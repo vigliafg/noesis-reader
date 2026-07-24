@@ -1,17 +1,38 @@
 # Noesis Reader
 
-A monolithic EPUB library and reader PWA built as a single HTML file (~7738 lines). Read, annotate, bookmark, extract EPUB chapters, and **translate pages using your browser's native translation engine** — fully offline capable via IndexedDB and Service Worker.
+A monolithic EPUB library and reader built as a single HTML file. Read, annotate, bookmark, extract EPUB chapters, and **translate pages using Chrome's built-in translation engine**.
 
-> **Primary browser: Google Chrome** (desktop and Android). The app is tested and optimized for Chrome, which provides the richest feature set. Some features may be degraded or unavailable in other browsers — see [Browser Compatibility](#browser-compatibility).
+> **Primary browser: Google Chrome** (desktop and Android). The app is tested and optimized for Chrome, which provides the richest feature set including native page translation. Some features may be degraded in other browsers.
 
 > **Disclaimer**: This software is provided for personal, educational, and research purposes. It is the user's sole responsibility to ensure that their use of this application — including but not limited to EPUB file acquisition, content reproduction, chapter extraction, and translation — complies with all applicable laws and regulations in their jurisdiction. The authors assume no liability for any misuse or legal violations arising from the use of this software.
+
+> **Why not a PWA?** Installing as a PWA hides Chrome's browser UI — including the address bar and the three-dot menu where the **Translate** feature lives. Since this app relies on Chrome-native services (translation, printing, etc.), it is designed to run as a regular web page. Use the shortcuts below instead.
+
+## How to use
+
+Open `index.html` in Chrome. All data is stored locally in IndexedDB — nothing leaves your device.
+
+### Add to desktop / home screen
+
+| Platform | Method |
+|----------|--------|
+| **Desktop (Windows/Mac/Linux)** | Bookmark the page (`Ctrl+D` / `Cmd+D`), or drag the URL to your desktop as a shortcut |
+| **Android** | Chrome menu → "Add to Home screen" **without** installing as app. Or bookmark the page (`⋮` → ☆) and access it from Chrome's bookmarks |
+| **iOS** | Safari → Share → "Add to Home Screen" — this creates a web clip that opens in Safari with full browser UI |
+
+### Self-host or use cloud
+
+The app is a single static HTML file with CDN dependencies. Serve it anywhere:
+
+- **Local**: open `index.html` directly in Chrome
+- **LAN**: `python3 -m http.server 8000`
+- **Cloud**: deploy to any static host (Cloudflare Pages, GitHub Pages, Netlify, Vercel, etc.)
 
 ## Table of Contents
 
 - [Browser-Native Page Translation](#browser-native-page-translation)
 - [Architecture Overview](#architecture-overview)
 - [CDN Dependencies](#cdn-dependencies)
-- [PWA &amp; Versioning](#pwa--versioning)
 - [IndexedDB Storage](#indexeddb-storage)
 - [Library View](#library-view)
 - [Reader View](#reader-view)
@@ -97,30 +118,6 @@ All loaded from jsDelivr CDN:
 | epub.js | 0.3.93 | `cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js` |
 
 Lines: CSS at line 19, JSZip at line 3555, epub.js at line 3556.
-
----
-
-## PWA &amp; Versioning
-
-### Manifest
-Generated dynamically as a Blob URL from a JavaScript object (`initPWA`, line 3571). Includes:
-- `name`: "Noesis Reader"
-- `display`: `standalone`
-- `theme_color`: `#667eea`
-- `categories`: `['books', 'education', 'productivity']`
-- Icons: 192x192 and 512x512 inline SVG data URIs
-
-### Service Worker
-Registered with version query parameter at `sw.js?v=<VERSION>` (line 3599). Listens for `updatefound` events and shows a toast when a new version is available (line 3602-3613).
-
-### Version System
-```javascript
-var NOESIS_VERSION = '816';  // line 3566
-```
-Rules (comments at lines 3562-3565):
-1. Increment when modifying HTML or SW
-2. Update `VERSION` comment in `sw.js` to match
-3. Deploy both files; browser detects byte-different SW and auto-updates
 
 ---
 
@@ -873,57 +870,14 @@ Settings are persisted in `savedState.interface` and restored on book open.
 
 ---
 
-## Browser Compatibility
+## Browser recommendation
 
-Noesis Reader is developed and tested primarily on **Google Chrome** (desktop and Android). Chrome provides the richest, most reliable experience because it is the only browser that integrates all the required technologies natively.
+Use **Google Chrome** (desktop or Android). The app relies on Chrome-native services:
 
-### Chrome / Chromium-based (recommended)
+- **Built-in page translation** (right-click → Translate). The app detects translation state and protects your reading position during translation.
+- **IndexedDB** for reliable local storage of books, bookmarks, and reading state.
+- **CSS `backdrop-filter`** for frosted-glass UI effects (header, floating nav buttons, bookmark drawer).
 
-| Feature | Chrome | Edge | Brave | Opera |
-|---------|--------|------|-------|-------|
-| EPUB rendering (epub.js) | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
-| PWA install (manifest + SW) | ✓ Full | ✓ Full | ✓ Limited¹ | ✓ Full |
-| IndexedDB storage | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
-| Browser-native page translation | ✓ Full | ✓ Full | ✗ Not available | ✓ Full |
-| Auto-save during translation | ✓ Full | ✓ Full | — | ✓ Full |
-| Offline reading (SW cache) | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
-| Touch zones / swipe navigation | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
-| Print support | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+Other Chromium browsers (Edge, Brave, Opera) also work. **Firefox** works for basic reading but lacks built-in translation. **Safari** has partial support — epub.js rendering may be inconsistent and IndexedDB storage is more restricted.
 
-¹ Brave's aggressive blocking may interfere with CDN resource loading and Service Worker registration. Disable Shields for the site if issues occur.
-
-### Firefox
-
-| Feature | Status |
-|---------|--------|
-| EPUB rendering | ✓ Works |
-| PWA install | ✗ Firefox does not support PWA installation on desktop |
-| Service Worker | ✓ Works (offline caching functional) |
-| IndexedDB | ✓ Works |
-| Page translation | ✗ Firefox does not have built-in page translation; requires an extension |
-| Auto-save during translation | — (translation detection is Chromium-specific) |
-| Touch/swipe on mobile | ✓ Works, but some CSS `backdrop-filter` effects may degrade |
-
-### Safari (macOS / iOS)
-
-| Feature | Status |
-|---------|--------|
-| EPUB rendering | ⚠ Partial — epub.js may have rendering inconsistencies on WebKit |
-| PWA install | ✓ Safari supports "Add to Home Screen" (uses `apple-mobile-web-app-capable` meta tags) |
-| Service Worker | ✓ Supported on iOS 11.3+, but storage quotas are more restrictive |
-| IndexedDB | ✓ Supported, but Safari may evict IndexedDB data under storage pressure |
-| Page translation | ✓ Safari 18+ has built-in translation; older versions require an extension |
-| Auto-save during translation | ✗ Translation detection classes are Chromium-specific |
-| Floating nav buttons | ⚠ `backdrop-filter` is not supported in Safari; buttons fall back to solid colors |
-| `_headers` (Cloudflare) | ✓ Cloudflare applies these server-side, browser-agnostic |
-
-### Known limitations in non-Chromium browsers
-
-- **Translation-aware auto-save**: Only works in Chromium-based browsers. In Firefox/Safari, using built-in or extension-based translation may cause reading position drift. The workaround is to close and reopen the book after translating.
-- **PWA installation prompt**: Only Chromium-based browsers show the automatic install prompt. Safari requires manual "Add to Home Screen", Firefox desktop has no PWA support.
-- **CSS `backdrop-filter`**: Used for floating nav buttons, header, and bookmark drawer effects. Falls back to solid opacity in browsers that don't support it (Safari < 16, older Firefox).
-- **IndexedDB storage limits**: Chrome provides generous storage (~60% of disk free space). Safari iOS applies stricter limits and may evict data under pressure without notice.
-
-### Summary
-
-For the best experience — especially **browser-native translation with reading position protection**, PWA installation, and reliable offline storage — use **Google Chrome** (desktop or Android).
+> **Do not install as a PWA/app.** PWA installation removes Chrome's browser UI (address bar, three-dot menu), blocking access to the **Translate** feature and other Chrome-native services. Use bookmarks or desktop shortcuts instead.
