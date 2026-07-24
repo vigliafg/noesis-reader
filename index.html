@@ -2934,6 +2934,7 @@
     <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
     <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
     <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
+    <div class="hamburger-item hmb-rdr" id="hmbOpenInBrowser" style="display:none"><i class="bi bi-box-arrow-up-right"></i> Open in Chrome</div>
   </div>
 
   <!-- LOADING OVERLAY -->
@@ -3230,6 +3231,7 @@
 
         <!-- Help -->
         <span class="rmb-item" id="rmbHelp">Help</span>
+        <span class="rmb-item" id="rmbOpenInBrowser" style="display:none">Open in Chrome</span>
 
       </nav>
       <!-- ═══════════ END MENUBAR ═══════════ -->
@@ -3569,6 +3571,12 @@
     // PWA — Manifest & Service Worker Registration
     // ═══════════════════════════════════════════════════════
     (function initPWA() {
+      // Detect standalone PWA mode — used to show "Open in Chrome" button
+      var isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      if (isStandalone) {
+        document.body.classList.add('pwa-standalone');
+      }
+
       var manifest = {
         name: 'Noesis Reader',
         short_name: 'Noesis',
@@ -7345,6 +7353,27 @@ ${htmlContent}
           _closeNavigate();
           var btn = document.getElementById('readerHelpBtn');
           if (btn) btn.click();
+        });
+      }
+
+      // ── Open in Chrome (PWA standalone only) ──
+      var rmbOpenInBrowser = document.getElementById('rmbOpenInBrowser');
+      var hmbOpenInBrowser = document.getElementById('hmbOpenInBrowser');
+      if (document.body.classList.contains('pwa-standalone')) {
+        if (rmbOpenInBrowser) rmbOpenInBrowser.style.display = '';
+        if (hmbOpenInBrowser) hmbOpenInBrowser.style.display = '';
+      }
+      if (rmbOpenInBrowser) {
+        rmbOpenInBrowser.addEventListener('click', function(e) {
+          e.stopPropagation();
+          window.open(location.href, '_blank', 'noopener');
+        });
+      }
+      if (hmbOpenInBrowser) {
+        hmbOpenInBrowser.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeHamburger();
+          window.open(location.href, '_blank', 'noopener');
         });
       }
 
