@@ -4487,17 +4487,15 @@ ${htmlContent}
         target = decodeURIComponent(target);
       } catch (e) { }
 
-      // In continuous scroll mode, bookmark navigation needs special handling.
-      // The 'continuous' manager causes auto-scroll when loading adjacent chapters.
-      // Solution: Use 'default' manager for navigating (no auto-load of adjacent chapters),
-      // which prevents the backward scroll issue while still allowing scrolled view.
+      // In scroll mode: destroy and recreate the rendition to prevent
+      // backward-scroll issues when loading adjacent chapters.
       if (scrollMode) {
         // Step 1: Find the target spine item
         let targetSpineItem = null;
         let targetSpineIndex = -1;
+        let targetAnchor = '';
 
         if (target.startsWith("epubcfi")) {
-          // For CFI, try to extract the spine item
           try {
             const cfiParts = target.match(/epubcfi\(\/6\/(\d+)/);
             if (cfiParts && cfiParts[1]) {
@@ -4508,8 +4506,8 @@ ${htmlContent}
             console.warn("Could not parse CFI:", e);
           }
         } else {
-          // For href-based navigation
           const [pathPart, anchor] = target.split('#');
+          targetAnchor = anchor || '';
           const fileName = pathPart.split('/').pop();
 
           let index = 0;
@@ -4532,97 +4530,26 @@ ${htmlContent}
         const viewer = document.getElementById('viewer');
         viewer.innerHTML = '';
 
-        // Step 3: Create rendition with 'default' manager (not 'continuous')
-        // This prevents auto-loading of adjacent chapters and the backward scroll issue.
-        // We keep flow: 'scrolled' so content is still scrollable within each section.
+        // Step 3: Create new rendition (using 'default' manager to prevent
+        // auto-load of adjacent chapters) and register standard hooks
         rendition = book.renderTo('viewer', {
           width: '100%',
           height: '100%',
           spread: 'none',
           flow: 'scrolled',
-          manager: 'default'  // Use default manager to prevent auto-scroll issues
+          manager: 'default'
         });
-        /* Inject close handler into epub iframe */
-        setTimeout(function() { _injectIframeCloseHandler(); }, 500);
-        /* Inject close handler into epub iframe */
-        setTimeout(function() { _injectIframeCloseHandler(); }, 500);
+        _registerRenditionHooks();
 
-        rendition.on('linkClicked', (linkHref) => {
-          navigateToHref(linkHref);
-        });
-
-        rendition.hooks.content.register((contents) => {
-          const style = contents.document.createElement('style');
-          style.textContent = `
-            img { max-width: 100% !important; height: auto !important; cursor: pointer; }
-            .epub-table-scroll-wrap {
-              display: block;
-              width: 100%;
-              overflow-x: auto;
-              -webkit-overflow-scrolling: touch;
-              margin: 1em 0;
-              cursor: pointer;
-            }
-            .epub-table-scroll-wrap table {
-              table-layout: auto !important;
-              width: auto !important;
-              max-width: none !important;
-            }
-          `;
-          contents.document.head.appendChild(style);
-
-          const iframeDoc = contents.document;
-
-          iframeDoc.querySelectorAll('table').forEach(function(table) {
-            if (table.parentElement && table.parentElement.classList.contains('epub-table-scroll-wrap')) return;
-            const wrap = iframeDoc.createElement('div');
-            wrap.className = 'epub-table-scroll-wrap';
-            table.parentNode.insertBefore(wrap, table);
-            wrap.appendChild(table);
-          });
-
-          iframeDoc.querySelectorAll('img').forEach(function(img) {
-            img.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-            img.style.webkitTouchCallout = 'none';
-            img.style.userSelect = 'none';
-            var touchMoved = false;
-            img.addEventListener('touchstart', function(e) { touchMoved = false; e.preventDefault(); }, { passive: false });
-            img.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
-            img.addEventListener('touchend', function(e) {
-              if (!touchMoved) { e.preventDefault(); sendMediaTap('img', { src: img.src, alt: img.alt || '' }); }
-            }, { passive: false });
-            img.addEventListener('click', function() { sendMediaTap('img', { src: img.src, alt: img.alt || '' }); });
-          });
-
-          iframeDoc.querySelectorAll('.epub-table-scroll-wrap').forEach(function(wrap) {
-            var table = wrap.querySelector('table');
-            if (!table) return;
-            var touchMoved = false;
-            wrap.addEventListener('touchstart', function() { touchMoved = false; }, { passive: true });
-            wrap.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
-            wrap.addEventListener('touchend', function(e) {
-              if (!touchMoved) { e.preventDefault(); sendMediaTap('table', { html: table.outerHTML }); }
-            }, { passive: false });
-            wrap.addEventListener('click', function() { sendMediaTap('table', { html: table.outerHTML }); });
-          });
-
-          setTimeout(applyTheme, 50);
-        });
-
-        // Step 4: Display the target chapter
+        // Step 4: Display the target chapter, preserving fragment anchors
         try {
-          if (targetSpineItem) {
-            // Use the spine item's href directly for clean navigation
-            await rendition.display(targetSpineItem.href);
-          } else {
-            // Fallback: use original target
-            await rendition.display(target);        }
-
-        applyTheme();
+          const displayTarget = targetSpineItem
+            ? (targetAnchor ? targetSpineItem.href + '#' + targetAnchor : targetSpineItem.href)
+            : target;
+          await rendition.display(displayTarget);
         } catch (e) {
           console.error("Display failed:", e);
           await rendition.display();
-          applyTheme();
         }
         return;
       }
@@ -5308,6 +5235,126 @@ ${htmlContent}
       }
     }
 
+    function _registerRenditionHooks() {
+      rendition.on('linkClicked', (href) => {
+        navigateToHref(href);
+      });
+
+      rendition.on('relocated', (location) => {
+        if (!location || !location.start || !location.start.href) return;
+        setTimeout(function() { _injectIframeCloseHandler(); }, 300);
+        if (location.start.cfi) _lastNavigatedCfi = location.start.cfi;
+        if (book && book.navigation && book.navigation.toc) {
+          const path = findBreadcrumbInToc(book.navigation.toc, location.start.href, '');
+          if (path) setStatusPath(path);
+        }
+      });
+
+      rendition.on('selected', (cfiRange, contents) => {
+        _readerHlHasSelection = true;
+        _readerPendingCfi = cfiRange;
+        const hlBtn = document.getElementById('readerHighlightBtn');
+        if (hlBtn) {
+          hlBtn.style.outline = '2px solid #3b82f6';
+          hlBtn.title = currentReaderHighlightColor === 'remove'
+            ? 'Click to remove highlight'
+            : 'Click to apply highlight';
+        }
+        setTimeout(function() { if (typeof _showCtxAnnotatePopup === 'function') _showCtxAnnotatePopup(); }, 60);
+      });
+
+      rendition.hooks.content.register((contents) => {
+        const style = contents.document.createElement('style');
+        
+        const buttonsVisible = !scrollMode && !sidebarVisible;
+        const basePadding = 40;
+        const buttonWidth = buttonsVisible ? 25 : 0;
+        const totalPadding = basePadding + buttonWidth;
+        
+        style.textContent = `
+          img { max-width: 100% !important; height: auto !important; cursor: pointer; }
+          body { 
+            padding-left: ${totalPadding}px !important; 
+            padding-right: ${totalPadding}px !important;
+            box-sizing: border-box !important;
+          }
+          .epub-table-scroll-wrap {
+            display: block;
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 1em 0;
+            cursor: pointer;
+          }
+          .epub-table-scroll-wrap table {
+            table-layout: auto !important;
+            width: auto !important;
+            max-width: none !important;
+          }
+          .epub-hl-yellow { background-color: #ffeb3b !important; fill: #ffeb3b !important; fill-opacity: 0.5 !important; }
+          .epub-hl-green  { background-color: #a5d6a7 !important; fill: #a5d6a7 !important; fill-opacity: 0.5 !important; }
+          .epub-hl-pink   { background-color: #f8bbd9 !important; fill: #f8bbd9 !important; fill-opacity: 0.5 !important; }
+        `;
+        contents.document.head.appendChild(style);
+
+        if (readerHighlights.length > 0) {
+          setTimeout(() => {
+            readerHighlights.forEach(hl => {
+              try {
+                rendition.annotations.remove(hl.cfi, 'highlight');
+                const _hlColor = HL_COLORS[hl.color] || '#ffeb3b';
+                rendition.annotations.highlight(hl.cfi, {}, () => {}, 'epub-hl-' + hl.color,
+                  { fill: _hlColor, 'fill-opacity': '0.5' });
+              } catch(e) { }
+            });
+          }, 120);
+        }
+
+        const iframeDoc = contents.document;
+        
+        iframeDoc.querySelectorAll('table').forEach(function(table) {
+          if (table.parentElement && table.parentElement.classList.contains('epub-table-scroll-wrap')) return;
+          const wrap = iframeDoc.createElement('div');
+          wrap.className = 'epub-table-scroll-wrap';
+          table.parentNode.insertBefore(wrap, table);
+          wrap.appendChild(table);
+        });
+
+        function sendMediaTap(type, data) {
+          try {
+            window.parent.postMessage({ epubMediaTap: true, type: type, data: data }, '*');
+          } catch(e) {}
+        }
+
+        iframeDoc.querySelectorAll('img').forEach(function(img) {
+          img.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+          img.style.webkitTouchCallout = 'none';
+          img.style.userSelect = 'none';
+          var touchMoved = false;
+          img.addEventListener('touchstart', function(e) { touchMoved = false; e.preventDefault(); }, { passive: false });
+          img.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
+          img.addEventListener('touchend', function(e) {
+            if (!touchMoved) { e.preventDefault(); sendMediaTap('img', { src: img.src, alt: img.alt || '' }); }
+          }, { passive: false });
+          img.addEventListener('click', function() { sendMediaTap('img', { src: img.src, alt: img.alt || '' }); });
+        });
+
+        iframeDoc.querySelectorAll('.epub-table-scroll-wrap').forEach(function(wrap) {
+          var table = wrap.querySelector('table');
+          if (!table) return;
+          var touchMoved = false;
+          wrap.addEventListener('touchstart', function() { touchMoved = false; }, { passive: true });
+          wrap.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
+          wrap.addEventListener('touchend', function(e) {
+            if (!touchMoved) { e.preventDefault(); sendMediaTap('table', { html: table.outerHTML }); }
+          }, { passive: false });
+          wrap.addEventListener('click', function() { sendMediaTap('table', { html: table.outerHTML }); });
+        });
+
+        setTimeout(applyTheme, 50);
+      });
+    }
+
     async function recreateRendition() {
       if (!book) return;
 
@@ -5338,151 +5385,7 @@ ${htmlContent}
         manager: 'default'  // Always use 'default' to prevent scroll offset issues
       });
 
-      rendition.on('linkClicked', (href) => {
-        navigateToHref(href);
-      });
-
-      // Auto-update breadcrumb on every page change
-      rendition.on('relocated', (location) => {
-        if (!location || !location.start || !location.start.href) return;
-        /* Re-inject close handler after iframe content reload */
-        setTimeout(function() { _injectIframeCloseHandler(); }, 300);
-        // Track the CFI from real epub.js navigation events (fired only on genuine
-        // page/section changes, not on external DOM modifications like browser translation).
-        if (location.start.cfi) _lastNavigatedCfi = location.start.cfi;
-        if (book && book.navigation && book.navigation.toc) {
-          const path = findBreadcrumbInToc(book.navigation.toc, location.start.href, '');
-          if (path) setStatusPath(path);
-        }
-      });
-
-      // epub.js fires 'selected' with the authoritative cfiRange — store it for button click
-      rendition.on('selected', (cfiRange, contents) => {
-        _readerHlHasSelection = true;
-        _readerPendingCfi = cfiRange;
-        const hlBtn = document.getElementById('readerHighlightBtn');
-        if (hlBtn) {
-          hlBtn.style.outline = '2px solid #3b82f6';
-          hlBtn.title = currentReaderHighlightColor === 'remove'
-            ? 'Click to remove highlight'
-            : 'Click to apply highlight';
-        }
-        /* Show contextual annotate popup near selection */
-        setTimeout(function() { if (typeof _showCtxAnnotatePopup === 'function') _showCtxAnnotatePopup(); }, 60);
-      });
-
-      rendition.hooks.content.register((contents) => {
-        const style = contents.document.createElement('style');
-        
-        // Calculate padding: 40px white margin always present
-        // When buttons are visible, add their width (25px) to the padding
-        const buttonsVisible = !scrollMode && !sidebarVisible;
-        const basePadding = 40; // White margin
-        const buttonWidth = buttonsVisible ? 25 : 0;
-        const totalPadding = basePadding + buttonWidth;
-        
-        style.textContent = `
-          img { max-width: 100% !important; height: auto !important; cursor: pointer; }
-          body { 
-            padding-left: ${totalPadding}px !important; 
-            padding-right: ${totalPadding}px !important;
-            box-sizing: border-box !important;
-          }
-          .epub-table-scroll-wrap {
-            display: block;
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            margin: 1em 0;
-            cursor: pointer;
-          }
-          .epub-table-scroll-wrap table {
-            table-layout: auto !important;
-            width: auto !important;
-            max-width: none !important;
-          }
-          .epub-hl-yellow { background-color: #ffeb3b !important; fill: #ffeb3b !important; fill-opacity: 0.5 !important; }
-          .epub-hl-green  { background-color: #a5d6a7 !important; fill: #a5d6a7 !important; fill-opacity: 0.5 !important; }
-          .epub-hl-pink   { background-color: #f8bbd9 !important; fill: #f8bbd9 !important; fill-opacity: 0.5 !important; }
-        `;
-        contents.document.head.appendChild(style);
-
-        // Restore saved highlights in this section
-        // Use a short timeout so epub.js finishes laying out the content first
-        if (readerHighlights.length > 0) {
-          setTimeout(() => {
-            readerHighlights.forEach(hl => {
-              try {
-                rendition.annotations.remove(hl.cfi, 'highlight');
-                const _hlColor = HL_COLORS[hl.color] || '#ffeb3b';
-                rendition.annotations.highlight(hl.cfi, {}, () => {}, 'epub-hl-' + hl.color,
-                  { fill: _hlColor, 'fill-opacity': '0.5' });
-              } catch(e) { /* stale CFI – ignore */ }
-            });
-          }, 120);
-        }
-
-        // Wrap tables in scrollable divs and attach media tap handlers
-        const iframeDoc = contents.document;
-        
-        // Wrap tables
-        iframeDoc.querySelectorAll('table').forEach(function(table) {
-          if (table.parentElement && table.parentElement.classList.contains('epub-table-scroll-wrap')) return;
-          const wrap = iframeDoc.createElement('div');
-          wrap.className = 'epub-table-scroll-wrap';
-          table.parentNode.insertBefore(wrap, table);
-          wrap.appendChild(table);
-        });
-
-        // Helper: post message to parent with media data
-        function sendMediaTap(type, data) {
-          try {
-            window.parent.postMessage({ epubMediaTap: true, type: type, data: data }, '*');
-          } catch(e) {}
-        }
-
-        // Attach tap/click to images
-        iframeDoc.querySelectorAll('img').forEach(function(img) {
-          img.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-          img.style.webkitTouchCallout = 'none';
-          img.style.userSelect = 'none';
-          var touchMoved = false;
-          img.addEventListener('touchstart', function(e) {
-            touchMoved = false;
-            e.preventDefault();
-          }, { passive: false });
-          img.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
-          img.addEventListener('touchend', function(e) {
-            if (!touchMoved) {
-              e.preventDefault();
-              sendMediaTap('img', { src: img.src, alt: img.alt || '' });
-            }
-          }, { passive: false });
-          img.addEventListener('click', function(e) {
-            sendMediaTap('img', { src: img.src, alt: img.alt || '' });
-          });
-        });
-
-        // Attach tap/click to table scroll wrappers
-        iframeDoc.querySelectorAll('.epub-table-scroll-wrap').forEach(function(wrap) {
-          var table = wrap.querySelector('table');
-          if (!table) return;
-          var touchMoved = false;
-          wrap.addEventListener('touchstart', function() { touchMoved = false; }, { passive: true });
-          wrap.addEventListener('touchmove', function() { touchMoved = true; }, { passive: true });
-          wrap.addEventListener('touchend', function(e) {
-            if (!touchMoved) {
-              e.preventDefault();
-              sendMediaTap('table', { html: table.outerHTML });
-            }
-          }, { passive: false });
-          wrap.addEventListener('click', function(e) {
-            sendMediaTap('table', { html: table.outerHTML });
-          });
-        });
-
-        setTimeout(applyTheme, 50);
-      });
+      _registerRenditionHooks();
 
       // Try to restore position - use CFI first, fallback to href
       let displaySuccess = false;
@@ -5572,18 +5475,17 @@ ${htmlContent}
           li.addEventListener('click', (e) => {
             e.stopPropagation();
 
-            if (item.href) {
-              navigateToHref(item.href);
-              // Update status path with breadcrumb
-              setStatusPath(itemPath);
-            }
-
             if (hasSub) {
               li.classList.toggle('open');
               const subUl = li.nextElementSibling;
               if (subUl && subUl.tagName === 'UL') {
                 subUl.classList.toggle('open');
               }
+            }
+
+            if (item.href) {
+              navigateToHref(item.href);
+              setStatusPath(itemPath);
             }
           });
 
