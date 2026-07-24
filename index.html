@@ -3,19 +3,8 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, viewport-fit=cover" />
-  <title>Noesis Reader</title>
-
-  <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#667eea" />
-  <meta name="description" content="EPUB Library & Reader — Read, annotate, and extract EPUB chapters offline" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Noesis" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="manifest" id="pwaManifest" />
-  <link rel="apple-touch-icon" href="noesis-reader.png" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
+  <title>EPUB Library & Reader</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
     /* --- GLOBAL & UTILS --- */
@@ -2934,7 +2923,6 @@
     <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
     <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
     <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
-    <div class="hamburger-item hmb-rdr" id="hmbOpenInBrowser" style="display:none"><i class="bi bi-box-arrow-up-right"></i> Open in Chrome</div>
   </div>
 
   <!-- LOADING OVERLAY -->
@@ -3231,7 +3219,6 @@
 
         <!-- Help -->
         <span class="rmb-item" id="rmbHelp">Help</span>
-        <span class="rmb-item" id="rmbOpenInBrowser" style="display:none">Open in Chrome</span>
 
       </nav>
       <!-- ═══════════ END MENUBAR ═══════════ -->
@@ -3558,88 +3545,6 @@
 <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
 
   <script>
-    // ═══════════════════════════════════════════════════════
-    // NOESIS VERSION — single source of truth
-    // ═══════════════════════════════════════════════════════
-    // Regole di avanzamento versione (vedi README.md):
-    //   1. Incrementa questo numero quando modifichi HTML o SW
-    //   2. Aggiorna il commento VERSION in sw.js allo stesso valore
-    //   3. Deploy di entrambi i file; il browser rileverà il nuovo SW (byte-diverso) e auto-aggiornerà
-    var NOESIS_VERSION = '816';
-
-    // ═══════════════════════════════════════════════════════
-    // PWA — Manifest & Service Worker Registration
-    // ═══════════════════════════════════════════════════════
-    (function initPWA() {
-      // Detect standalone PWA mode — used to show "Open in Chrome" button
-      var isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      if (isStandalone) {
-        document.body.classList.add('pwa-standalone');
-      }
-
-      var manifest = {
-        name: 'Noesis Reader',
-        short_name: 'Noesis',
-        description: 'EPUB Library & Reader — Read, annotate, and extract EPUB chapters',
-        start_url: '/',
-        display: 'standalone',
-        orientation: 'any',
-        background_color: '#f3f4f6',
-        theme_color: '#667eea',
-        lang: 'en',
-        categories: ['books', 'education', 'productivity'],
-        version: NOESIS_VERSION,
-        icons: [
-          { src: 'noesis-reader.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: 'noesis-reader.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-        ]
-      };
-
-      var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      var manifestUrl = URL.createObjectURL(blob);
-      var link = document.getElementById('pwaManifest');
-      if (link) link.href = manifestUrl;
-
-      if ('serviceWorker' in navigator) {
-        // Pass version to SW via query param; SW reads it for CACHE_NAME.
-        // When VERSION changes, the SW file itself must also change (byte-different)
-        // to trigger the browser's update flow.
-        var swUrl = new URL('sw.js?v=' + NOESIS_VERSION, location.href).href;
-        var _swUpdating = false;
-
-        navigator.serviceWorker.register(swUrl, { scope: '.' }).then(function(reg) {
-          console.log('SW registered v' + NOESIS_VERSION, reg.scope);
-
-          // Reload when a new SW takes over
-          navigator.serviceWorker.addEventListener('controllerchange', function() {
-            if (_swUpdating) return;
-            _swUpdating = true;
-            // Force a clean reload — skip browser cache, fetch fresh from network
-            window.location.reload();
-          });
-
-          // Check for waiting SW on page load (e.g., after a previous update)
-          if (reg.waiting) {
-            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-          }
-
-          reg.addEventListener('updatefound', function() {
-            var installing = reg.installing;
-            if (!installing) return;
-            installing.addEventListener('statechange', function() {
-              if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                showToast && showToast('Update ready — refreshing...', 'saving', 1200);
-                // Tell the waiting SW to activate immediately
-                installing.postMessage({ type: 'SKIP_WAITING' });
-              }
-            });
-          });
-        }).catch(function(err) {
-          console.warn('SW registration failed (expected on file:// or unsupported origin):', err.message);
-        });
-      }
-    })();
-
     // --- ERROR HANDLING ---
     // Prevent ResizeObserver loop limit exceeded error from showing up
     // This is common with complex layout engines like epub.js inside iframes
@@ -7370,27 +7275,6 @@ ${htmlContent}
           _closeNavigate();
           var btn = document.getElementById('readerHelpBtn');
           if (btn) btn.click();
-        });
-      }
-
-      // ── Open in Chrome (PWA standalone only) ──
-      var rmbOpenInBrowser = document.getElementById('rmbOpenInBrowser');
-      var hmbOpenInBrowser = document.getElementById('hmbOpenInBrowser');
-      if (document.body.classList.contains('pwa-standalone')) {
-        if (rmbOpenInBrowser) rmbOpenInBrowser.style.display = '';
-        if (hmbOpenInBrowser) hmbOpenInBrowser.style.display = '';
-      }
-      if (rmbOpenInBrowser) {
-        rmbOpenInBrowser.addEventListener('click', function(e) {
-          e.stopPropagation();
-          window.open(location.href, '_blank', 'noopener');
-        });
-      }
-      if (hmbOpenInBrowser) {
-        hmbOpenInBrowser.addEventListener('click', function(e) {
-          e.stopPropagation();
-          closeHamburger();
-          window.open(location.href, '_blank', 'noopener');
         });
       }
 
