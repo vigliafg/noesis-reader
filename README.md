@@ -1,49 +1,61 @@
 # Noesis Reader
 
-A monolithic EPUB library and reader PWA built as a single HTML file (~7738 lines). Read, annotate, bookmark, and extract EPUB chapters — fully offline capable via IndexedDB and Service Worker.
+A monolithic EPUB library and reader PWA built as a single HTML file (~7738 lines). Read, annotate, bookmark, extract EPUB chapters, and **translate pages using your browser's native translation engine** — fully offline capable via IndexedDB and Service Worker.
+
+> **Primary browser: Google Chrome** (desktop and Android). The app is tested and optimized for Chrome, which provides the richest feature set. Some features may be degraded or unavailable in other browsers — see [Browser Compatibility](#browser-compatibility).
 
 ## Table of Contents
 
+- [Browser-Native Page Translation](#browser-native-page-translation)
 - [Architecture Overview](#architecture-overview)
 - [CDN Dependencies](#cdn-dependencies)
 - [PWA &amp; Versioning](#pwa--versioning)
 - [IndexedDB Storage](#indexeddb-storage)
 - [Library View](#library-view)
-  - [Book Import](#book-import)
-  - [Book Listing](#book-listing)
-  - [Cover Extraction](#cover-extraction)
-  - [Delete Book](#delete-book)
-  - [Library Themes](#library-themes)
-  - [Tools Dropdown](#tools-dropdown)
-  - [Help System (Library)](#help-system-library)
-  - [Extracted Chapters Display](#extracted-chapters-display)
 - [Reader View](#reader-view)
-  - [Opening a Book](#opening-a-book)
-  - [epub.js Rendition](#epubjs-rendition)
-  - [TOC Sidebar / Overlay](#toc-sidebar--overlay)
-  - [Reading Modes](#reading-modes)
-  - [Dual Page](#dual-page)
-  - [Font Size &amp; Line Height](#font-size--line-height)
-  - [Floating Nav Buttons](#floating-nav-buttons)
-  - [Status Bar &amp; Chapter Nav](#status-bar--chapter-nav)
-  - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Reader Menubar](#reader-menubar)
 - [Display Menu (Accordion)](#display-menu-accordion)
-  - [Typography Section](#typography-section)
-  - [Themes Section](#themes-section)
-  - [Interface Section](#interface-section)
 - [Auto-Save System](#auto-save-system)
 - [User Bookmarks System](#user-bookmarks-system)
 - [Highlights &amp; Annotations](#highlights--annotations)
 - [Chapter Extraction](#chapter-extraction)
-  - [Single Chapter](#single-chapter)
-  - [Current + Sublevels](#current--sublevels)
 - [Snapshot System](#snapshot-system)
 - [Media Preview](#media-preview)
 - [Print Support](#print-support)
 - [Mobile Responsive](#mobile-responsive)
 - [Help System](#help-system)
 - [Interface Customization](#interface-customization)
+- [Browser Compatibility](#browser-compatibility)
+
+---
+
+## Browser-Native Page Translation
+
+Noesis Reader leverages **the browser's own translation engine** — no external APIs, no token limits, no configuration needed. When you load an EPUB, every page is a standard HTML document rendered inside an iframe. Chrome's built-in translation service (Google Translate) treats each page as translatable web content.
+
+### How to translate an EPUB while reading
+
+1. Open a book in the Reader view
+2. Right-click anywhere on the page text → **"Translate to [your language]"**
+3. Or use the Translate icon in the Chrome address bar
+4. Chrome translates the current page and auto-translates subsequent pages as you navigate
+
+### How the app protects your reading position during translation
+
+Browser translation modifies the iframe DOM (it rewraps text nodes in `<font>` tags), which would normally cause epub.js to report wrong position CFIs. Noesis Reader detects translation state and prevents corruption:
+
+```
+Chrome adds classes to <html> during translation:
+  translated-ltr  → left-to-right translation active
+  translated-rtl  → right-to-left translation active
+  translated      → generic translation attribute
+```
+
+**When translation is active**, the auto-save system **pauses itself** (`_isBrowserTranslated()`, line 4323) — it stops writing position updates to IndexedDB. This ensures that the pre-translation reading position (which is correct) is preserved. When translation ends, auto-save resumes automatically.
+
+The Table of Contents is also marked with `translate="yes"` attributes so chapter titles get translated alongside the content.
+
+> This feature relies on the browser's native `translated-ltr` / `translated-rtl` CSS classes on `<html>`, which are specific to Chromium-based browsers (Chrome, Edge, Brave, Opera, etc.).
 
 ---
 
@@ -856,3 +868,60 @@ Settings are persisted in `savedState.interface` and restored on book open.
 5. **Bookmark**: Current position → TOC lookup → preview extract → `saveUserBookmarksToDB()`
 6. **Highlight**: Selection → CFI from epub.js → `applyReaderHighlight()` → annotations API → saved in state
 7. **Extract**: Current spine item → load section → process images (base64) → extract styles → `saveExtractedChapterToDB()` → auto-download HTML pair
+
+---
+
+## Browser Compatibility
+
+Noesis Reader is developed and tested primarily on **Google Chrome** (desktop and Android). Chrome provides the richest, most reliable experience because it is the only browser that integrates all the required technologies natively.
+
+### Chrome / Chromium-based (recommended)
+
+| Feature | Chrome | Edge | Brave | Opera |
+|---------|--------|------|-------|-------|
+| EPUB rendering (epub.js) | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+| PWA install (manifest + SW) | ✓ Full | ✓ Full | ✓ Limited¹ | ✓ Full |
+| IndexedDB storage | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+| Browser-native page translation | ✓ Full | ✓ Full | ✗ Not available | ✓ Full |
+| Auto-save during translation | ✓ Full | ✓ Full | — | ✓ Full |
+| Offline reading (SW cache) | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+| Touch zones / swipe navigation | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+| Print support | ✓ Full | ✓ Full | ✓ Full | ✓ Full |
+
+¹ Brave's aggressive blocking may interfere with CDN resource loading and Service Worker registration. Disable Shields for the site if issues occur.
+
+### Firefox
+
+| Feature | Status |
+|---------|--------|
+| EPUB rendering | ✓ Works |
+| PWA install | ✗ Firefox does not support PWA installation on desktop |
+| Service Worker | ✓ Works (offline caching functional) |
+| IndexedDB | ✓ Works |
+| Page translation | ✗ Firefox does not have built-in page translation; requires an extension |
+| Auto-save during translation | — (translation detection is Chromium-specific) |
+| Touch/swipe on mobile | ✓ Works, but some CSS `backdrop-filter` effects may degrade |
+
+### Safari (macOS / iOS)
+
+| Feature | Status |
+|---------|--------|
+| EPUB rendering | ⚠ Partial — epub.js may have rendering inconsistencies on WebKit |
+| PWA install | ✓ Safari supports "Add to Home Screen" (uses `apple-mobile-web-app-capable` meta tags) |
+| Service Worker | ✓ Supported on iOS 11.3+, but storage quotas are more restrictive |
+| IndexedDB | ✓ Supported, but Safari may evict IndexedDB data under storage pressure |
+| Page translation | ✓ Safari 18+ has built-in translation; older versions require an extension |
+| Auto-save during translation | ✗ Translation detection classes are Chromium-specific |
+| Floating nav buttons | ⚠ `backdrop-filter` is not supported in Safari; buttons fall back to solid colors |
+| `_headers` (Cloudflare) | ✓ Cloudflare applies these server-side, browser-agnostic |
+
+### Known limitations in non-Chromium browsers
+
+- **Translation-aware auto-save**: Only works in Chromium-based browsers. In Firefox/Safari, using built-in or extension-based translation may cause reading position drift. The workaround is to close and reopen the book after translating.
+- **PWA installation prompt**: Only Chromium-based browsers show the automatic install prompt. Safari requires manual "Add to Home Screen", Firefox desktop has no PWA support.
+- **CSS `backdrop-filter`**: Used for floating nav buttons, header, and bookmark drawer effects. Falls back to solid opacity in browsers that don't support it (Safari < 16, older Firefox).
+- **IndexedDB storage limits**: Chrome provides generous storage (~60% of disk free space). Safari iOS applies stricter limits and may evict data under pressure without notice.
+
+### Summary
+
+For the best experience — especially **browser-native translation with reading position protection**, PWA installation, and reliable offline storage — use **Google Chrome** (desktop or Android).
