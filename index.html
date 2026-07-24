@@ -3554,6 +3554,13 @@
       }
     });
 
+    // Unregister previous PWA service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(r) { r.unregister(); });
+      });
+    }
+
     // --- INDEXEDDB & LIBRARY LOGIC ---
 
     // --- NOESIS DB (extractedChapters + snapshots) ---
