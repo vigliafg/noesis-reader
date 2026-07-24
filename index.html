@@ -3605,17 +3605,34 @@
         // When VERSION changes, the SW file itself must also change (byte-different)
         // to trigger the browser's update flow.
         var swUrl = new URL('sw.js?v=' + NOESIS_VERSION, location.href).href;
+        var _swUpdating = false;
+
         navigator.serviceWorker.register(swUrl, { scope: '.' }).then(function(reg) {
           console.log('SW registered v' + NOESIS_VERSION, reg.scope);
+
+          // Reload when a new SW takes over
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (_swUpdating) return;
+            _swUpdating = true;
+            // Force a clean reload — skip browser cache, fetch fresh from network
+            window.location.reload();
+          });
+
+          // Check for waiting SW on page load (e.g., after a previous update)
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+
           reg.addEventListener('updatefound', function() {
             var installing = reg.installing;
-            if (installing) {
-              installing.addEventListener('statechange', function() {
-                if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-                  showToast && showToast('New version available — refresh to update', 'saving', 5000);
-                }
-              });
-            }
+            if (!installing) return;
+            installing.addEventListener('statechange', function() {
+              if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                showToast && showToast('Update ready — refreshing...', 'saving', 1200);
+                // Tell the waiting SW to activate immediately
+                installing.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
           });
         }).catch(function(err) {
           console.warn('SW registration failed (expected on file:// or unsupported origin):', err.message);
