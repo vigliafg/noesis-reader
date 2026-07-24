@@ -4,6 +4,8 @@ A monolithic EPUB library and reader PWA built as a single HTML file (~7738 line
 
 > **Primary browser: Google Chrome** (desktop and Android). The app is tested and optimized for Chrome, which provides the richest feature set. Some features may be degraded or unavailable in other browsers — see [Browser Compatibility](#browser-compatibility).
 
+> **Disclaimer**: This software is provided for personal, educational, and research purposes. It is the user's sole responsibility to ensure that their use of this application — including but not limited to EPUB file acquisition, content reproduction, chapter extraction, and translation — complies with all applicable laws and regulations in their jurisdiction. The authors assume no liability for any misuse or legal violations arising from the use of this software.
+
 ## Table of Contents
 
 - [Browser-Native Page Translation](#browser-native-page-translation)
