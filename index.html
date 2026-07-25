@@ -4025,6 +4025,9 @@ ${htmlContent}
         document.getElementById('extractChapterBtn').disabled = false;
         startAutoSave();
 
+        // Toast: show current navigation mode
+        showToast(scrollMode ? 'Scroll Mode ON' : 'Page Mode ON', 'saved', 2000);
+
         // Update floating button visibility
         const shouldShowButtons = !scrollMode && !sidebarVisible;
         document.getElementById('floatingPrevBtn').classList.toggle('hidden', !shouldShowButtons);
