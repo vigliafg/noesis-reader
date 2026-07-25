@@ -6845,6 +6845,12 @@ ${htmlContent}
         });
         if (dmWasOpen && !suppressDisplayPrompt) _showDisplaySavePrompt();
       }
+      /* Revert any .rmb-item-wrap that was force-shown by hamburger menu */
+      document.querySelectorAll('.rmb-item-wrap').forEach(function(w) {
+        if (w.style.display === 'block' && w.style.getPropertyPriority('display') === 'important') {
+          w.style.removeProperty('display');
+        }
+      });
     }
     /* ── Inject click handler into epub.js iframe ── */
     function _injectIframeCloseHandler() {
@@ -7445,11 +7451,7 @@ ${htmlContent}
                 clearInterval(checkClosed);
               }
             }, 150);
-            // Safety: force-revert after 8 seconds
-            setTimeout(() => {
-              wrapper.style.removeProperty('display');
-              clearInterval(checkClosed);
-            }, 8000);
+
           } else {
             target.click();
           }
