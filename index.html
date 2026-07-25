@@ -3769,12 +3769,17 @@
       loadingOverlay.classList.add('hidden');
     }
 
-    function showLibrary() {
+    async function showLibrary() {
       stopAutoSave();
       _lastSavedVisualState = null;
       _hideDisplaySavePrompt();
       readerView.classList.add('hidden');
       libraryView.classList.remove('hidden');
+
+      // Save annotations before resetting
+      if (currentBookId && readerHighlights.length > 0) {
+        await saveVisualSettings();
+      }
 
       // Reset reader state when leaving
       if (book) {
@@ -4210,6 +4215,7 @@ ${htmlContent}
             fontSize, lineHeight, theme: currentTheme,
             scrollMode, dualPageMode, buttonZoom,
             interface: { ...interfaceSettings },
+            readerHighlights: readerHighlights.slice(),
             savedAt: Date.now()
           }
         };
