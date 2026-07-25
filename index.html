@@ -5269,16 +5269,20 @@ ${htmlContent}
         const style = contents.document.createElement('style');
         
         const buttonsVisible = !scrollMode && !sidebarVisible;
-        const basePadding = 40;
-        const buttonWidth = buttonsVisible ? 25 : 0;
-        const totalPadding = basePadding + buttonWidth;
-        
+        const buttonPad = buttonsVisible ? 25 : 0;
+
         style.textContent = `
           img { max-width: 100% !important; height: auto !important; cursor: pointer; }
           body { 
-            padding-left: ${totalPadding}px !important; 
-            padding-right: ${totalPadding}px !important;
+            padding-left: ${40 + buttonPad}px !important; 
+            padding-right: ${40 + buttonPad}px !important;
             box-sizing: border-box !important;
+          }
+          @media (max-width: 768px) {
+            body { padding-left: 24px !important; padding-right: 24px !important; }
+          }
+          @media (max-width: 480px) {
+            body { padding-left: 16px !important; padding-right: 16px !important; }
           }
           .epub-table-scroll-wrap {
             display: block;
