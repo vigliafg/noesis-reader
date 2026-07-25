@@ -6845,12 +6845,6 @@ ${htmlContent}
         });
         if (dmWasOpen && !suppressDisplayPrompt) _showDisplaySavePrompt();
       }
-      /* Revert any .rmb-item-wrap that was force-shown by hamburger menu */
-      document.querySelectorAll('.rmb-item-wrap').forEach(function(w) {
-        if (w.style.display === 'block' && w.style.getPropertyPriority('display') === 'important') {
-          w.style.removeProperty('display');
-        }
-      });
     }
     /* ── Inject click handler into epub.js iframe ── */
     function _injectIframeCloseHandler() {
