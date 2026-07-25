@@ -2892,6 +2892,7 @@
       .library-grid { padding: 12px 10px 30px; }
       .book-header { gap: 10px; padding: 14px 0 12px; }
       #hamburgerDrawer { width: 260px; max-width: 88vw; }
+      .nav-mode-label { font-size: 13px; }
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -2922,7 +2923,7 @@
     <div class="hamburger-item hmb-rdr" id="hmbToc"><i class="bi bi-list-ul"></i> TOC</div>
     <div class="hamburger-item hmb-rdr" id="hmbBookmarks"><i class="bi bi-bookmark"></i> Bookmarks</div>
     <div class="hamburger-item hmb-rdr" id="hmbDisplay"><i class="bi bi-palette"></i> Display</div>
-    <div class="hamburger-item hmb-rdr" id="hmbNavigate"><i class="bi bi-arrow-left-right"></i> Navigate</div>
+    <div class="hamburger-item hmb-rdr" id="hmbNavigate"><i class="bi bi-arrow-left-right"></i> Navigate<span id="hmbNavigateMode" class="rmb-navigate-badge" style="margin-left:6px;">Page</span></div>
     <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
     <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
     <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
@@ -3979,6 +3980,8 @@ ${htmlContent}
         if (rmbSM) rmbSM.classList.toggle('rmb-nav-active', scrollMode);
         const rmbNM = document.getElementById('rmbNavigateMode');
         if (rmbNM) rmbNM.textContent = scrollMode ? 'Scroll' : 'Page';
+        const hmbNM = document.getElementById('hmbNavigateMode');
+        if (hmbNM) hmbNM.textContent = scrollMode ? 'Scroll' : 'Page';
 
         // Sync dual page button visual state
         const dualPageBtnEl = document.getElementById('dualPageBtn');
@@ -7063,6 +7066,8 @@ ${htmlContent}
         if (rmbScrollModeItem) rmbScrollModeItem.classList.toggle('rmb-nav-active', scrollMode);
         var modeLabel = document.getElementById('rmbNavigateMode');
         if (modeLabel) modeLabel.textContent = scrollMode ? 'Scroll' : 'Page';
+        var hmbLabel = document.getElementById('hmbNavigateMode');
+        if (hmbLabel) hmbLabel.textContent = scrollMode ? 'Scroll' : 'Page';
       }
 
       // applica cambio modalità e aggiorna UI
