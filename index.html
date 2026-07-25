@@ -5320,6 +5320,10 @@ ${htmlContent}
                   { fill: _hlColor, 'fill-opacity': '0.5' });
               } catch(e) { }
             });
+            // Clean up any spurious selection state triggered by highlight restoration
+            _readerHlHasSelection = false;
+            _readerPendingCfi = null;
+            if (typeof _hideCtxAnnotatePopup === 'function') _hideCtxAnnotatePopup();
           }, 120);
         }
 
@@ -6137,9 +6141,16 @@ ${htmlContent}
         let _tzDebounce = null;
 
         function _handleZoneTap(direction, el, e) {
-          // Ignore if text is selected (allow copy/paste)
-          const sel = window.getSelection();
-          if (sel && sel.toString().trim().length > 0) return;
+          // Ignore if text is selected in the book iframe (allow copy/paste)
+          try {
+            const iframes = document.querySelectorAll('#viewer iframe');
+            for (const iframe of iframes) {
+              const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+              if (!doc) continue;
+              const sel = doc.getSelection ? doc.getSelection() : null;
+              if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) return;
+            }
+          } catch(e) {}
           // Only in paginated mode with sidebar closed
           if (scrollMode || sidebarVisible) return;
           // Debounce: prevent rapid double-taps
@@ -6215,10 +6226,14 @@ ${htmlContent}
 
         console.log('Sidebar toggled - sidebarVisible:', sidebarVisible, 'scrollMode:', scrollMode);
 
-        // Hide/show floating buttons when sidebar is toggled
+        // Hide/show floating buttons and touch zones when sidebar is toggled
         if (!scrollMode) {
           floatingPrevBtn.classList.toggle('hidden', sidebarVisible);
           floatingNextBtn.classList.toggle('hidden', sidebarVisible);
+          const tzPrev = document.getElementById('touchZonePrev');
+          const tzNext = document.getElementById('touchZoneNext');
+          if (tzPrev) tzPrev.classList.toggle('hidden', sidebarVisible);
+          if (tzNext) tzNext.classList.toggle('hidden', sidebarVisible);
           console.log('Floating buttons updated - hidden:', sidebarVisible);
           
           // Recreate rendition to update padding
@@ -7054,11 +7069,15 @@ ${htmlContent}
       async function _applyModeChange(newScrollMode) {
         if (scrollMode === newScrollMode) return;
         scrollMode = newScrollMode;
-        // sync floating nav buttons
+        // sync floating nav buttons and touch zones
         var fprev = document.getElementById('floatingPrevBtn');
         var fnext = document.getElementById('floatingNextBtn');
+        var tzPrev = document.getElementById('touchZonePrev');
+        var tzNext = document.getElementById('touchZoneNext');
         if (fprev) fprev.classList.toggle('hidden', scrollMode);
         if (fnext) fnext.classList.toggle('hidden', scrollMode);
+        if (tzPrev) tzPrev.classList.toggle('hidden', scrollMode);
+        if (tzNext) tzNext.classList.toggle('hidden', scrollMode);
         // sync dual page button
         var dpBtn = document.getElementById('dualPageBtn');
         if (dpBtn) {
