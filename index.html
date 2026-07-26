@@ -133,7 +133,6 @@
       flex-direction: column;
       height: 100%;
       background: var(--lib-bg);
-      overflow-y: auto;
       font-family: 'Georgia', 'Times New Roman', serif;
       transition: background 0.25s;
     }
@@ -298,6 +297,9 @@
       margin: 0 auto;
       width: 100%;
       box-sizing: border-box;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
     }
 
     /* ── Book row ── */
@@ -535,10 +537,6 @@
 
     /* ── Storage status bar ── */
     .lib-storage-bar {
-      position: sticky;
-      bottom: 0;
-      left: 0;
-      right: 0;
       background: var(--lib-bg);
       border-top: 1px solid var(--lib-row-border);
       padding: 6px 20px;
