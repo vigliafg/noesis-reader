@@ -1346,6 +1346,20 @@
       background: transparent;
     }
 
+    /* ── Current chapter highlight ── */
+    #bookmarks li.toc-current {
+      font-weight: 700;
+      color: #667eea;
+      border-left: 3px solid #667eea;
+      background: rgba(102,126,234,0.08);
+    }
+    #bookmarks li.toc-current.expandable {
+      padding-left: 7px;
+    }
+    #bookmarks li.toc-current.leaf {
+      padding-left: 23px;
+    }
+
     /* ── TOC mini-toolbar ── */
     .toc-toolbar {
       position: sticky;
@@ -5322,7 +5336,7 @@ ${htmlContent}
         if (location.start.cfi) _lastNavigatedCfi = location.start.cfi;
         if (book && book.navigation && book.navigation.toc) {
           const path = findBreadcrumbInToc(book.navigation.toc, location.start.href, '');
-          if (path) setStatusPath(path);
+          if (path) { setStatusPath(path); _updateTocHighlight(location.start.href); }
         }
       });
 
@@ -5547,9 +5561,10 @@ ${htmlContent}
           const li = document.createElement('li');
           const hasSub = item.subitems && item.subitems.length > 0;
 
-          li.textContent = item.label;
-          li.className = hasSub ? 'expandable' : 'leaf';
-          li.setAttribute('translate', 'yes');
+      li.textContent = item.label;
+      li.className = hasSub ? 'expandable' : 'leaf';
+      li.setAttribute('translate', 'yes');
+      if (item.href) li.setAttribute('data-href', item.href);
 
           // Build full breadcrumb path for this item
           const itemPath = ancestorPath
@@ -5570,6 +5585,7 @@ ${htmlContent}
             if (item.href) {
               navigateToHref(item.href);
               setStatusPath(itemPath);
+              _updateTocHighlight(item.href);
             }
           });
 
@@ -5584,6 +5600,44 @@ ${htmlContent}
       };
 
       container.appendChild(createList(toc, 1, ''));
+    }
+
+    // --- TOC current chapter highlight ---
+    function _updateTocHighlight(targetHref) {
+      if (!targetHref) return;
+      // Remove previous highlight
+      document.querySelectorAll('#bookmarks li.toc-current').forEach(function(el) {
+        el.classList.remove('toc-current');
+      });
+      // Try exact match first
+      var match = document.querySelector('#bookmarks li[data-href="' + CSS.escape(targetHref) + '"]');
+      // Fallback: match base path (ignore anchor)
+      if (!match) {
+        var targetBase = targetHref.split('#')[0];
+        var allItems = document.querySelectorAll('#bookmarks li[data-href]');
+        for (var i = 0; i < allItems.length; i++) {
+          if (allItems[i].getAttribute('data-href').split('#')[0] === targetBase) {
+            match = allItems[i];
+            break;
+          }
+        }
+      }
+      if (match) {
+        match.classList.add('toc-current');
+        // Expand ancestors so the highlighted item is visible
+        var parent = match.parentElement;
+        while (parent && parent.id !== 'bookmarks') {
+          if (parent.tagName === 'UL' && parent.classList.contains('sub')) {
+            parent.classList.add('open');
+          }
+          if (parent.tagName === 'LI' && parent.classList.contains('expandable')) {
+            parent.classList.add('open');
+          }
+          parent = parent.parentElement;
+        }
+        // Scroll into view
+        match.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
 
     // --- TOC toolbar button handlers ---
