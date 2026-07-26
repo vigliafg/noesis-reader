@@ -1346,6 +1346,60 @@
       background: transparent;
     }
 
+    /* ── TOC mini-toolbar ── */
+    .toc-toolbar {
+      position: sticky;
+      top: -12px;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      gap: 8px;
+      padding: 10px 12px;
+      margin: -12px -12px 12px -12px;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+
+    .toc-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-size: 14px;
+      flex-shrink: 0;
+      padding: 0;
+    }
+
+    .toc-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .toc-btn:active {
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    /* Mobile: larger tap targets for toolbar buttons */
+    @media screen and (max-width: 768px) {
+      .toc-toolbar {
+        padding: 12px 14px;
+      }
+      .toc-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+      }
+    }
+
+
     #viewer {
       flex: 1;
       position: relative;
@@ -3483,9 +3537,15 @@
     </div>
 
     <div id="container">
-      <nav id="bookmarks" translate="yes" lang="">
-        <ul id="toc"></ul>
-      </nav>
+<nav id="bookmarks" translate="yes" lang="">
+  <div class="toc-toolbar">
+    <button id="btnTocExpand" class="toc-btn" title="Espandi tutti"><i class="bi bi-arrows-angle-expand"></i></button>
+    <button id="btnTocCollapse" class="toc-btn" title="Collassa tutti"><i class="bi bi-arrows-angle-contract"></i></button>
+    <div style="flex:1"></div>
+    <button id="btnTocClose" class="toc-btn" title="Chiudi"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <ul id="toc"></ul>
+</nav>
       <div id="viewer"></div>
     </div>
 
@@ -5524,6 +5584,40 @@ ${htmlContent}
 
       container.appendChild(createList(toc, 1, ''));
     }
+
+    // --- TOC toolbar button handlers ---
+    (function initTocToolbar() {
+      var tocToolbar = document.querySelector('#bookmarks .toc-toolbar');
+      if (!tocToolbar) return;
+
+      // Close button: adaptive for mobile overlay vs desktop sidebar
+      tocToolbar.querySelector('#btnTocClose').addEventListener('click', function() {
+        if (window.innerWidth <= 768 && typeof closeTocOverlay === 'function') {
+          closeTocOverlay();
+        } else {
+          var tsb = document.getElementById('toggleSidebarBtn');
+          if (tsb) tsb.click();
+        }
+      });
+
+      // Expand all
+      tocToolbar.querySelector('#btnTocExpand').addEventListener('click', function() {
+        document.querySelectorAll('#toc li.expandable').forEach(function(li) {
+          li.classList.add('open');
+          var ul = li.querySelector('ul.sub');
+          if (ul) ul.classList.add('open');
+        });
+      });
+
+      // Collapse all
+      tocToolbar.querySelector('#btnTocCollapse').addEventListener('click', function() {
+        document.querySelectorAll('#toc li.expandable').forEach(function(li) {
+          li.classList.remove('open');
+          var ul = li.querySelector('ul.sub');
+          if (ul) ul.classList.remove('open');
+        });
+      });
+    })();
 
     // =====================================================================
     // --- USER BOOKMARKS MODULE ---
