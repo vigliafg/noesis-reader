@@ -3866,9 +3866,90 @@
       });
     }
 
+    /* ── EPUB Validation Utilities ── */
+    function validateEpubFile(file) {
+      const name = file.name.toLowerCase();
+      if (!name.endsWith('.epub')) {
+        return { valid: false, error: 'Il file "' + file.name + '" non è un EPUB. Seleziona un file con estensione .epub.' };
+      }
+      if (file.type && file.type !== '' && file.type !== 'application/epub+zip') {
+        return { valid: false, error: 'Il file "' + file.name + '" non è un EPUB valido (tipo rilevato: ' + file.type + ').' };
+      }
+      return { valid: true };
+    }
+
+    async function validateEpubStructure(arrayBuffer) {
+      try {
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const mimetypeFile = zip.file('mimetype');
+        if (!mimetypeFile) {
+          return { valid: false, error: 'EPUB malformato: file "mimetype" mancante.' };
+        }
+        const mimetypeContent = await mimetypeFile.async('string');
+        if (mimetypeContent.trim() !== 'application/epub+zip') {
+          return { valid: false, error: 'EPUB malformato: mimetype non valido.' };
+        }
+        const containerFile = zip.file('META-INF/container.xml');
+        if (!containerFile) {
+          return { valid: false, error: 'EPUB malformato: META-INF/container.xml mancante.' };
+        }
+        const containerXml = await containerFile.async('string');
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(containerXml, 'application/xml');
+        /* getElementsByTagName is namespace-unaware and safer than querySelector for XML */
+        const rootfile = doc.getElementsByTagName('rootfile')[0];
+        if (!rootfile) {
+          return { valid: false, error: 'EPUB malformato: container.xml non contiene <rootfile>.' };
+        }
+        const opfPath = rootfile.getAttribute('full-path');
+        if (!opfPath) {
+          return { valid: false, error: 'EPUB malformato: percorso OPF non specificato in container.xml.' };
+        }
+        const opfFile = zip.file(opfPath);
+        if (!opfFile) {
+          return { valid: false, error: 'EPUB malformato: file OPF "' + opfPath + '" non trovato.' };
+        }
+        /* Return zip object to avoid re-parsing in detectDrm */
+        return { valid: true, zip: zip };
+      } catch (e) {
+        if (e.message && (e.message.includes('not a valid zip') || e.message.includes('corrupt') || e.message.includes('invalid'))) {
+          return { valid: false, error: 'Il file non è un archivio ZIP valido. Potrebbe essere corrotto o non essere un EPUB.' };
+        }
+        return { valid: false, error: 'Impossibile leggere la struttura EPUB. Il file potrebbe essere danneggiato.' };
+      }
+    }
+
+    async function detectDrm(zipOrBuffer) {
+      try {
+        /* Accept either a JSZip instance (from validateEpubStructure) or an ArrayBuffer */
+        const zip = (zipOrBuffer && zipOrBuffer.files) ? zipOrBuffer : await JSZip.loadAsync(zipOrBuffer);
+        const encryptionFile = zip.file('META-INF/encryption.xml');
+        if (encryptionFile) {
+          return { hasDrm: true, message: 'Questo EPUB è protetto da DRM e non può essere letto.\n\nI file con DRM richiedono Adobe Digital Editions o software autorizzato.' };
+        }
+        return { hasDrm: false };
+      } catch (e) {
+        return { hasDrm: false };
+      }
+    }
+
     async function saveBookToDB(file) {
-      const db = await openDB();
+      /* 1. Validate file type (extension + MIME) */
+      const fileCheck = validateEpubFile(file);
+      if (!fileCheck.valid) throw new Error(fileCheck.error);
+
       const arrayBuffer = await file.arrayBuffer();
+
+      /* 2. Validate EPUB structure (ZIP, mimetype, container.xml, OPF) — returns zip for reuse */
+      const structCheck = await validateEpubStructure(arrayBuffer);
+      if (!structCheck.valid) throw new Error(structCheck.error);
+
+      /* 3. Detect DRM (reuses parsed ZIP from structCheck) */
+      const drmCheck = await detectDrm(structCheck.zip);
+      if (drmCheck.hasDrm) throw new Error(drmCheck.message);
+
+      /* 4. Open DB only after all validations pass */
+      const db = await openDB();
 
       // Temporary load to get metadata
       const book = ePub(arrayBuffer);
@@ -6272,30 +6353,47 @@ ${htmlContent}
 
       // --- EVENT LISTENERS ---
 
-      // Add Book
-      libraryInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+      // Add BooklibraryInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-      showLoading('Adding book to library...');
-      try {
-        var canSave = await checkQuotaBeforeSave(file);
-        if (!canSave) return;
-        await saveBookToDB(file);
-        await loadLibraryBooks();
-        updateStorageBar();
-      } catch (err) {
-        console.error(err);
-        if (err.name === 'QuotaExceededError') {
-          alert('Spazio di archiviazione pieno.\n\nElimina alcuni libri dalla libreria per liberare spazio.');
-        } else {
-          alert('Errore durante il salvataggio: ' + err.message);
-        }
-      } finally {
-          hideLoading();
-          libraryInput.value = ''; // Reset input
-        }
-      });
+  /* Pre-validate file type before reading (fast check, no I/O) */
+  const fileCheck = validateEpubFile(file);
+  if (!fileCheck.valid) {
+    alert(fileCheck.error);
+    libraryInput.value = '';
+    return;
+  }
+
+  showLoading('Adding book to library...');
+  try {
+    const canSave = await checkQuotaBeforeSave(file);
+    if (!canSave) { hideLoading(); return; }
+    await saveBookToDB(file);
+    await loadLibraryBooks();
+    updateStorageBar();
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'QuotaExceededError') {
+      alert('Spazio di archiviazione pieno.\n\nElimina alcuni libri dalla libreria per liberare spazio.');
+    } else if (err.message && err.message.includes('DRM')) {
+      alert(err.message);
+    } else if (err.message && err.message.includes('EPUB malformato')) {
+      alert(err.message);
+    } else if (err.message && err.message.includes('non è un archivio ZIP')) {
+      alert(err.message);
+    } else if (err.message && err.message.includes('non è un EPUB')) {
+      alert(err.message);
+    } else if (err.message && err.message.includes('Impossibile leggere')) {
+      alert(err.message);
+    } else {
+      alert('Impossibile aprire questo EPUB. Il file potrebbe essere danneggiato o in un formato non supportato.\n\nDettaglio: ' + err.message);
+    }
+  } finally {
+    hideLoading();
+    libraryInput.value = ''; // Reset input
+  }
+});
 
       // Add Books button (triggers libraryInput)
       const libAddBooksBtn = document.getElementById('libAddBooksBtn');
