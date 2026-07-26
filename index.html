@@ -5604,8 +5604,8 @@ ${htmlContent}
       tocToolbar.querySelector('#btnTocExpand').addEventListener('click', function() {
         document.querySelectorAll('#toc li.expandable').forEach(function(li) {
           li.classList.add('open');
-          var ul = li.querySelector('ul.sub');
-          if (ul) ul.classList.add('open');
+          var ul = li.nextElementSibling;
+          if (ul && ul.tagName === 'UL') ul.classList.add('open');
         });
       });
 
@@ -5613,8 +5613,8 @@ ${htmlContent}
       tocToolbar.querySelector('#btnTocCollapse').addEventListener('click', function() {
         document.querySelectorAll('#toc li.expandable').forEach(function(li) {
           li.classList.remove('open');
-          var ul = li.querySelector('ul.sub');
-          if (ul) ul.classList.remove('open');
+          var ul = li.nextElementSibling;
+          if (ul && ul.tagName === 'UL') ul.classList.remove('open');
         });
       });
     })();
