@@ -3743,7 +3743,7 @@
       if (file.size > remaining) {
         var needed = formatBytes(file.size);
         var free = formatBytes(remaining);
-        alert('Spazio insufficiente.\n\nIl file pesa ' + needed + ' ma hai solo ' + free + ' liberi.\nElimina alcuni libri dalla libreria per fare spazio.');
+        alert('Insufficient space.\n\nThe file is ' + needed + ' but you only have ' + free + ' free.\nDelete some books from the library to make room.');
         return false;
       }
       return true;
@@ -3870,10 +3870,10 @@
     function validateEpubFile(file) {
       const name = file.name.toLowerCase();
       if (!name.endsWith('.epub')) {
-        return { valid: false, error: 'Il file "' + file.name + '" non è un EPUB. Seleziona un file con estensione .epub.' };
+        return { valid: false, error: 'The file "' + file.name + '" is not an EPUB. Please select a file with .epub extension.' };
       }
       if (file.type && file.type !== '' && file.type !== 'application/epub+zip') {
-        return { valid: false, error: 'Il file "' + file.name + '" non è un EPUB valido (tipo rilevato: ' + file.type + ').' };
+        return { valid: false, error: 'The file "' + file.name + '" is not a valid EPUB (detected type: ' + file.type + ').' };
       }
       return { valid: true };
     }
@@ -3883,15 +3883,15 @@
         const zip = await JSZip.loadAsync(arrayBuffer);
         const mimetypeFile = zip.file('mimetype');
         if (!mimetypeFile) {
-          return { valid: false, error: 'EPUB malformato: file "mimetype" mancante.' };
+          return { valid: false, error: 'Malformed EPUB: "mimetype" file missing.' };
         }
         const mimetypeContent = await mimetypeFile.async('string');
         if (mimetypeContent.trim() !== 'application/epub+zip') {
-          return { valid: false, error: 'EPUB malformato: mimetype non valido.' };
+          return { valid: false, error: 'Malformed EPUB: invalid mimetype.' };
         }
         const containerFile = zip.file('META-INF/container.xml');
         if (!containerFile) {
-          return { valid: false, error: 'EPUB malformato: META-INF/container.xml mancante.' };
+          return { valid: false, error: 'Malformed EPUB: META-INF/container.xml missing.' };
         }
         const containerXml = await containerFile.async('string');
         const parser = new DOMParser();
@@ -3899,23 +3899,23 @@
         /* getElementsByTagName is namespace-unaware and safer than querySelector for XML */
         const rootfile = doc.getElementsByTagName('rootfile')[0];
         if (!rootfile) {
-          return { valid: false, error: 'EPUB malformato: container.xml non contiene <rootfile>.' };
+          return { valid: false, error: 'Malformed EPUB: container.xml does not contain <rootfile>.' };
         }
         const opfPath = rootfile.getAttribute('full-path');
         if (!opfPath) {
-          return { valid: false, error: 'EPUB malformato: percorso OPF non specificato in container.xml.' };
+          return { valid: false, error: 'Malformed EPUB: OPF path not specified in container.xml.' };
         }
         const opfFile = zip.file(opfPath);
         if (!opfFile) {
-          return { valid: false, error: 'EPUB malformato: file OPF "' + opfPath + '" non trovato.' };
+          return { valid: false, error: 'Malformed EPUB: OPF file "' + opfPath + '" not found.' };
         }
         /* Return zip object to avoid re-parsing in detectDrm */
         return { valid: true, zip: zip };
       } catch (e) {
         if (e.message && (e.message.includes('not a valid zip') || e.message.includes('corrupt') || e.message.includes('invalid'))) {
-          return { valid: false, error: 'Il file non è un archivio ZIP valido. Potrebbe essere corrotto o non essere un EPUB.' };
+          return { valid: false, error: 'The file is not a valid ZIP archive. It may be corrupted or not an EPUB.' };
         }
-        return { valid: false, error: 'Impossibile leggere la struttura EPUB. Il file potrebbe essere danneggiato.' };
+        return { valid: false, error: 'Cannot read EPUB structure. The file may be damaged.' };
       }
     }
 
@@ -3925,7 +3925,7 @@
         const zip = (zipOrBuffer && zipOrBuffer.files) ? zipOrBuffer : await JSZip.loadAsync(zipOrBuffer);
         const encryptionFile = zip.file('META-INF/encryption.xml');
         if (encryptionFile) {
-          return { hasDrm: true, message: 'Questo EPUB è protetto da DRM e non può essere letto.\n\nI file con DRM richiedono Adobe Digital Editions o software autorizzato.' };
+          return { hasDrm: true, message: 'This EPUB is protected by DRM and cannot be read.\n\nDRM-protected files require Adobe Digital Editions or authorized software.' };
         }
         return { hasDrm: false };
       } catch (e) {
@@ -6376,19 +6376,19 @@ ${htmlContent}
   } catch (err) {
     console.error(err);
     if (err.name === 'QuotaExceededError') {
-      alert('Spazio di archiviazione pieno.\n\nElimina alcuni libri dalla libreria per liberare spazio.');
+      alert('Storage space full.\n\nDelete some books from the library to free up space.');
     } else if (err.message && err.message.includes('DRM')) {
       alert(err.message);
-    } else if (err.message && err.message.includes('EPUB malformato')) {
+    } else if (err.message && err.message.includes('Malformed EPUB')) {
       alert(err.message);
-    } else if (err.message && err.message.includes('non è un archivio ZIP')) {
+    } else if (err.message && err.message.includes('not a valid ZIP')) {
       alert(err.message);
-    } else if (err.message && err.message.includes('non è un EPUB')) {
+    } else if (err.message && err.message.includes('is not an EPUB')) {
       alert(err.message);
-    } else if (err.message && err.message.includes('Impossibile leggere')) {
+    } else if (err.message && err.message.includes('Cannot read')) {
       alert(err.message);
     } else {
-      alert('Impossibile aprire questo EPUB. Il file potrebbe essere danneggiato o in un formato non supportato.\n\nDettaglio: ' + err.message);
+      alert('Cannot open this EPUB. The file may be damaged or in an unsupported format.\n\nDetail: ' + err.message);
     }
   } finally {
     hideLoading();
