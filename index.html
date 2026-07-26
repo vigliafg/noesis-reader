@@ -533,6 +533,50 @@
       color: var(--lib-empty-icon);
     }
 
+    /* ── Storage status bar ── */
+    .lib-storage-bar {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--lib-bg);
+      border-top: 1px solid var(--lib-row-border);
+      padding: 6px 20px;
+      font-size: 11px;
+      font-family: 'system-ui', sans-serif;
+      color: var(--lib-stats);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 5;
+      flex-shrink: 0;
+      min-height: 28px;
+    }
+    #libStorageText {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #libStorageBooks {
+      flex-shrink: 0;
+      color: var(--lib-badge-color);
+      background: var(--lib-badge-bg);
+      padding: 1px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    @media (max-width: 600px) {
+      .lib-storage-bar {
+        padding: 6px 16px;
+        font-size: 10px;
+      }
+    }
+
     /* ── Compatibility ── */
     .book-card { display: none; }
     .delete-btn { display: none; }
@@ -3177,6 +3221,10 @@
       </div>
     </div>
   </div>
+  <div id="libStorageBar" class="lib-storage-bar hidden">
+    <span id="libStorageText">Calcolo spazio...</span>
+    <span id="libStorageBooks"></span>
+  </div>
 
   <!-- READER VIEW (ORIGINAL LAYOUT) -->
   <div id="reader-view" class="hidden">
@@ -3640,6 +3688,78 @@
       });
     }
 
+    // --- STORAGE UTILITIES ---
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      var units = ['B', 'KB', 'MB', 'GB'];
+      var i = Math.floor(Math.log(bytes) / Math.log(1024));
+      if (i >= units.length) i = units.length - 1;
+      return (bytes / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+    }
+
+    async function getStorageInfo() {
+      try {
+        if (!navigator.storage || !navigator.storage.estimate) return null;
+        var estimate = await navigator.storage.estimate();
+        return { usage: estimate.usage || 0, quota: estimate.quota || 0 };
+      } catch (e) {
+        console.warn('Storage estimate failed:', e);
+        return null;
+      }
+    }
+
+    async function updateStorageBar() {
+      var bar = document.getElementById('libStorageBar');
+      if (!bar) return;
+      var textEl = document.getElementById('libStorageText');
+      var booksEl = document.getElementById('libStorageBooks');
+      if (!textEl) return;
+
+      var info = await getStorageInfo();
+      var bookCount = 0;
+      try {
+        var books = await getAllBooks();
+        bookCount = books ? books.length : 0;
+      } catch (e) { /* ignore */ }
+
+      if (info) {
+        var used = formatBytes(info.usage);
+        var total = formatBytes(info.quota);
+        var pct = info.quota > 0 ? Math.round((info.usage / info.quota) * 100) : 0;
+        textEl.textContent = '\uD83D\uDCC1 ' + used + ' / ' + total + ' (' + pct + '%)';
+      } else {
+        textEl.textContent = '\uD83D\uDCC1 Storage info non disponibile';
+      }
+      if (booksEl && bookCount > 0) {
+        booksEl.textContent = bookCount + ' libri';
+        booksEl.style.display = '';
+      } else if (booksEl) {
+        booksEl.style.display = 'none';
+      }
+      bar.classList.remove('hidden');
+    }
+
+    async function checkQuotaBeforeSave(file) {
+      var info = await getStorageInfo();
+      if (!info) return true; // can't check, allow save
+      var remaining = info.quota - info.usage;
+      if (file.size > remaining) {
+        var needed = formatBytes(file.size);
+        var free = formatBytes(remaining);
+        alert('Spazio insufficiente.\n\nIl file pesa ' + needed + ' ma hai solo ' + free + ' liberi.\nElimina alcuni libri dalla libreria per fare spazio.');
+        return false;
+      }
+      return true;
+    }
+
+    (function requestPersistentStorage() {
+      if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then(function(granted) {
+          if (granted) console.log('Storage persistente: concesso');
+        }).catch(function() {});
+      }
+    })();
+
     // --- INDEXEDDB & LIBRARY LOGIC ---
 
     // --- NOESIS DB (extractedChapters + snapshots) ---
@@ -3826,6 +3946,7 @@
       if (currentBookId === id) {
         currentBookId = null;
       }
+      updateStorageBar();
     }
 
     // --- UI VIEW SWITCHING ---
@@ -4006,6 +4127,7 @@ ${htmlContent}
 
           bookGrid.appendChild(bookRow);
         });
+        updateStorageBar();
 
       } catch (e) {
         console.error("Error loading library", e);
@@ -6158,14 +6280,21 @@ ${htmlContent}
         const file = e.target.files[0];
         if (!file) return;
 
-        showLoading('Adding book to library...');
-        try {
-          await saveBookToDB(file);
-          await loadLibraryBooks();
-        } catch (err) {
-          console.error(err);
-          alert('Error saving book: ' + err.message);
-        } finally {
+      showLoading('Adding book to library...');
+      try {
+        var canSave = await checkQuotaBeforeSave(file);
+        if (!canSave) return;
+        await saveBookToDB(file);
+        await loadLibraryBooks();
+        updateStorageBar();
+      } catch (err) {
+        console.error(err);
+        if (err.name === 'QuotaExceededError') {
+          alert('Spazio di archiviazione pieno.\n\nElimina alcuni libri dalla libreria per liberare spazio.');
+        } else {
+          alert('Errore durante il salvataggio: ' + err.message);
+        }
+      } finally {
           hideLoading();
           libraryInput.value = ''; // Reset input
         }
