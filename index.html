@@ -3681,8 +3681,8 @@
     // Unregister previous PWA service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
-        regs.forEach(function(r) { r.unregister(); });
-      });
+      regs.forEach(function(r) { r.unregister(); });
+    }).catch(function() { /* service worker not available in file:// context */ });
     }
 
     // --- STORAGE UTILITIES ---
@@ -6353,7 +6353,8 @@ ${htmlContent}
 
       // --- EVENT LISTENERS ---
 
-      // Add BooklibraryInput.addEventListener('change', async (e) => {
+      // Add Book
+      libraryInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
