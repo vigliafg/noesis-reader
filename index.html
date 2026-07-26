@@ -3767,6 +3767,7 @@
     function openNoesisDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(NOESIS_DB_NAME, NOESIS_DB_VERSION);
+        var blockedTimer = null;
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains(NOESIS_STORE)) {
@@ -3775,10 +3776,40 @@
             store.createIndex('chapterName', 'chapterName', { unique: false });
           }
         };
-        request.onsuccess = (event) => resolve(event.target.result);
-        request.onerror = (event) => reject(event.target.error);
-      });
-    }
+        request.onsuccess = (event) => {
+          if (blockedTimer) clearTimeout(blockedTimer);
+          const db = event.target.result;
+          /* If another tab upgrades the DB, close our connection gracefully */
+          db.onversionchange = () => { db.close(); console.warn('NoesisDB: version changed externally, connection closed.'); };
+          resolve(db);
+        };
+        request.onerror = (event) => {
+          if (blockedTimer) clearTimeout(blockedTimer);
+          const error = event.target.error;
+          if (error.name === 'VersionError') {
+            console.warn('NoesisDB VersionError, deleting old database...');
+            const deleteRequest = indexedDB.deleteDatabase(NOESIS_DB_NAME);
+            deleteRequest.onsuccess = () => {
+              const retryRequest = indexedDB.open(NOESIS_DB_NAME, NOESIS_DB_VERSION);
+              retryRequest.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(NOESIS_STORE)) {
+                  const store = db.createObjectStore(NOESIS_STORE, { keyPath: 'chapterId' });
+                  store.createIndex('bookName', 'bookName', { unique: false });
+                  store.createIndex('chapterName', 'chapterName', { unique: false });
+                }
+              };
+              retryRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                db.onversionchange = () => { db.close(); };
+                resolve(db);
+              };
+              retryRequest.onerror = (event) => reject(event.target.error);
+              retryRequest.onblocked = () => {
+                blockedTimer = setTimeout(() => {
+                  reject(new Error('Database upgrade blocked by another connection. Close other tabs using the app and reload.'));
+                }, 5000);
+              };
 
     async function saveExtractedChapterToDB(chapterRecord) {
       const db = await openNoesisDB();
@@ -3829,6 +3860,7 @@
     function openDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
+        var blockedTimer = null;
 
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
@@ -3837,13 +3869,20 @@
           }
         };
 
-        request.onsuccess = (event) => resolve(event.target.result);
+        request.onsuccess = (event) => {
+          if (blockedTimer) clearTimeout(blockedTimer);
+          const db = event.target.result;
+          /* If another tab upgrades the DB, close our connection gracefully */
+          db.onversionchange = () => { db.close(); console.warn('EpubLibraryDB: version changed externally, connection closed.'); };
+          resolve(db);
+        };
 
         request.onerror = (event) => {
+          if (blockedTimer) clearTimeout(blockedTimer);
           const error = event.target.error;
           // Handle version error by deleting and recreating the database
           if (error.name === 'VersionError') {
-            console.log('VersionError detected, deleting old database...');
+            console.warn('EpubLibraryDB VersionError, deleting old database...');
             const deleteRequest = indexedDB.deleteDatabase(DB_NAME);
             deleteRequest.onsuccess = () => {
               console.log('Old database deleted, retrying...');
@@ -3855,13 +3894,29 @@
                   db.createObjectStore(STORE_NAME, { keyPath: 'id' });
                 }
               };
-              retryRequest.onsuccess = (event) => resolve(event.target.result);
+              retryRequest.onsuccess = (event) => {
+                const db = event.target.result;
+                db.onversionchange = () => { db.close(); };
+                resolve(db);
+              };
               retryRequest.onerror = (event) => reject(event.target.error);
+              retryRequest.onblocked = () => {
+                blockedTimer = setTimeout(() => {
+                  reject(new Error('Database upgrade blocked by another connection. Close other tabs using the app and reload.'));
+                }, 5000);
+              };
             };
             deleteRequest.onerror = () => reject(error);
           } else {
             reject(error);
           }
+        };
+
+        request.onblocked = () => {
+          console.warn('EpubLibraryDB: upgrade blocked by another connection, waiting...');
+          blockedTimer = setTimeout(() => {
+            reject(new Error('Database upgrade blocked by another connection. Close other tabs using the app and reload.'));
+          }, 5000);
         };
       });
     }
