@@ -2020,6 +2020,24 @@
       line-height: 1;
       padding: 4px 8px;
     }
+    #readerMediaFullscreen .rfs-save {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      background: #10b981;
+      border: none;
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      font-family: system-ui, sans-serif;
+    }
+    #readerMediaFullscreen .rfs-save:hover {
+      background: #059669;
+    }
 
     #saveToast {
       position: fixed;
@@ -3728,6 +3746,7 @@
   <!-- Main Reader Fullscreen Overlay -->
   <div id="readerMediaFullscreen">
     <button class="rfs-close" id="readerFsClose">&#x2715;</button>
+    <button class="rfs-save" id="readerFsSave">⬇ Save</button>
     <div id="readerFsContent"></div>
     <div class="rfs-caption" id="readerFsCaption"></div>
   </div>
@@ -6431,8 +6450,8 @@ ${htmlContent}
       var fsOverlay = document.getElementById('readerMediaFullscreen');
       var fsContent = document.getElementById('readerFsContent');
       var fsCaption = document.getElementById('readerFsCaption');
-      var fsClose   = document.getElementById('readerFsClose');
-      var pending   = null; // { type, data }
+      var fsClose   = document.getElementById('readerFsClose');      var pending = null;
+      var _savedMedia = null; // { type, data }
 
       function hideDialog() {
         dialog.classList.remove('visible');
@@ -6454,6 +6473,7 @@ ${htmlContent}
       function doPreview() {
         if (!pending) return;
         var type = pending.type, data = pending.data;
+        _savedMedia = { type: type, data: data };
         hideDialog();
         fsContent.innerHTML = '';
         if (type === 'img') {
@@ -6482,6 +6502,58 @@ ${htmlContent}
       });
 
       fsClose.addEventListener('click', function() { fsOverlay.classList.remove('visible'); });
+
+      // ── Save media button ──────────────────────────────────────────
+      document.getElementById('readerFsSave').addEventListener('click', function(e) {
+        e.stopPropagation();
+        saveMedia();
+      });
+
+      function saveMedia() {
+        if (!_savedMedia) return;
+        if (_savedMedia.type === 'img') {
+          var saveAsJpeg = confirm('Save as JPEG?\n(OK = JPEG, Cancel = PNG)');
+          var fmt = saveAsJpeg ? 'image/jpeg' : 'image/png';
+          var ext = saveAsJpeg ? 'jpg' : 'png';
+          var quality = saveAsJpeg ? 0.9 : 1.0;
+          var img = new Image();
+          img.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob(function(blob) {
+              _downloadFile('image.' + ext, blob, fmt);
+            }, fmt, quality);
+          };
+          img.src = _savedMedia.data.src;
+        } else {
+          var saveAsHtml = confirm('Save as HTML table?\n(OK = HTML, Cancel = CSV)');
+          if (saveAsHtml) {
+            var htmlDoc = '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>Table</title>' +
+              '<style>body{font-family:system-ui;max-width:900px;margin:20px auto;padding:20px}' +
+              'table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 10px}</style>' +
+              '</head><body>' + _savedMedia.data.html + '</body></html>';
+            _downloadFile('table.html', htmlDoc, 'text/html;charset=utf-8');
+          } else {
+            var temp = document.createElement('div');
+            temp.innerHTML = _savedMedia.data.html;
+            var table = temp.querySelector('table');
+            if (!table) { alert('No table found.'); return; }
+            var rows = table.querySelectorAll('tr');
+            var csv = '';
+            rows.forEach(function(row) {
+              var cells = row.querySelectorAll('td, th');
+              var rowData = [];
+              cells.forEach(function(cell) { rowData.push('"' + (cell.textContent || '').replace(/"/g, '""') + '"'); });
+              csv += rowData.join(',') + '\n';
+            });
+            _downloadFile('table.csv', csv, 'text/csv;charset=utf-8');
+          }
+        }
+      }
+
       fsOverlay.addEventListener('click', function(e) {
         if (e.target === fsOverlay) fsOverlay.classList.remove('visible');
       });
