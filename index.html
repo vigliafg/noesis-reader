@@ -1103,6 +1103,54 @@
       white-space: nowrap;
     }
 
+    /* ── Extract format selector ── */
+    .extract-format-row {
+      display: flex;
+      gap: 1px;
+      padding: 10px 12px 8px;
+      background: #f8fafc;
+      border-bottom: 1px solid #f0f0f0;
+      flex-wrap: wrap;
+    }
+    .extract-fmt-btn {
+      flex: 1;
+      min-width: 46px;
+      padding: 6px 4px;
+      border: 1px solid #e5e7eb;
+      background: white;
+      color: #6b7280;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      border-radius: 5px;
+      text-align: center;
+      transition: all 0.15s;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    .extract-fmt-btn:first-child { border-radius: 5px 0 0 5px; }
+    .extract-fmt-btn:last-child { border-radius: 0 5px 5px 0; }
+    .extract-fmt-btn:only-child { border-radius: 5px; }
+    .extract-fmt-btn:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      color: #374151;
+    }
+    .extract-fmt-btn.active {
+      background: #667eea;
+      border-color: #667eea;
+      color: white;
+      box-shadow: 0 1px 3px rgba(102,126,234,0.35);
+    }
+
+    /* ── Extract divider ── */
+    .extract-divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 0;
+    }
+
     /* --- THEME PICKER POPUP STYLES --- */
     .theme-popup {
       position: absolute;
@@ -3324,6 +3372,14 @@
         <div class="rmb-item-wrap" id="rmbExtractWrap">
           <span class="rmb-item" id="rmbExtract">Extract</span>
           <div class="extract-menu" id="extractMenu">
+            <div class="extract-format-row" id="extractFormatRow">
+              <button class="extract-fmt-btn active" data-fmt="html">HTML</button>
+              <button class="extract-fmt-btn" data-fmt="txt">TXT</button>
+              <button class="extract-fmt-btn" data-fmt="md">MD</button>
+              <button class="extract-fmt-btn" data-fmt="epub">EPUB</button>
+              <button class="extract-fmt-btn" data-fmt="pdf">PDF 🖨️</button>
+            </div>
+            <div class="extract-divider"></div>
             <div class="extract-menu-item" data-mode="current">
               <i class="bi bi-file-earmark"></i>
               <span>Current chapter only</span>
@@ -3667,6 +3723,7 @@
   </div>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.js"></script>
 
   <script>
     // --- ERROR HANDLING ---
@@ -4211,15 +4268,170 @@ ${htmlContent}
         + String(d.getSeconds()).padStart(2, '0');
     }
 
+    // ── Download as Plain Text ──────────────────────────────────────────
+    function _downloadAsText(htmlContent, filename) {
+      const temp = document.createElement('div');
+      temp.innerHTML = htmlContent;
+      const ps = temp.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li');
+      let text = '';
+      ps.forEach(function(p, i) { if (i > 0) text += '\n'; text += p.innerText; });
+      if (!text) text = temp.innerText;
+      _downloadFile(filename, text, 'text/plain;charset=utf-8');
+    }
+
+    // ── Download as Markdown (TurndownService) ───────────────────────────
+    function _downloadAsMarkdown(htmlContent, filename) {
+      const md = new TurndownService().turndown(htmlContent);
+      _downloadFile(filename, md, 'text/markdown;charset=utf-8');
+    }
+
+    // ── Generate standalone EPUB ─────────────────────────────────────────
+    async function _generateEpub(htmlContent, title, author, filename) {
+      const zip = new JSZip();
+      zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+      zip.file('META-INF/container.xml',
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n' +
+        '  <rootfiles>\n' +
+        '    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n' +
+        '  </rootfiles>\n' +
+        '</container>');
+
+      const temp = document.createElement('div');
+      temp.innerHTML = htmlContent;
+      const imgs = temp.querySelectorAll('img');
+      const images = [];
+      let imgIdx = 1;
+      imgs.forEach(function(img) {
+        const src = img.getAttribute('src');
+        if (src && src.startsWith('data:')) {
+          const m = src.match(/^data:image\/([^;]+);base64,(.+)$/);
+          if (m) {
+            const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+            const safeExt = ext.replace(/[^a-zA-Z0-9]/g, '_');
+            const name = 'img_' + String(imgIdx++).padStart(3, '0') + '.' + safeExt;
+            images.push({ name: name, ext: ext, data: m[2] });
+            img.setAttribute('src', 'images/' + name);
+          }
+        }
+      });
+      const processedHTML = temp.innerHTML;
+
+      zip.file('OEBPS/chapter.xhtml',
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<!DOCTYPE html>\n' +
+        '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">\n' +
+        '<head><title>' + (title || 'Chapter') + '</title><meta charset="UTF-8"/></head>\n' +
+        '<body>' + processedHTML + '</body>\n' +
+        '</html>');
+
+      if (images.length > 0) {
+        const imgFolder = zip.folder('OEBPS/images');
+        images.forEach(function(img) { imgFolder.file(img.name, img.data, { base64: true }); });
+      }
+
+      const mimeMap = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', svg_xml: 'image/svg+xml', webp: 'image/webp' };
+      const imageItems = images.map(function(img) {
+        const safeId = img.name.replace(/[^a-zA-Z0-9]/g, '_');
+        return '    <item id="img_' + safeId + '" href="images/' + img.name + '" media-type="' + (mimeMap[img.ext.replace(/[^a-zA-Z0-9]/g, '_')] || 'image/' + img.ext) + '"/>';
+      }).join('\n');
+
+      zip.file('OEBPS/content.opf',
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<package version="3.0" unique-identifier="book-id" xmlns="http://www.idpf.org/2007/opf">\n' +
+        '  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n' +
+        '    <dc:title>' + (title || 'Untitled') + '</dc:title>\n' +
+        '    <dc:creator>' + (author || 'Unknown') + '</dc:creator>\n' +
+        '    <dc:language>en</dc:language>\n' +
+        '    <dc:identifier id="book-id">noesis-' + Date.now() + '</dc:identifier>\n' +
+        '  </metadata>\n' +
+        '  <manifest>\n' +
+        '    <item id="chapter" href="chapter.xhtml" media-type="application/xhtml+xml"/>\n' +
+        (imageItems ? imageItems + '\n' : '') +
+        '  </manifest>\n' +
+        '  <spine>\n' +
+        '    <itemref idref="chapter"/>\n' +
+        '  </spine>\n' +
+        '</package>');
+
+      const blob = await zip.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
+      _downloadFile(filename, blob, 'application/epub+zip');
+    }
+
+    // ── Print to PDF via browser ─────────────────────────────────────────
+    function _printPDF(htmlContent) {
+      let pc = document.getElementById('print-container');
+      if (!pc) {
+        pc = document.createElement('div');
+        pc.id = 'print-container';
+        pc.style.cssText = 'display:none;font-family:system-ui;max-width:750px;margin:0 auto;padding:20px;';
+        document.body.appendChild(pc);
+      }
+      pc.innerHTML = htmlContent;
+      pc.querySelectorAll('table').forEach(function(t) {
+        t.removeAttribute('width');
+        t.style.cssText += 'width:100%;table-layout:fixed;border-collapse:collapse;word-break:break-word;max-width:100%;';
+      });
+      pc.querySelectorAll('td,th').forEach(function(c) {
+        c.removeAttribute('width'); c.style.width = ''; c.style.maxWidth = '';
+        c.style.wordBreak = 'break-word'; c.style.overflowWrap = 'break-word'; c.style.padding = '4px';
+      });
+      pc.querySelectorAll('img').forEach(function(img) {
+        img.removeAttribute('width'); img.removeAttribute('height');
+        img.style.maxWidth = '100%'; img.style.height = 'auto';
+      });
+      window.print();
+      setTimeout(function() { pc.innerHTML = ''; }, 1000);
+    }
+
+    // ── Dispatch extract download based on selected format ────────────────
+    function _dispatchExtractDownload(bookName, chapterName, chapterId, htmlContent, timestamp) {
+      const sBook = bookName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      const sCh = chapterName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+
+      switch (_extractFormat) {
+        case 'html':
+          _autoDownloadHTML(`noesis-extract-${sBook}__${sCh}__${timestamp}.html`,
+            _generateCleanHTML(bookName, chapterName, '', htmlContent, false));
+          setTimeout(() => {
+            _autoDownloadHTML(`noesis-origin-${sBook}__${sCh}__${timestamp}.html`,
+              _generateCleanHTML(bookName, chapterName, chapterId, htmlContent, true));
+          }, 1500);
+          break;
+        case 'txt':
+          _downloadAsText(htmlContent, `noesis-extract-${sBook}__${sCh}__${timestamp}.txt`);
+          break;
+        case 'md':
+          _downloadAsMarkdown(htmlContent, `noesis-extract-${sBook}__${sCh}__${timestamp}.md`);
+          break;
+        case 'epub':
+          _generateEpub(htmlContent, bookName, bookName, `noesis-extract-${sBook}__${sCh}__${timestamp}.epub`)
+            .catch(e => { console.error('EPUB generation failed:', e); alert('EPUB generation failed: ' + e.message); });
+          break;
+        case 'pdf':
+          _printPDF(htmlContent);
+          break;
+      }
+    }
+
     // ── Download automatico file HTML (no dialog, per coppie automatiche) ────
-    function _autoDownloadHTML(filename, htmlContent) {
-      const url = URL.createObjectURL(new Blob([htmlContent], { type: 'text/html;charset=utf-8' }));
+    // ── Current extract format (html|txt|md|epub|pdf) ────────────────────
+    let _extractFormat = 'html';
+
+    // ── Generic file download helper ─────────────────────────────────────
+    function _downloadFile(filename, data, mimeType) {
+      const blob = data instanceof Blob ? data : new Blob([data], { type: mimeType });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url; a.download = filename;
       a.style.cssText = 'position:fixed;top:-999px;left:-999px;';
       document.body.appendChild(a);
       a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
       setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 8000);
+    }
+
+    function _autoDownloadHTML(filename, htmlContent) {
+      _downloadFile(filename, htmlContent, 'text/html;charset=utf-8');
     }
 
     // ── Open extracted chapter environment from snapshot → sn56.x ──────────
@@ -5219,21 +5431,9 @@ ${htmlContent}
       };
       try { await saveExtractedChapterToDB(_msChapterRecord); } catch(e) { console.warn('noesisDB save failed:', e); }
 
-      // ── Salva coppia noesis-extract- / noesis-origin- su disco ──
-      const _ts2   = _buildExtractionTimestamp();
-      const _sBook2 = (currentBookTitle || 'book').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
-      const _sCh2   = (overallTitle    || 'chapter').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
-
-      _autoDownloadHTML(
-        `noesis-extract-${_sBook2}__${_sCh2}__${_ts2}.html`,
-        _generateCleanHTML(currentBookTitle || '', overallTitle || '', '', combinedHTML, false)
-      );
-      setTimeout(() => {
-        _autoDownloadHTML(
-          `noesis-origin-${_sBook2}__${_sCh2}__${_ts2}.html`,
-          _generateCleanHTML(currentBookTitle || '', overallTitle || '', _msChapterId, combinedHTML, true)
-        );
-      }, 1500);
+      // ── Salva nel formato selezionato ──
+      const _ts2 = _buildExtractionTimestamp();
+      _dispatchExtractDownload(currentBookTitle || '', overallTitle || '', _msChapterId, combinedHTML, _ts2);
 
       setStatus('✅ Sections extracted! Check new tab');
     }
@@ -5467,24 +5667,9 @@ ${htmlContent}
           console.warn('Could not save chapterRecord to noesisDB:', e);
         }
 
-        // ── Salva coppia noesis-extract- / noesis-origin- su disco ──
-        const _ts  = _buildExtractionTimestamp();
-        const _sBook = (currentBookTitle || 'book').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
-        const _sCh   = (chapterTitle    || 'chapter').replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
-
-        // File 1: noesis-extract- (no meta tag noesis, solo lettura offline)
-        _autoDownloadHTML(
-          `noesis-extract-${_sBook}__${_sCh}__${_ts}.html`,
-          _generateCleanHTML(currentBookTitle || '', chapterTitle || '', '', htmlContent, false)
-        );
-
-        // File 2: noesis-origin- (con meta tag, reimportabile in libreria)
-        setTimeout(() => {
-          _autoDownloadHTML(
-            `noesis-origin-${_sBook}__${_sCh}__${_ts}.html`,
-            _generateCleanHTML(currentBookTitle || '', chapterTitle || '', _chapterId, htmlContent, true)
-          );
-        }, 1500);
+        // ── Salva nel formato selezionato ──
+        const _ts = _buildExtractionTimestamp();
+        _dispatchExtractDownload(currentBookTitle || '', chapterTitle || '', _chapterId, htmlContent, _ts);
 
         setStatus('✅ Chapter extracted! Check new tab');
 
@@ -7109,14 +7294,20 @@ ${htmlContent}
       // --- END READER HIGHLIGHT BUTTON LOGIC ---
 
       // Extract Chapter Dropdown
-      const extractMenu = document.getElementById('extractMenu');
-      
-      extractChapterBtn.onclick = (e) => {
+      const extractMenu = document.getElementById('extractMenu');      extractChapterBtn.onclick = (e) => {
         e.stopPropagation();
         extractMenu.classList.toggle('show');
       };
 
-
+      // Format selector buttons
+      document.querySelectorAll('#extractFormatRow .extract-fmt-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          document.querySelectorAll('#extractFormatRow .extract-fmt-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          _extractFormat = btn.dataset.fmt;
+        });
+      });
 
       // Handle menu item clicks
       extractMenu.querySelectorAll('.extract-menu-item').forEach(item => {
