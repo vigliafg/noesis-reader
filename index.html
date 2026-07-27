@@ -1053,7 +1053,9 @@
     /* --- EXTRACT CHAPTER DROPDOWN --- */
     .extract-dropdown {
       position: relative;
-      display: inline-block;
+      display: flex;
+      align-items: center;
+      height: 35px;
     }
 
     .extract-menu {
@@ -1114,27 +1116,26 @@
     .extract-format-row {
       display: flex;
       gap: 1px;
-      padding: 10px 12px 8px;
+      padding: 8px 10px 6px;
       background: #f8fafc;
       border-bottom: 1px solid #f0f0f0;
       flex-wrap: wrap;
     }
     .extract-fmt-btn {
-      flex: 1;
-      min-width: 46px;
-      padding: 6px 4px;
+      flex: 1 1 auto;
+      min-width: 55px;
+      padding: 6px 3px;
       border: 1px solid #e5e7eb;
       background: white;
       color: #6b7280;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       font-family: system-ui, sans-serif;
       cursor: pointer;
       border-radius: 5px;
       text-align: center;
       transition: all 0.15s;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
+      line-height: 1.2;
     }
     .extract-fmt-btn:first-child { border-radius: 5px 0 0 5px; }
     .extract-fmt-btn:last-child { border-radius: 0 5px 5px 0; }
@@ -3381,7 +3382,8 @@
           <span class="rmb-item" id="rmbExtract">Extract</span>
           <div class="extract-menu" id="extractMenu">
             <div class="extract-format-row" id="extractFormatRow">
-              <button class="extract-fmt-btn active" data-fmt="html">HTML</button>
+              <button class="extract-fmt-btn active" data-fmt="html-clean">HTML clean</button>
+              <button class="extract-fmt-btn" data-fmt="html-annotated">HTML annot.</button>
               <button class="extract-fmt-btn" data-fmt="txt">TXT</button>
               <button class="extract-fmt-btn" data-fmt="md">MD</button>
               <button class="extract-fmt-btn" data-fmt="epub">EPUB</button>
@@ -4400,13 +4402,13 @@ ${htmlContent}
       const sCh = chapterName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
 
       switch (_extractFormat) {
-        case 'html':
-          _autoDownloadHTML(`noesis-extract-${sBook}__${sCh}__${timestamp}.html`,
+        case 'html-clean':
+          _autoDownloadHTML(`noesis-clean-${sBook}__${sCh}__${timestamp}.html`,
             _generateCleanHTML(bookName, chapterName, '', htmlContent, false));
-          setTimeout(() => {
-            _autoDownloadHTML(`noesis-origin-${sBook}__${sCh}__${timestamp}.html`,
-              _generateCleanHTML(bookName, chapterName, chapterId, htmlContent, true));
-          }, 1500);
+          break;
+        case 'html-annotated':
+          _autoDownloadHTML(`noesis-annotated-${sBook}__${sCh}__${timestamp}.html`,
+            _generateCleanHTML(bookName, chapterName, chapterId, htmlContent, true));
           break;
         case 'txt':
           _downloadAsText(htmlContent, `noesis-extract-${sBook}__${sCh}__${timestamp}.txt`);
@@ -4426,7 +4428,7 @@ ${htmlContent}
 
     // ── Download automatico file HTML (no dialog, per coppie automatiche) ────
     // ── Current extract format (html|txt|md|epub|pdf) ────────────────────
-    let _extractFormat = 'html';
+    let _extractFormat = 'html-clean';
 
     // ── Generic file download helper ─────────────────────────────────────
     function _downloadFile(filename, data, mimeType) {
