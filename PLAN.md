@@ -1,168 +1,124 @@
-# Implementation Plan — Next Session
+# Resoconto — 27 Luglio 2026
 
-**Date**: July 27, 2026  
-**Total estimated time**: ~3.5 hours  
-**Order**: 3 → 1 → 2 → 4
+## ✅ Completato oggi
 
----
+### Ambito 3: Logo 📚 NOESIS
+- Aggiunto `<span class="lib-brand">📚 NOESIS</span>` nella library header ✅
+- CSS dedicato ✅
+- Commit: `feat: aggiunto logo 📚 NOESIS nella library header`
 
-## Ambito 3: Logo e nome nell'interfaccia
+### Ambito 1: Extract multi-formato (già completato in sessione precedente, verificato e propagato)
+- Format selector con 5 formati: HTML, TXT, MD, EPUB, PDF ✅
+- Funzioni: `_downloadAsText`, `_downloadAsMarkdown`, `_generateEpub`, `_printPDF`, `_downloadFile` ✅
+- `_dispatchExtractDownload` con switch case ✅
+- Commit: `feat: extract multi-formato (HTML, TXT, MD, EPUB, PDF)`
 
-**Stato attuale**: Library header sinistra vuota (solo hamburger nascosto), reader header senza logo.
+### Evoluzione Ambito 1: Split HTML clean / HTML annotated
+- Sostituito il singolo pulsante "HTML" con due pulsanti separati:
+  - **HTML clean** (`data-fmt="html-clean"`): scarica file pulito senza meta Noesis, offline reading
+  - **HTML annot.** (`data-fmt="html-annotated"`): scarica file con meta Noesis, reimportabile in libreria
+- Modificato `_dispatchExtractDownload`: rimosso `case 'html'` (doppio download), aggiunti `case 'html-clean'` e `case 'html-annotated'` (download singolo)
+- `_extractFormat` default: `'html'` → `'html-clean'`
+- **Pipeline index.html**: split formato soltanto (nessun prompt Editor — `_openSn56` non esiste nel source)
+- **Pipeline noesis816 (4 target)**: split formato + dopo download HTML, `confirm('Open in Noesis Editor?')` che chiama `_openSn56(payload)`
+- Commit: `feat: split HTML extract in html-clean e html-annotated + prompt Open in Editor`
 
-**Cosa fare**: Aggiungere "📚 NOESIS" in piccolo nella `.library-header-left`.
+### Fix CSS: Format buttons layout
+- `.extract-fmt-btn`: `flex: 1 1 auto`, `min-width: 55px`, `font-size: 10px`, `line-height: 1.2`
+- Rimosso `white-space: nowrap` e `letter-spacing` per consentire wrapping
+- `.extract-format-row`: padding ridotto
+- I 6 bottoni ora si dispongono correttamente su 2 righe in dropdown stretti
+- Commit: incluso nel commit split HTML
 
-```
-[📚 NOESIS]                    [ADD BOOKS] [THEMES] [TOOLS]
-```
+### Fix CSS: Extract dropdown alignment
+- `.extract-dropdown`: `display: inline-block` → `display: flex; align-items: center; height: 35px`
+- Risolve il disallineamento del pulsante "Extract" nella toolbar durante resize
+- Commit: incluso nel commit split HTML
 
-**Modifiche**:
-1. Aggiungere `<span class="lib-brand">📚 NOESIS</span>` nella `.library-header-left`
-2. CSS: `.lib-brand { font-size: 13px; opacity: 0.85; letter-spacing: 0.05em; font-family: system-ui; }`
-3. Opzionale: stesso span nella reader header accanto al back button
+### Fix: Turndown CDN in noesis816-full-reader.html
+- `noesis816-full-reader.html` non aveva TurndownService (né embedded né CDN)
+- Aggiunto `<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.2/dist/turndown.js"></script>`
+- Commit: incluso nel commit split HTML
 
-**Stima**: ~20 righe, 15 minuti.
+### Ambito 2: Save media dal preview
+- Aggiunto pulsante "⬇ Save" nell'overlay fullscreen (`#readerMediaFullscreen`)
+- Posizionato in alto a sinistra (simmetrico al ✕ di chiusura)
+- CSS: stile verde `#10b981`, hover `#059669`
+- **JS `saveMedia()`**:
+  - **Immagini**: `confirm()` sceglie JPEG (canvas.toBlob) o PNG (canvas.toBlob)
+  - **Tabelle**: `confirm()` sceglie HTML (documento completo con stili) o CSV (iterazione tr/td, quoting corretto)
+- **Fix bug critico**: `doPreview()` chiama `hideDialog()` che azzera `pending = null`. Aggiunto `_savedMedia` per persistere i dati oltre `hideDialog()`.
+- Commit: `fix: Save button not working — pending nullified by hideDialog before saveMedia runs`
 
----
+### Propagazione a noesis-multi
+- Tutte le modifiche propagate ai 4 file target: `noesis816.html`, `noesis816-reader.html`, `noesis816-full.html`, `noesis816-full-reader.html`
+- 3 commit totali oggi in ciascun repo
 
-## Ambito 1: Extract multi-formato
-
-**Stato attuale**: Menu Extract con 2 opzioni (current chapter, current + sublevels), entrambi salvano solo HTML.
-
-**Cosa fare**: Aggiungere selettore di formato. 4 formati disponibili.
-
-### Formati
-
-| # | Formato | Generazione | Estensione | Complessità |
-|---|---|---|---|---|
-| 1 | **HTML** | Già esistente (`_autoDownloadHTML`) | `.html` | ✅ Fatto |
-| 2 | **Plain Text** | `textContent` del capitolo, strip HTML | `.txt` | Bassa |
-| 3 | **Markdown** | Conversione HTML→MD: heading, p, strong, em, a, img, table, ul/ol, blockquote | `.md` | Media |
-| 4 | **EPUB standalone** | JSZip: mimetype, container.xml, OPF, chapter XHTML + immagini embeddate | `.epub` | Alta |
-
-### EPUB con immagini — algoritmo `generateEpub(title, author, htmlContent, epubArrayBuffer)`
-
-```
-1. Apri l'EPUB originale con JSZip (da epubArrayBuffer in IDB)
-2. Scansiona htmlContent per tutti i <img src="...">
-3. Per ogni immagine:
-   a. Se src è relativo (../images/xxx) → estrai da JSZip, salva in OEBPS/images/
-   b. Se src è data URL → decodifica base64, salva in OEBPS/images/
-   c. Se src è URL esterno → fetch, salva in OEBPS/images/
-   d. Aggiorna src → "images/nomefile.jpg"
-   e. Aggiungi <item> al manifest OPF con media-type corretto
-4. Crea struttura EPUB con JSZip:
-   - mimetype (STORE, no compression)
-   - META-INF/container.xml
-   - OEBPS/content.opf (metadata + manifest + spine)
-   - OEBPS/chapter.xhtml
-   - OEBPS/images/*
-5. Genera blob e trigger download
-```
-
-**Dipendenze**: JSZip (✅ già caricato v3.10.1), epubArrayBuffer da IndexedDB (`bookData.data`)
-
-**Modifiche**:
-- HTML: aggiungere selettore formato nel dropdown extract
-- JS: `_downloadAsText()`, `_downloadAsMarkdown()`, `_generateEpub()`, `_embedImages()`
-- JS: modificare handler click extract per usare il formato selezionato
-
-**Stima**: ~155 righe, ~1.5 ore.
+### Bug noto — Bassa priorità
+- **Extract button alignment durante resize**: passando da finestra stretta (hamburger mode) a desktop con dropdown Extract aperto, il pulsante "Extract" nella toolbar appare leggermente più alto. Funziona correttamente in modalità solo-mobile e solo-desktop. Il bug è solo transitorio durante il resize. Registrato come bassa priorità.
 
 ---
 
-## Ambito 2: Salva media dal preview
+# Piano — 28 Luglio 2026
 
-**Stato attuale**: Cliccando su immagine/tabella nell'EPUB → dialog "Preview/Exit" → overlay fullscreen con [✕] per chiudere.
+## Obiettivo: Rifinire le finestre di salvataggio delle preview
 
-**Cosa fare**: Aggiungere pulsante "Save" nell'overlay fullscreen.
+### Problemi attuali da risolvere
 
-### Formati
+1. **Il pulsante Save usa `confirm()` nativo del browser**
+   - L'esperienza utente è poco elegante: un popup di sistema chiede "Save as JPEG?" ogni volta
+   - Sostituire con un selettore di formato inline nell'overlay fullscreen
 
-| Tipo media | Formati | Come |
-|---|---|---|
-| **Immagine** | PNG (originale), JPEG (convertito) | Data URL → canvas.toBlob() per JPEG, download diretto per PNG |
-| **Tabella** | CSV, HTML | CSV: itera `<tr>/<td>`, virgole. HTML: contenuto già disponibile |
+2. **Manca feedback dopo il salvataggio**
+   - Dopo il download non c'è nessuna conferma visiva
+   - Aggiungere un toast/notifica "✅ Saved as image.jpg"
 
-### Algoritmo `saveMedia()`
+3. **Il nome file è generico** (`image.png`, `image.jpg`, `table.html`, `table.csv`)
+   - Usare l'alt text dell'immagine o il caption come nome file (sanitizzato)
+   - Per le tabelle, generare un nome basato sul contesto
 
+4. **Il pulsante Save potrebbe essere migliorato visivamente**
+   - Valutare un'icona più chiara (es. `⬇` → icona Bootstrap)
+   - Aggiungere una leggera animazione/transizione al click
+
+### Modifiche proposte
+
+#### 1. Sostituire `confirm()` con selettore formato inline
 ```
-1. Se pending.type === 'img':
-   a. Crea <canvas>, disegna immagine
-   b. canvas.toBlob('image/jpeg', 0.9) → download JPEG
-   c. Oppure download diretto del src originale (PNG)
-2. Se pending.type === 'table':
-   a. Estrai tutte le righe: [...table.querySelectorAll('tr')]
-   b. Per ogni riga: [...tr.querySelectorAll('td,th')].map(td => td.textContent)
-   c. Unisci con virgole → Blob → download CSV
-   d. Oppure table.outerHTML → Blob → download HTML
+Aggiungere due mini-bottoni sotto il pulsante Save (o un dropdown):
+  [Save as PNG]  [Save as JPEG]
+  [Save as CSV]  [Save as HTML]
+```
+Oppure: un pulsante "Save" con un piccolo dropdown/chevron per scegliere il formato.
+
+#### 2. Aggiungere toast di conferma
+Riutilizzare il sistema `#saveToast` già esistente nel reader:
+```javascript
+showToast('✅ Saved as image.png', 'saved');
 ```
 
-**Modifiche**:
-- HTML: `<button id="readerFsSave">Save</button>` nell'overlay fullscreen
-- JS: `saveMedia()` con logica per tipo
-- CSS: stile pulsante Save
+#### 3. Migliorare i nomi file
+- Immagini: usare `pending.data.alt` sanitizzato (rimuovere caratteri non validi) o timestamp
+- Tabelle: `table-{timestamp}.html` / `table-{timestamp}.csv`
 
-**Stima**: ~75 righe, 1 ora.
+#### 4. Icona Bootstrap per il pulsante Save
+Sostituire `⬇` con `<i class="bi bi-download"></i>`
 
----
-
-## Ambito 4: Studio — Pubblicità non intrusiva
-
-**Obiettivo**: Analizzare come inserire pubblicità senza impattare la lettura. **Solo analisi, nessuna implementazione.**
-
-### Principio guida
-
-> Mai interrompere la lettura. Mai.
-
-### Punti di inserimento (dal meno al più intrusivo)
-
-| # | Punto | Momento | Intrusività |
-|---|---|---|---|
-| A | Library: banner tra i libri | Ogni N libri, banner nativo | ⭐ Bassa |
-| B | Transizione capitolo | Dopo N cambi capitolo, mini-banner status bar | ⭐ Bassa |
-| C | Ritorno alla library | Dopo lettura, banner | ⭐ Bassa |
-| D | Idle timeout | Dopo N minuti senza interazione | ⭐ Molto bassa |
-
-### Cosa NON fare
-
-- ❌ Popup/interstitial durante la lettura
-- ❌ Banner fisso nel reader
-- ❌ Video autoplay
-- ❌ Ads che coprono il testo
-
-### Da testare nella sessione
-
-Prototipo di banner nativo nella library view con JSON di "libri sponsorizzati" finti. Valutare impatto visivo.
-
-### Tecnologie da valutare
-
-- Google AdSense (display nativi)
-- Carbon Ads (design pulito, developer/tech)
-- Auto-gestito (affiliati Amazon libri)
-- Modello freemium (no ads, abbonamento)
-
-**Stima**: 30 minuti (analisi, prototipo, decisione).
+### Stima
+~1 ora, ~50 righe
 
 ---
 
-## Timeline
+## Commit di oggi (noesis-reader)
 
-| Ora | Ambito | Attività |
-|---|---|---|
-| 0:00 | **3 — Logo** | Aggiungere "📚 NOESIS" nella library header |
-| 0:15 | **1 — Extract** | Plain Text + Markdown |
-| 0:35 | **1 — Extract** | EPUB con immagini embeddate |
-| 1:30 | **2 — Save media** | Pulsante Save in preview fullscreen |
-| 2:30 | **4 — Studio ads** | Prototipo banner nativo in library |
-| 3:00 | Test + commit | Browser-use test, commit, push |
+| Commit | Messaggio |
+|---|---|
+| `cd512d0` | feat: split HTML extract in html-clean e html-annotated + fix CSS format buttons layout + fix extract dropdown alignment |
+| `52b7461` | fix: Save button not working — pending nullified by hideDialog before saveMedia runs |
 
----
+## Commit di oggi (noesis-multi)
 
-## Note tecniche
-
-- JSZip v3.10.1 già caricato via CDN
-- EPUB originale accessibile come ArrayBuffer in IndexedDB: `bookData.data`
-- Metadati disponibili: `currentBookTitle`, `bookData.title`, `bookData.author`
-- Funzione di download esistente: `_autoDownloadHTML(filename, htmlContent)` — da generalizzare
-- Usare `allowMultiple: true` con cautela — ha causato SyntaxError in passato
+| Commit | Messaggio |
+|---|---|
+| `ce3c32b` | feat: split HTML extract in html-clean e html-annotated + prompt Editor + fix CSS + Turndown CDN |
+| `e9f3cb8` | fix: Save button not working — pending nullified by hideDialog before saveMedia runs |
