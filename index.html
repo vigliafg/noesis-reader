@@ -1025,6 +1025,61 @@
       white-space: nowrap;
     }
     #collExportBtn:hover { background: #059669; }
+    .coll-json-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    #collJsonBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s;
+      white-space: nowrap;
+    }
+    #collJsonBtn:hover { background: #4f46e5; }
+    .coll-json-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: white;
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 8px;
+      min-width: 170px;
+      z-index: 20;
+      display: none;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .coll-json-menu.show { display: block; }
+    .coll-json-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      color: #374151;
+      font-size: 13px;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .coll-json-menu button:hover {
+      background: #eef2ff;
+      color: #4338ca;
+    }
+    .coll-json-menu button i { font-size: 16px; color: #6366f1; }
     .coll-export-menu {
       position: absolute;
       top: calc(100% + 6px);
@@ -1230,7 +1285,7 @@
       background: white;
       cursor: pointer;
       font-family: system-ui, sans-serif;
-      max-width: 160px;
+      max-width: 320px;
     }
 
     /* ── Select bar ── */
@@ -4273,10 +4328,16 @@
     <div id="collectionDrawer">
       <div id="collHeader">
         <h3><i class="bi bi-collection" style="margin-right:5px;color:#10b981;"></i>Collection</h3>
+        <div class="coll-json-wrap">
+          <button id="collJsonBtn" title="Salva/Carica l'intera collezione"><i class="bi bi-folder-symlink"></i> Collection <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i></button>
+          <div class="coll-json-menu" id="collJsonMenu">
+            <button data-action="import"><i class="bi bi-box-arrow-in-down"></i> Import collection</button>
+            <button data-action="export"><i class="bi bi-box-arrow-up-right"></i> Export collection</button>
+          </div>
+        </div>
         <div class="coll-export-wrap">
-          <button id="collExportBtn" title="Export collection"><i class="bi bi-download"></i> Export <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i></button>
+          <button id="collExportBtn" title="Esporta i chunks selezionati"><i class="bi bi-download"></i> Chunks <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i></button>
           <div class="coll-export-menu" id="collExportMenu">
-            <button data-fmt="json"><i class="bi bi-filetype-json"></i> JSON</button>
             <button data-fmt="html"><i class="bi bi-filetype-html"></i> HTML</button>
             <button data-fmt="md"><i class="bi bi-filetype-md"></i> Markdown</button>
           </div>
@@ -4313,6 +4374,7 @@
       </div>
       <div class="coll-viewer-content" id="collViewerContent"></div>
     </div>
+    <input type="file" id="collImportInput" accept=".json" style="display:none;">
 
     <div id="status">
       <button id="statusPrevBtn" class="chap-nav-btn" title="Previous chapter (spine)" disabled>◀</button>
@@ -5423,14 +5485,69 @@ ${htmlContent}
     function _exportCollectionJSON() {
       var chunks = _getSelectedOrAll();
       if (!chunks.length) { showToast('No items to export', 'error', 2000); return; }
+      var collName = prompt('Collection name:', (currentBookTitle || 'Collection'));
+      if (collName === null) return; // user cancelled
+      collName = collName.trim() || (currentBookTitle || 'Collection');
       var json = JSON.stringify({
+        name: collName,
         book: currentBookTitle || 'Collection',
         exportedAt: new Date().toISOString(),
         count: chunks.length,
         chunks: chunks
       }, null, 2);
-      _downloadFile(_sanitizeExportName(currentBookTitle) + '-collection.json', json, 'application/json;charset=utf-8');
-      showToast('📦 Exported ' + chunks.length + ' chunks as JSON', 'saved');
+      _downloadFile(_sanitizeExportName(collName) + '.json', json, 'application/json;charset=utf-8');
+      showToast('📦 Exported "' + collName + '" (' + chunks.length + ' chunks)', 'saved');
+    }
+
+    function _importCollectionFromJSON(file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var data = JSON.parse(e.target.result);
+          if (!data.chunks || !Array.isArray(data.chunks)) {
+            showToast('❌ Invalid collection file: missing chunks array', 'error', 3000);
+            return;
+          }
+          if (data.chunks.length === 0) {
+            showToast('⚠ Collection file is empty', 'error', 2000);
+            return;
+          }
+          var collName = data.name || 'Imported';
+          var ALLOWED_TYPES = ['img', 'text', 'table'];
+          var validChunks = data.chunks.filter(function(c) {
+            if (!c.type || ALLOWED_TYPES.indexOf(c.type) === -1) return false;
+            if (c.type === 'img' && !c.src) return false;
+            if ((c.type === 'text' || c.type === 'table') && !c.content) return false;
+            return true;
+          });
+          if (validChunks.length === 0) {
+            showToast('❌ No valid chunks found in file', 'error', 3000);
+            return;
+          }
+          var skipped = data.chunks.length - validChunks.length;
+          var confirmMsg = 'Import "' + collName + '"?';
+          if (skipped > 0) confirmMsg += '\n(' + skipped + ' invalid chunks will be skipped)';
+          confirmMsg += '\n' + validChunks.length + ' chunks will be appended to current collection.';
+          if (!confirm(confirmMsg)) return;
+          // Reassign IDs to avoid collisions and set current book/chapter context
+          var now = Date.now();
+          validChunks.forEach(function(c, i) {
+            c.id = now + i + Math.floor(Math.random() * 100000);
+            c.book = currentBookTitle || c.book || 'Unknown';
+            c.date = c.date || new Date().toISOString();
+          });
+          _collection = _collection.concat(validChunks);
+          _saveCollectionToDB();
+          _updateCollectionBadge();
+          _renderCollectionList();
+          showToast('📥 Imported "' + collName + '" (' + validChunks.length + ' chunks)', 'saved');
+        } catch (err) {
+          console.error('Import JSON failed:', err);
+          showToast('❌ Invalid JSON file', 'error', 3000);
+        }
+      };
+      reader.onerror = function() { showToast('❌ Failed to read file', 'error', 3000); };
+      reader.readAsText(file);
     }
 
     function _exportCollectionHTML() {
@@ -7898,6 +8015,37 @@ ${htmlContent}
         closeUbmDrawer();
       });
 
+      // ── JSON Import/Export ──
+      var collImportInput = document.getElementById('collImportInput');
+      var collJsonBtn = document.getElementById('collJsonBtn');
+      var collJsonMenu = document.getElementById('collJsonMenu');
+      collJsonBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        collExportMenu.classList.remove('show');
+        collJsonMenu.classList.toggle('show');
+      });
+      collJsonMenu.querySelectorAll('button').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          collJsonMenu.classList.remove('show');
+          var action = btn.dataset.action;
+          if (action === 'import') collImportInput.click();
+          else if (action === 'export') _exportCollectionJSON();
+        });
+      });
+      document.addEventListener('click', function(e) {
+        if (!collJsonMenu.classList.contains('show')) return;
+        if (!collJsonMenu.contains(e.target) && e.target !== collJsonBtn) {
+          collJsonMenu.classList.remove('show');
+        }
+      });
+      collImportInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+          _importCollectionFromJSON(this.files[0]);
+          this.value = '';
+        }
+      });
+
       document.getElementById('collClearBtn').addEventListener('click', () => {
         if (_collection.length === 0) { showToast('Collection already empty', 'saved', 2000); return; }
         if (!confirm('Clear all ' + _collection.length + ' items from collection?')) return;
@@ -7954,6 +8102,7 @@ ${htmlContent}
       var collExportMenu = document.getElementById('collExportMenu');
       collExportBtn.addEventListener('click', function(e) {
         e.stopPropagation();
+        collJsonMenu.classList.remove('show');
         collExportMenu.classList.toggle('show');
       });
       collExportMenu.querySelectorAll('button').forEach(function(btn) {
@@ -7961,8 +8110,7 @@ ${htmlContent}
           e.stopPropagation();
           collExportMenu.classList.remove('show');
           var fmt = btn.dataset.fmt;
-          if (fmt === 'json') _exportCollectionJSON();
-          else if (fmt === 'html') _exportCollectionHTML();
+          if (fmt === 'html') _exportCollectionHTML();
           else if (fmt === 'md') _exportCollectionMD();
         });
       });
