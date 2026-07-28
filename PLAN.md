@@ -59,53 +59,54 @@
 
 ---
 
-# Piano — 28 Luglio 2026
+# Piano — 28 Luglio 2026 ✅ COMPLETATO
 
 ## Obiettivo: Rifinire le finestre di salvataggio delle preview
 
-### Problemi attuali da risolvere
+### Modifiche realizzate
 
-1. **Il pulsante Save usa `confirm()` nativo del browser**
-   - L'esperienza utente è poco elegante: un popup di sistema chiede "Save as JPEG?" ogni volta
-   - Sostituire con un selettore di formato inline nell'overlay fullscreen
+#### 1. Nuova toolbar nell'overlay fullscreen
+- **Copy** (`readerFsCopy`): copia in clipboard via `navigator.clipboard.write()`
+  - Immagini: canvas → blob PNG → `ClipboardItem({ 'image/png': blob })`
+  - Tabelle: sia `text/html` (solo table HTML) che `text/plain` (testo pulito)
+  - Canvas capped a 4096px per evitare errori su immagini enormi
+- **Download ▼** (`readerFsDownload`): dropdown con selettore formato
+  - Immagini: PNG / JPEG
+  - Tabelle: HTML / CSV
+  - Menu popolato dinamicamente in `_populateDownloadMenu()` chiamato da `doPreview()`
+- **Close ✕** (`readerFsClose`): invariato
 
-2. **Manca feedback dopo il salvataggio**
-   - Dopo il download non c'è nessuna conferma visiva
-   - Aggiungere un toast/notifica "✅ Saved as image.jpg"
+#### 2. `prompt()` per nome file con proposta
+- Immagini: `alt` text sanitizzato (o `image-{timestamp}`)
+- Tabelle: `table-{timestamp}`
+- Funzione `_sanitizeFilename()` rimuove caratteri illegali, normalizza spazi
 
-3. **Il nome file è generico** (`image.png`, `image.jpg`, `table.html`, `table.csv`)
-   - Usare l'alt text dell'immagine o il caption come nome file (sanitizzato)
-   - Per le tabelle, generare un nome basato sul contesto
+#### 3. Toast di feedback
+- `showToast('✅ Saved as ...', 'saved')` dopo download
+- `showToast('✅ Copied to clipboard', 'saved')` dopo copy
+- `showToast('❌ Copy failed', 'error')` / `showToast('❌ Failed to load image', 'error')` per errori
 
-4. **Il pulsante Save potrebbe essere migliorato visivamente**
-   - Valutare un'icona più chiara (es. `⬇` → icona Bootstrap)
-   - Aggiungere una leggera animazione/transizione al click
+#### 4. Canvas dimension capping a 4096px
+- Sia in `copyMedia()` che in `_doDownload()` per prevenire overflow canvas
 
-### Modifiche proposte
+### File modificati
+| File | Modifiche |
+|---|---|
+| `index.html` | CSS, HTML, JS — nuovo overlay + funzioni |
+| `noesis816.html` | Mirror completo |
+| `noesis816-full.html` | Mirror completo |
+| `noesis816-reader.html` | Mirror completo |
+| `noesis816-full-reader.html` | Mirror completo |
 
-#### 1. Sostituire `confirm()` con selettore formato inline
-```
-Aggiungere due mini-bottoni sotto il pulsante Save (o un dropdown):
-  [Save as PNG]  [Save as JPEG]
-  [Save as CSV]  [Save as HTML]
-```
-Oppure: un pulsante "Save" con un piccolo dropdown/chevron per scegliere il formato.
+### Commit
+| Repo | Commit | Messaggio |
+|---|---|---|
+| `noesis-reader` | `b7868ff` | feat: redesign media preview overlay — Copy, Download▼ format selector, prompt() filename, showToast feedback |
+| `noesis-multi` | `21a4151` | feat: redesign media preview overlay — Copy, Download▼ format selector, prompt() filename, showToast feedback |
 
-#### 2. Aggiungere toast di conferma
-Riutilizzare il sistema `#saveToast` già esistente nel reader:
-```javascript
-showToast('✅ Saved as image.png', 'saved');
-```
+---
 
-#### 3. Migliorare i nomi file
-- Immagini: usare `pending.data.alt` sanitizzato (rimuovere caratteri non validi) o timestamp
-- Tabelle: `table-{timestamp}.html` / `table-{timestamp}.csv`
-
-#### 4. Icona Bootstrap per il pulsante Save
-Sostituire `⬇` con `<i class="bi bi-download"></i>`
-
-### Stima
-~1 ora, ~50 righe
+# Vecchio piano (28 Luglio 2026)
 
 ---
 
