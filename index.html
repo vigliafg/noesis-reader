@@ -1079,11 +1079,6 @@
       transition: box-shadow 0.15s;
     }
     .coll-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-    .coll-item.coll-selected {
-      border-color: #10b981;
-      background: rgba(16,185,129,0.12);
-      box-shadow: 0 0 0 2px rgba(16,185,129,0.3);
-    }
 
     .coll-item-body {
       flex: 1;
@@ -1189,6 +1184,184 @@
       display: block;
       margin-bottom: 8px;
       color: #6ee7b7;
+    }
+
+    /* ── Filter bar ── */
+    #collFilterBar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-bottom: 1px solid rgba(16,185,129,0.12);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .coll-filter-types {
+      display: flex;
+      gap: 3px;
+    }
+    .coll-ft-btn {
+      padding: 4px 10px;
+      border: 1px solid rgba(16,185,129,0.2);
+      background: white;
+      color: #065f46;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: system-ui, sans-serif;
+      white-space: nowrap;
+    }
+    .coll-ft-btn i { font-size: 12px; }
+    .coll-ft-btn:hover { background: #f0fdf4; }
+    .coll-ft-btn.active {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+    .coll-chapter-select {
+      padding: 4px 8px;
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #065f46;
+      background: white;
+      cursor: pointer;
+      font-family: system-ui, sans-serif;
+      max-width: 160px;
+    }
+
+    /* ── Select bar ── */
+    #collSelectBar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: #6b7280;
+      flex-shrink: 0;
+    }
+    .coll-select-link {
+      background: none;
+      border: none;
+      color: #10b981;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: system-ui, sans-serif;
+    }
+    .coll-select-link:hover { background: rgba(16,185,129,0.1); }
+    #collSelBadge {
+      margin-left: auto;
+      font-weight: 700;
+      color: #10b981;
+    }
+
+    /* ── Checkbox in item ── */
+    .coll-checkbox {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .coll-checkbox input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #10b981;
+      cursor: pointer;
+    }
+
+    /* ── Chunk Viewer ── */
+    #collViewer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10001;
+      background: rgba(0,0,0,0.92);
+      flex-direction: column;
+      padding: 0;
+    }
+    #collViewer.visible { display: flex; }
+    .coll-viewer-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      flex-shrink: 0;
+    }
+    .coll-viewer-title {
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: system-ui, sans-serif;
+    }
+    .coll-viewer-close {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 5px 12px;
+      border-radius: 6px;
+      line-height: 1;
+      transition: background 0.15s;
+    }
+    .coll-viewer-close:hover { background: rgba(239,68,68,0.5); }
+    .coll-viewer-content {
+      flex: 1;
+      overflow: auto;
+      display: block;
+      padding: 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .coll-viewer-content img {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 4px;
+      display: block;
+      margin: 0 auto;
+    }
+    .coll-viewer-content .cv-text {
+      color: #e5e7eb;
+      font-size: 18px;
+      line-height: 1.9;
+      max-width: 700px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 40px 24px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      margin: 0 auto;
+    }
+    .coll-viewer-content .cv-table-wrap {
+      max-height: 85vh;
+      overflow: auto;
+      background: white;
+      border-radius: 6px;
+      padding: 12px;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    .coll-viewer-content .cv-table-wrap table {
+      border-collapse: collapse;
+      white-space: nowrap;
+    }
+    .coll-viewer-content .cv-table-wrap td,
+    .coll-viewer-content .cv-table-wrap th {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      font-size: 13px;
     }
 
     .ubm-item {
@@ -2238,7 +2411,6 @@
       border-radius: 4px;
     }
     #readerMediaFullscreen .rfs-table-wrap {
-      max-width: 100%;
       max-height: 75vh;
       overflow: auto;
       background: white;
@@ -2247,7 +2419,7 @@
     }
     #readerMediaFullscreen .rfs-table-wrap table {
       border-collapse: collapse;
-      width: auto;
+      white-space: nowrap;
     }
     #readerMediaFullscreen .rfs-table-wrap td,
     #readerMediaFullscreen .rfs-table-wrap th {
@@ -3484,6 +3656,7 @@
     <div class="hamburger-item hmb-rdr" id="hmbNavigate"><i class="bi bi-arrow-left-right"></i> Navigate<span id="hmbNavigateMode" class="rmb-navigate-badge" style="margin-left:6px;">Page</span></div>
     <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
     <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
+    <div class="hamburger-item hmb-rdr" id="hmbCollection"><i class="bi bi-collection"></i> Collection<span id="hmbCollBadge" class="rmb-badge" style="display:none;margin-left:6px;">0</span></div>
     <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
   </div>
 
@@ -4111,9 +4284,34 @@
         <button id="collClearBtn" title="Clear all"><i class="bi bi-trash"></i> Clear</button>
         <button id="collCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
       </div>
+      <div id="collFilterBar">
+        <div class="coll-filter-types">
+          <button class="coll-ft-btn active" data-type="all">All</button>
+          <button class="coll-ft-btn" data-type="text"><i class="bi bi-chat-quote"></i> Text</button>
+          <button class="coll-ft-btn" data-type="img"><i class="bi bi-image"></i> Images</button>
+          <button class="coll-ft-btn" data-type="table"><i class="bi bi-table"></i> Tables</button>
+        </div>
+        <select id="collChapterFilter" class="coll-chapter-select">
+          <option value="all">All chapters</option>
+        </select>
+      </div>
+      <div id="collSelectBar">
+        <button id="collSelectAllBtn" class="coll-select-link">Select all</button>
+        <button id="collDeselectAllBtn" class="coll-select-link">Deselect</button>
+        <span id="collSelBadge">0 selected</span>
+      </div>
       <div id="collList">
         <div class="coll-empty"><i class="bi bi-collection"></i>No items yet.<br><small>Preview an image, table, or highlight and tap [+] Collect.</small></div>
       </div>
+    </div>
+
+    <!-- Collection Chunk Viewer -->
+    <div id="collViewer">
+      <div class="coll-viewer-toolbar">
+        <span class="coll-viewer-title" id="collViewerTitle"></span>
+        <button class="coll-viewer-close" id="collViewerClose">&times;</button>
+      </div>
+      <div class="coll-viewer-content" id="collViewerContent"></div>
     </div>
 
     <div id="status">
@@ -5153,12 +5351,23 @@ ${htmlContent}
 
     function _updateCollectionBadge() {
       var badge = document.getElementById('collBadge');
-      if (!badge) return;
-      if (_collection.length > 0) {
-        badge.textContent = _collection.length;
-        badge.style.display = 'inline-block';
-      } else {
-        badge.style.display = 'none';
+      var hmbBadge = document.getElementById('hmbCollBadge');
+      var len = _collection.length;
+      if (badge) {
+        if (len > 0) {
+          badge.textContent = len;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+      if (hmbBadge) {
+        if (len > 0) {
+          hmbBadge.textContent = len;
+          hmbBadge.style.display = 'inline-block';
+        } else {
+          hmbBadge.style.display = 'none';
+        }
       }
     }
 
@@ -5191,13 +5400,24 @@ ${htmlContent}
       return (name || 'collection').replace(/[\\/:*?"<>|]/g, '').trim().replace(/\s+/g, '-').substring(0, 100) || 'collection';
     }
 
+    // ── Collection filters state ──
+    var _collFilterType = 'all';
+    var _collFilterChapter = 'all';
+
     function _getSelectedOrAll() {
       if (!_collection.length) return [];
-      var selectedItems = document.querySelectorAll('#collList .coll-item.coll-selected');
-      if (selectedItems.length === 0) return _collection.slice();
+      var checkedBoxes = document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]:checked');
+      if (checkedBoxes.length === 0) return _collection.slice();
       var selectedIds = [];
-      selectedItems.forEach(function(el) { selectedIds.push(Number(el.dataset.chunkId)); });
+      checkedBoxes.forEach(function(cb) { selectedIds.push(Number(cb.closest('.coll-item').dataset.chunkId)); });
       return _collection.filter(function(c) { return selectedIds.indexOf(c.id) !== -1; });
+    }
+
+    function _updateCollSelBadge() {
+      var badge = document.getElementById('collSelBadge');
+      if (!badge) return;
+      var checked = document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]:checked');
+      badge.textContent = checked.length + ' selected';
     }
 
     function _exportCollectionJSON() {
@@ -7033,6 +7253,15 @@ ${htmlContent}
       const headerH = header ? header.getBoundingClientRect().height : 0;
       drawer.style.setProperty('--coll-header-height', headerH + 'px');
       drawer.classList.add('coll-open');
+      // Reset filters
+      _collFilterType = 'all';
+      _collFilterChapter = 'all';
+      var activeBtn = document.querySelector('.coll-ft-btn.active');
+      if (activeBtn) activeBtn.classList.remove('active');
+      var allBtn = document.querySelector('.coll-ft-btn[data-type="all"]');
+      if (allBtn) allBtn.classList.add('active');
+      var chapterSel = document.getElementById('collChapterFilter');
+      if (chapterSel) chapterSel.value = 'all';
     }
 
     function _closeCollectionDrawer() {
@@ -7040,20 +7269,71 @@ ${htmlContent}
       if (drawer) drawer.classList.remove('coll-open');
     }
 
+    function _populateChapterFilter() {
+      var sel = document.getElementById('collChapterFilter');
+      if (!sel) return;
+      var currentVal = sel.value;
+      var chapters = [];
+      _collection.forEach(function(c) {
+        var ch = c.chapter || 'Unknown';
+        if (chapters.indexOf(ch) === -1) chapters.push(ch);
+      });
+      chapters.sort();
+      sel.innerHTML = '<option value="all">All chapters</option>';
+      chapters.forEach(function(ch) {
+        sel.innerHTML += '<option value="' + ch.replace(/"/g, '&quot;') + '">' + ch.substring(0, 40) + '</option>';
+      });
+      if (currentVal && chapters.indexOf(currentVal) !== -1) {
+        sel.value = currentVal;
+      } else {
+        sel.value = 'all';
+      }
+    }
+
     function _renderCollectionList() {
       var list = document.getElementById('collList');
       if (!list) return;
 
       if (_collection.length === 0) {
+        _populateChapterFilter();
         list.innerHTML = '<div class="coll-empty"><i class="bi bi-collection"></i>No items yet.<br><small>Preview an image, table, or highlight and tap [+] Collect.</small></div>';
+        _updateCollSelBadge();
+        return;
+      }
+
+      _populateChapterFilter();
+
+      // Apply filters
+      var filtered = _collection.slice().reverse().filter(function(c) {
+        if (_collFilterType !== 'all' && c.type !== _collFilterType) return false;
+        if (_collFilterChapter !== 'all' && c.chapter !== _collFilterChapter) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        var msg = _collection.length === 0
+          ? '<i class="bi bi-collection"></i>No items yet.<br><small>Preview an image, table, or highlight and tap [+] Collect.</small>'
+          : '<i class="bi bi-funnel"></i>No items match filters.<br><small>Try changing the type or chapter filter.</small>';
+        list.innerHTML = '<div class="coll-empty">' + msg + '</div>';
+        _updateCollSelBadge();
         return;
       }
 
       list.innerHTML = '';
-      _collection.slice().reverse().forEach(function(c) {
+      filtered.forEach(function(c) {
         var item = document.createElement('div');
         item.className = 'coll-item';
         item.dataset.chunkId = c.id;
+
+        // Checkbox
+        var cbWrap = document.createElement('div');
+        cbWrap.className = 'coll-checkbox';
+        cbWrap.addEventListener('click', function(e) { e.stopPropagation(); });
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.addEventListener('change', function() { _updateCollSelBadge(); });
+        cbWrap.appendChild(cb);
+        item.appendChild(cbWrap);
 
         var body = document.createElement('div');
         body.className = 'coll-item-body';
@@ -7131,10 +7411,10 @@ ${htmlContent}
         dateEl.textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
         body.appendChild(dateEl);
 
-        // Click to select/deselect
+        // Click to open chunk viewer
         body.addEventListener('click', function(e) {
-          if (e.target.closest('.coll-delete-btn')) return;
-          item.classList.toggle('coll-selected');
+          if (e.target.closest('.coll-delete-btn') || e.target.closest('.coll-checkbox')) return;
+          _openChunkViewer(c);
         });
 
         // Delete button
@@ -7152,6 +7432,46 @@ ${htmlContent}
         item.appendChild(delBtn);
         list.appendChild(item);
       });
+      _updateCollSelBadge();
+    }
+
+    // ── Chunk Viewer ──
+    function _openChunkViewer(chunk) {
+      var viewer = document.getElementById('collViewer');
+      var title = document.getElementById('collViewerTitle');
+      var content = document.getElementById('collViewerContent');
+      if (!viewer || !content) return;
+
+      title.textContent = (chunk.chapter || 'Unknown') + ' · ' + chunk.type;
+      content.innerHTML = '';
+
+      if (chunk.type === 'img') {
+        var img = document.createElement('img');
+        img.src = chunk.src;
+        img.alt = chunk.alt || '';
+        content.appendChild(img);
+      } else if (chunk.type === 'text') {
+        var div = document.createElement('div');
+        div.className = 'cv-text';
+        div.textContent = chunk.content || '';
+        var hlMap = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
+        if (chunk.color && hlMap[chunk.color]) {
+          div.style.borderLeft = '4px solid ' + hlMap[chunk.color];
+        }
+        content.appendChild(div);
+      } else {
+        var wrap = document.createElement('div');
+        wrap.className = 'cv-table-wrap';
+        wrap.innerHTML = chunk.content || '';
+        content.appendChild(wrap);
+      }
+
+      viewer.classList.add('visible');
+    }
+
+    function _closeChunkViewer() {
+      var viewer = document.getElementById('collViewer');
+      if (viewer) viewer.classList.remove('visible');
     }
 
     // =====================================================================
@@ -7302,21 +7622,32 @@ ${htmlContent}
       });
 
       // ── Collect button ───────────────────────────────────────────
-      fsCollect.addEventListener('click', function(e) {
+      fsCollect.addEventListener('click', async function(e) {
         e.stopPropagation();
         fsCollect.disabled = true;
-        _addToCollection();
-        setTimeout(function() { fsCollect.disabled = false; }, 800);
+        await _addToCollection();
+        fsCollect.disabled = false;
       });
 
-      function _addToCollection() {
+      async function _addToCollection() {
         if (!_savedMedia) return;
         var chapterEl = document.getElementById('statusChapterName');
         var chapterName = chapterEl ? chapterEl.textContent : '';
         var chunk = { type: _savedMedia.type, chapter: chapterName };
         if (_savedMedia.type === 'img') {
-          chunk.src = _savedMedia.data.src;
+          var rawSrc = _savedMedia.data.src;
           chunk.alt = _savedMedia.data.alt || '';
+          // Convert blob/http URLs to base64 for persistence across page reloads
+          if (rawSrc && (rawSrc.startsWith('blob:') || rawSrc.startsWith('http'))) {
+            try {
+              chunk.src = await _blobToBase64(rawSrc);
+            } catch (e) {
+              console.warn('Image conversion failed, storing original:', e);
+              chunk.src = rawSrc;
+            }
+          } else {
+            chunk.src = rawSrc || '';
+          }
         } else if (_savedMedia.type === 'text') {
           chunk.content = _savedMedia.data.text;
           chunk.color = _savedMedia.data.color || 'yellow';
@@ -7325,6 +7656,28 @@ ${htmlContent}
         }
         _saveChunk(chunk);
         showToast('📦 Added to collection (' + _collection.length + ')', 'saved');
+      }
+
+      // Convert image URL (blob/http) to base64 data URL
+      function _blobToBase64(src) {
+        return new Promise(function(resolve, reject) {
+          var img = new Image();
+          img.crossOrigin = 'Anonymous';
+          img.onload = function() {
+            var canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            try {
+              resolve(canvas.toDataURL('image/png'));
+            } catch (e) {
+              reject(e);
+            }
+          };
+          img.onerror = function() { reject(new Error('Failed to load image')); };
+          img.src = src;
+        });
       }
 
       async function copyMedia() {
@@ -7555,6 +7908,45 @@ ${htmlContent}
 
       document.getElementById('collCloseBtn').addEventListener('click', () => {
         _closeCollectionDrawer();
+      });
+
+      // ── Chunk viewer close on background click ──
+      document.getElementById('collViewer').addEventListener('click', function(e) {
+        if (e.target === this) _closeChunkViewer();
+      });
+
+      // ── Filter type buttons ──
+      document.querySelectorAll('.coll-ft-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.coll-ft-btn').forEach(function(b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          _collFilterType = btn.dataset.type;
+          _renderCollectionList();
+        });
+      });
+
+      // ── Chapter filter ──
+      document.getElementById('collChapterFilter').addEventListener('change', function() {
+        _collFilterChapter = this.value;
+        _renderCollectionList();
+      });
+
+      // ── Select All / Deselect ──
+      document.getElementById('collSelectAllBtn').addEventListener('click', function() {
+        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) { cb.checked = true; });
+        _updateCollSelBadge();
+      });
+      document.getElementById('collDeselectAllBtn').addEventListener('click', function() {
+        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+        _updateCollSelBadge();
+      });
+
+      // ── Chunk viewer close ──
+      document.getElementById('collViewerClose').addEventListener('click', function() {
+        _closeChunkViewer();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') _closeChunkViewer();
       });
 
       // Export dropdown
@@ -9147,7 +9539,8 @@ ${htmlContent}
       hmbDisplay: 'rmbDisplay',
       hmbNavigate: 'rmbNavigate',
       hmbAnnotate: 'rmbAnnotate',
-      hmbExtract: 'rmbExtract'
+      hmbExtract: 'rmbExtract',
+      hmbCollection: 'rmbCollection'
     };
     const hamburgerLibHandlers = {
       hmbAddBooks: function() { var b = document.getElementById('libAddBooksBtn'); if (b) b.click(); },
