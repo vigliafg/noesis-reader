@@ -2008,35 +2008,104 @@
       text-align: center;
       font-style: italic;
     }
-    #readerMediaFullscreen .rfs-close {
+    #readerMediaFullscreen .rfs-toolbar {
       position: absolute;
-      top: 14px;
-      right: 18px;
-      background: none;
-      border: none;
-      color: white;
-      font-size: 32px;
-      cursor: pointer;
-      line-height: 1;
-      padding: 4px 8px;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      z-index: 10;
+      gap: 10px;
     }
-    #readerMediaFullscreen .rfs-save {
-      position: absolute;
-      top: 14px;
-      left: 18px;
-      background: #10b981;
-      border: none;
+    #readerMediaFullscreen .rfs-copy,
+    #readerMediaFullscreen .rfs-download {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
       color: white;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
       padding: 8px 16px;
       border-radius: 6px;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: system-ui, sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    #readerMediaFullscreen .rfs-copy:hover,
+    #readerMediaFullscreen .rfs-download:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.35);
+    }
+    #readerMediaFullscreen .rfs-copy:active,
+    #readerMediaFullscreen .rfs-download:active {
+      background: rgba(255,255,255,0.35);
+    }
+    #readerMediaFullscreen .rfs-close {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 7px 14px;
+      border-radius: 6px;
+      line-height: 1;
       transition: background 0.15s;
       font-family: system-ui, sans-serif;
+      white-space: nowrap;
     }
-    #readerMediaFullscreen .rfs-save:hover {
-      background: #059669;
+    #readerMediaFullscreen .rfs-close:hover {
+      background: rgba(239,68,68,0.5);
+      border-color: rgba(239,68,68,0.6);
+    }
+    #readerMediaFullscreen .rfs-download-wrap {
+      position: relative;
+    }
+    #readerMediaFullscreen .rfs-download-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      background: #1f2937;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      min-width: 130px;
+      z-index: 20;
+      display: none;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    #readerMediaFullscreen .rfs-download-menu.show { display: block; }
+    #readerMediaFullscreen .rfs-download-menu button {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      color: #d1d5db;
+      font-size: 13px;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, color 0.15s;
+    }
+    #readerMediaFullscreen .rfs-download-menu button:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+    #readerMediaFullscreen .rfs-download-menu button:first-child {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    @media (max-width: 480px) {
+      #readerMediaFullscreen .rfs-toolbar { padding: 8px 10px; gap: 6px; }
+      #readerMediaFullscreen .rfs-copy,
+      #readerMediaFullscreen .rfs-download {
+        font-size: 12px; padding: 6px 10px;
+      }
+      #readerMediaFullscreen .rfs-close { font-size: 16px; padding: 5px 10px; }
+      #readerMediaFullscreen .rfs-download-menu { min-width: 110px; }
     }
 
     #saveToast {
@@ -3745,8 +3814,14 @@
 
   <!-- Main Reader Fullscreen Overlay -->
   <div id="readerMediaFullscreen">
-    <button class="rfs-close" id="readerFsClose">&#x2715;</button>
-    <button class="rfs-save" id="readerFsSave">⬇ Save</button>
+    <div class="rfs-toolbar">
+      <button class="rfs-copy" id="readerFsCopy"><i class="bi bi-clipboard"></i> Copy</button>
+      <div class="rfs-download-wrap">
+        <button class="rfs-download" id="readerFsDownload"><i class="bi bi-download"></i> Download</button>
+        <div class="rfs-download-menu" id="readerFsDownloadMenu"></div>
+      </div>
+      <button class="rfs-close" id="readerFsClose">&#x2715;</button>
+    </div>
     <div id="readerFsContent"></div>
     <div class="rfs-caption" id="readerFsCaption"></div>
   </div>
@@ -6450,7 +6525,11 @@ ${htmlContent}
       var fsOverlay = document.getElementById('readerMediaFullscreen');
       var fsContent = document.getElementById('readerFsContent');
       var fsCaption = document.getElementById('readerFsCaption');
-      var fsClose   = document.getElementById('readerFsClose');      var pending = null;
+      var fsClose       = document.getElementById('readerFsClose');
+      var fsDownload    = document.getElementById('readerFsDownload');
+      var fsDownloadMenu = document.getElementById('readerFsDownloadMenu');
+      var fsCopy        = document.getElementById('readerFsCopy');
+      var pending = null;
       var _savedMedia = null; // { type, data }
 
       function hideDialog() {
@@ -6474,6 +6553,7 @@ ${htmlContent}
         if (!pending) return;
         var type = pending.type, data = pending.data;
         _savedMedia = { type: type, data: data };
+        _populateDownloadMenu();
         hideDialog();
         fsContent.innerHTML = '';
         if (type === 'img') {
@@ -6503,53 +6583,183 @@ ${htmlContent}
 
       fsClose.addEventListener('click', function() { fsOverlay.classList.remove('visible'); });
 
-      // ── Save media button ──────────────────────────────────────────
-      document.getElementById('readerFsSave').addEventListener('click', function(e) {
+      // ── Populate download menu based on media type ────────────────
+      function _populateDownloadMenu() {
+        if (!_savedMedia) return;
+        fsDownloadMenu.innerHTML = '';
+        if (_savedMedia.type === 'img') {
+          ['PNG', 'JPEG'].forEach(function(fmt) {
+            var btn = document.createElement('button');
+            btn.textContent = fmt;
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              fsDownloadMenu.classList.remove('show');
+              _doDownload(fmt);
+            });
+            fsDownloadMenu.appendChild(btn);
+          });
+        } else {
+          ['HTML', 'CSV'].forEach(function(fmt) {
+            var btn = document.createElement('button');
+            btn.textContent = fmt;
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              fsDownloadMenu.classList.remove('show');
+              _doDownload(fmt);
+            });
+            fsDownloadMenu.appendChild(btn);
+          });
+        }
+      }
+
+      // ── Sanitize filename ─────────────────────────────────────────
+      function _sanitizeFilename(name) {
+        return name.replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().substring(0, 200) || 'file';
+      }
+
+      // ── Download button (toggle menu) ────────────────────────────
+      fsDownload.addEventListener('click', function(e) {
         e.stopPropagation();
-        saveMedia();
+        fsDownloadMenu.classList.toggle('show');
       });
 
-      function saveMedia() {
+      // ── Close download menu on outside click ─────────────────────
+      document.addEventListener('click', function(e) {
+        if (!fsDownloadMenu.contains(e.target) && e.target !== fsDownload) {
+          fsDownloadMenu.classList.remove('show');
+        }
+      });
+
+      // ── Copy button ──────────────────────────────────────────────
+      fsCopy.addEventListener('click', function(e) {
+        e.stopPropagation();
+        copyMedia();
+      });
+
+      async function copyMedia() {
         if (!_savedMedia) return;
+        try {
+          if (_savedMedia.type === 'img') {
+            var img = new Image();
+            img.crossOrigin = 'Anonymous';
+            await new Promise(function(resolve, reject) {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = _savedMedia.data.src;
+            });
+            var maxDim = 4096;
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if (w > maxDim || h > maxDim) {
+              var scale = Math.min(maxDim / w, maxDim / h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            var blob = await new Promise(function(resolve) {
+              canvas.toBlob(resolve, 'image/png');
+            });
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+          } else {
+            var tableHtml = _savedMedia.data.html;
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = tableHtml;
+            var plainText = (tempDiv.textContent || '').trim();
+            var htmlBlob = new Blob([tableHtml], { type: 'text/html' });
+            var textBlob = new Blob([plainText], { type: 'text/plain' });
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                'text/html': htmlBlob,
+                'text/plain': textBlob
+              })
+            ]);
+          }
+          showToast('✅ Copied to clipboard', 'saved', 2000);
+        } catch (e) {
+          console.error('Copy failed:', e);
+          showToast('❌ Copy failed', 'error', 2500);
+        }
+      }
+
+      // ── Core download logic ──────────────────────────────────────
+      function _doDownload(fmt) {
+        if (!_savedMedia) return;
+        var ts = Date.now();
+        var proposal, ext, mime, content;
+
         if (_savedMedia.type === 'img') {
-          var saveAsJpeg = confirm('Save as JPEG?\n(OK = JPEG, Cancel = PNG)');
-          var fmt = saveAsJpeg ? 'image/jpeg' : 'image/png';
-          var ext = saveAsJpeg ? 'jpg' : 'png';
-          var quality = saveAsJpeg ? 0.9 : 1.0;
+          var alt = (_savedMedia.data.alt || '').trim();
+          proposal = alt ? _sanitizeFilename(alt) : 'image-' + ts;
+          ext = fmt === 'JPEG' ? 'jpg' : 'png';
+          var propFilename = prompt('Save as:', proposal + '.' + ext);
+          if (!propFilename) return;
+
+          var mimeFmt = fmt === 'JPEG' ? 'image/jpeg' : 'image/png';
+          var quality = fmt === 'JPEG' ? 0.92 : 1.0;
           var img = new Image();
           img.onload = function() {
+            var maxDim = 4096;
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if (w > maxDim || h > maxDim) {
+              var scale = Math.min(maxDim / w, maxDim / h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
             var canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
+            canvas.width = w;
+            canvas.height = h;
             var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, w, h);
             canvas.toBlob(function(blob) {
-              _downloadFile('image.' + ext, blob, fmt);
-            }, fmt, quality);
+              _downloadFile(propFilename, blob, mimeFmt);
+              showToast('✅ Saved as ' + propFilename, 'saved', 2200);
+            }, mimeFmt, quality);
+          };
+          img.onerror = function() {
+            showToast('❌ Failed to load image', 'error', 2500);
           };
           img.src = _savedMedia.data.src;
         } else {
-          var saveAsHtml = confirm('Save as HTML table?\n(OK = HTML, Cancel = CSV)');
-          if (saveAsHtml) {
-            var htmlDoc = '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>Table</title>' +
+          if (fmt === 'HTML') {
+            proposal = 'table-' + ts;
+            ext = 'html'; mime = 'text/html;charset=utf-8';
+            var propFilename = prompt('Save as:', proposal + '.' + ext);
+            if (!propFilename) return;
+            content = '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>Table</title>' +
               '<style>body{font-family:system-ui;max-width:900px;margin:20px auto;padding:20px}' +
               'table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 10px}</style>' +
               '</head><body>' + _savedMedia.data.html + '</body></html>';
-            _downloadFile('table.html', htmlDoc, 'text/html;charset=utf-8');
+            _downloadFile(propFilename, content, mime);
+            showToast('✅ Saved as ' + propFilename, 'saved', 2200);
           } else {
+            proposal = 'table-' + ts;
+            ext = 'csv'; mime = 'text/csv;charset=utf-8';
+            var propFilename = prompt('Save as:', proposal + '.' + ext);
+            if (!propFilename) return;
             var temp = document.createElement('div');
             temp.innerHTML = _savedMedia.data.html;
             var table = temp.querySelector('table');
-            if (!table) { alert('No table found.'); return; }
+            if (!table) {
+              showToast('❌ No table found', 'error', 2500);
+              return;
+            }
             var rows = table.querySelectorAll('tr');
             var csv = '';
             rows.forEach(function(row) {
               var cells = row.querySelectorAll('td, th');
               var rowData = [];
-              cells.forEach(function(cell) { rowData.push('"' + (cell.textContent || '').replace(/"/g, '""') + '"'); });
+              cells.forEach(function(cell) {
+                rowData.push('"' + (cell.textContent || '').replace(/"/g, '""') + '"');
+              });
               csv += rowData.join(',') + '\n';
             });
-            _downloadFile('table.csv', csv, 'text/csv;charset=utf-8');
+            _downloadFile(propFilename, csv, mime);
+            showToast('✅ Saved as ' + propFilename, 'saved', 2200);
           }
         }
       }
