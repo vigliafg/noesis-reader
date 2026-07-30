@@ -7781,11 +7781,18 @@ ${htmlContent}
           var img = new Image();
           img.crossOrigin = 'Anonymous';
           img.onload = function() {
+            var maxDim = 4096;
+            var w = img.naturalWidth, h = img.naturalHeight;
+            if (w > maxDim || h > maxDim) {
+              var scale = Math.min(maxDim / w, maxDim / h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
             var canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
+            canvas.width = w;
+            canvas.height = h;
             var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0);
+            ctx.drawImage(img, 0, 0, w, h);
             try {
               resolve(canvas.toDataURL('image/png'));
             } catch (e) {
