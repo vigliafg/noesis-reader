@@ -7771,6 +7771,18 @@ ${htmlContent}
         } else {
           chunk.content = _savedMedia.data.html;
         }
+        // Deduplication: skip if identical chunk already exists
+        var isDuplicate = _collection.some(function(existing) {
+          if (existing.type !== chunk.type) return false;
+          if (chunk.type === 'img') return existing.src === chunk.src;
+          if (chunk.type === 'text') return existing.content === chunk.content && existing.color === chunk.color;
+          if (chunk.type === 'table') return existing.content === chunk.content;
+          return false;
+        });
+        if (isDuplicate) {
+          showToast('📦 Already in collection', 'saved');
+          return;
+        }
         _saveChunk(chunk);
         showToast('📦 Added to collection (' + _collection.length + ')', 'saved');
       }
