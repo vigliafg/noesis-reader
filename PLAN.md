@@ -2,69 +2,192 @@
 
 ## ✅ Completato oggi
 
-### Infrastruttura di test Puppeteer
+### Riepilogo numerico
 
-- **Debug mode `?debug=1`**: flag URL che auto-carica `test.epub` senza file picker. Nessun effetto in produzione (nessun autocaricamento, nessun duplicato DB). Loading overlay mostra "🔧 Debug: loading test.epub...".
-- **Script Puppeteer riutilizzabili**: 4 script di test che caricano il reader, navigano a spine[44] (capitolo 26 "Pain": 10 immagini, 9 tabelle), e verificano il DOM.
-- **Pattern chiave**: riacquisizione iframe dopo `rendition.display()`, `page.$()` fresh per evitare handle DOM stantii, `page.evaluate()` per chiamate dirette a funzioni JS, handler dialog centralizzato (`page.on('dialog', ...)`) per gestire `prompt()` / `confirm()`.
-- **Lesson learned**: `browser-use` agent ha bug interni (`wait_for`, `upload_file`), abbandonato in favore di Puppeteer nativo.
+| Categoria | Dettaglio |
+|---|---|
+| **Test eseguiti** | 95 (61 T1-T12 + 14 W2 + 20 W3) |
+| **Test PASS** | 95/95 ✅ |
+| **Bug fixati** | 3 (B1 canvas 4096px, W2 deduplica, W3 selezione filtri) |
+| **Script test creati** | 6 (`test_collection_T1T3.js`, `T4T6`, `T7T9`, `T10T12`, `test_W2_deduplica.js`, `test_W3_selezione.js`) |
+| **Commit noesis-reader** | 9 |
+| **Commit noesis-multi** | 5 |
 
-### Test completati — 61/61 PASS
+---
+
+## 1. INFRASTRUTTURA DI TEST
+
+### Debug Mode `?debug=1`
+- Auto-carica `test.epub` senza file picker
+- Nessun effetto in produzione (condizione `searchParams.get('debug') === '1'`)
+- Loading overlay: "🔧 Debug: loading test.epub..." (~6s)
+
+### Server HTTP
+```bash
+setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
+```
+⚠️ Se il server si blocca: `fuser -k 8765/tcp` e riavviare.
+
+### Puppeteer patterns (da AGENTS.md)
+- **Riacquisizione iframe**: dopo `rendition.display()`, l'iframe si ricarica → serve `contentFrame()` fresco
+- **`page.$()` fresh**: mai salvare handle DOM tra re-render del drawer
+- **`page.evaluate()` per funzioni JS**: chiamare `_showMediaDialog()`, `_openChunkViewer()`, etc. direttamente
+- **Handler dialog centralizzato**: `page.on('dialog', ...)` per gestire `prompt()` / `confirm()` senza race condition
+- **Test checkbox via `cb.click()`**: `cb.checked = true` NON scatena l'evento `change` → `_checkedChunkIds` non aggiornato
+
+### test.epub
+- 508 spine items, capitolo 26 "Pain" a **spine[44]** (0-based)
+- 10 immagini, 9 tabelle
+- Navigazione: `rendition.display(book.spine.items[44].href)`
+
+---
+
+## 2. TEST T1-T12 — 61/61 PASS
 
 | Script | # | Area | Risultato |
 |---|---|---|---|
-| `test_collection_T1T3.js` | 3 test | T1-T3: image, table, highlight collect | **3/3 ✅** |
-| `test_collection_T4T6.js` | 20 test | T4-T6: drawer, filtri, selezione, delete | **20/20 ✅** |
-| `test_collection_T7T9.js` | 25 test | T7-T9: viewer, export JSON/HTML/MD, import | **25/25 ✅** |
-| `test_collection_T10T12.js` | 13 test | T10-T12: persistenza, edge case, UI | **13/13 ✅** |
+| `test_collection_T1T3.js` | 3 | T1-T3: image, table, highlight collect | **3/3 ✅** |
+| `test_collection_T4T6.js` | 20 | T4-T6: drawer, filtri, selezione, delete | **20/20 ✅** |
+| `test_collection_T7T9.js` | 25 | T7-T9: viewer, export JSON/HTML/MD, import | **25/25 ✅** |
+| `test_collection_T10T12.js` | 13 | T10-T12: persistenza, edge case, UI | **13/13 ✅** |
 | **Totale** | **61** | | **61/61 ✅** |
 
-### T1-T3: Aggiunta chunk da immagine, tabella, highlight
+### Highlights
+- Export/import: 19/20 test (JSON/HTML/MD, validazione, errori, cancel)
+- Drawer: filtri tipo + capitolo, apertura/chiusura, empty state
+- Viewer: img/table/text, chiusura ✕/Esc/backdrop
+- Persistenza: chunk sopravvivono a close/reopen libro
+- Performance: 102 chunk renderizzati in 1139ms
 
-- Click su immagine → dialog → Preview → fullscreen → **Collect** → badge=1
-- Click su tabella → dialog → Preview → fullscreen → **Collect** → badge=2
-- Highlight: `_showMediaDialog('text', ...)` (bypassa evento epub.js non triggerabile da Puppeteer) → Preview → **Collect** → badge=3
+---
 
-### T4-T6: Drawer, selezione, eliminazione
+## 3. BUG FIXATI
 
-- Drawer si apre/chiude via ✕ e click fuori
-- Filtri tipo (All/Text/Images/Tables) e capitolo funzionano correttamente
-- Filtri resettati alla riapertura
-- Checkbox singolo, multiplo, Select All, Deselect
-- Cambio filtro resetta selezione
-- Eliminazione singolo chunk, Clear all con conferma, badge aggiornato
-- Persistenza delete dopo reload
-
-### T7-T9: Viewer, export, import
-
-- Viewer chunk per img, table, text con formattazione corretta
-- Chiusura viewer: ✕, Escape, backdrop click
-- Export JSON con tutti i metadati, prompt nome file, gestione cancel
-- Export HTML con immagini base64 e colori highlight preservati
-- Export MD con sintassi immagini e blocchi codice
-- Export vuoto → toast (no prompt)
-- Import JSON valido → confirm → chunk accodati + persistenza
-- Import con validazione: JSON corrotto, chunks mancanti, tipi invalidi filtrati
-- Due import consecutivi: nessuna collisione ID
-
-### T10-T12: Persistenza, edge case, UI
-
-- Chunk persistono dopo close/reopen libro (via Back to Library + riapri)
-- Delete persiste dopo close/reopen
-- Import persiste dopo close/reopen
-- 102 chunk renderizzati in 1139ms 🚀
-- Chunk duplicati permessi (by design)
-- Tabella vuota / highlight vuoto non crashano
-- Reader view nascosto correttamente in library
-- Badge consistente toolbar/hamburger
-- Dropdown Export/JSON modali
-
-### Bug fixato: B1 — Canvas 4096px cap
-
-- **File**: `index.html` — `_blobToBase64()`
-- **Problema**: immagini enormi (>4096px) causano `canvas.toDataURL()` failure, rompendo la conversione blob→base64 durante l'aggiunta alla collection.
-- **Fix**: cappato canvas a 4096px con scaling proporzionale, stesso pattern già usato in `copyMedia()` e `_doDownload()`.
+### B1 — Canvas 4096px cap in `_blobToBase64()`
+- **Problema**: immagini >4096px causano `canvas.toDataURL()` failure
+- **Fix**: cap canvas a 4096px con scaling proporzionale (pattern già usato in `copyMedia()` / `_doDownload()`)
 - **Commit**: `58a58e7` (noesis-reader), `39b5f2b` (noesis-multi)
+
+### W2 — Deduplica chunk in `_addToCollection()`
+- **Problema**: stesso contenuto poteva essere aggiunto N volte
+- **Fix**: `_collection.some()` prima di `_saveChunk()`, confronto per tipo:
+  - `img`: `src` (base64 data URL)
+  - `text`: `content` + `color`
+  - `table`: `content` (HTML)
+- **Test**: 14/14 PASS — stesso img/table bloccato, stesso text+color bloccato, colore diverso = chunk distinto
+- **Commit**: `f2940a2` (noesis-reader), `103507a` (noesis-multi)
+- **Script**: `test_W2_deduplica.js`
+
+### W3 — Selezione checkbox persistente tra filtri (v2)
+- **Problema**: `_renderCollectionList()` ricostruiva DOM → checkbox resettati a ogni cambio filtro
+- **v1 (DOM query)**: salvava checkedIds dal DOM prima del re-render. **Falliva**: i checkbox non visibili non esistono nel DOM → ID persi al secondo cambio filtro
+- **v2 (modulo persistente)**: `var _checkedChunkIds = {}` a livello modulo, aggiornato via evento `change` su ogni checkbox + sincronizzato in Select All/Deselect. Resettato in `_openCollectionDrawer()` e `_clearCollection()`.
+- **Test**: 20/20 PASS — All→Images→Tables→All→Text→All, selezione sempre preservata
+- **Lezione**: `cb.checked = true` programmatico NON scatena `change` → nei test usare `cb.click()`, nel codice aggiornare `_checkedChunkIds` esplicitamente nei handler Select All/Deselect
+- **Commit**: `341b2e0` (noesis-reader), `0d75f21` (noesis-multi)
+- **Script**: `test_W3_selezione.js`
+
+---
+
+## 4. TEST CHE RESTANO DA FARE
+
+### 🔴 Prioritari (impatto funzionale)
+
+| # | Test | Priorità | Note |
+|---|---|---|---|
+| T5.6 | Export con selezione: solo chunk checkati esportati | Alta | Flusso export selettivo mai testato |
+| T5.7 | Export senza selezione: esporta tutti | Alta | Comportamento default |
+| T10.2 | Cambio libro → collection vuota (per-book storage) | Media | Richiede 2 libri diversi |
+| T10.3 | Ritorno al primo libro → collection ripristinata | Media | Roundtrip cross-book |
+
+### 🟡 Secondari (edge case / UX)
+
+| # | Test | Priorità | Note |
+|---|---|---|---|
+| T1.4-T1.8 | Image drawer detail (hamburger badge, reopen, thumbnail, viewer) | Bassa | Flusso già coperto da T4/T7 |
+| T2.4 | Scroll orizzontale tabelle larghe | Bassa | Viewer table già testato in T7.3 |
+| T3.4 | Testo highlight preservato integralmente nel viewer | Bassa | |
+| T4.7 | Filtri combinati tipo + capitolo | Bassa | |
+| T4.11 | Drawer da hamburger menu (mobile) | Bassa | Richiede viewport mobile |
+| T7.2 | Viewer testo completo con colore highlight | Bassa | |
+| T10.6 | DB corrotto → fallback `_collection = []` | Bassa | Hard da simulare |
+| T11.3 | Immagine >10MB base64 | Bassa | Rischio ridotto da B1 (cap 4096px) |
+
+### 🟢 I/O correctness (non ancora testati)
+
+| # | Test | Note |
+|---|---|---|
+| I/O 1 | `_blobToBase64` con src null/undefined → `chunk.src = ''` | |
+| I/O 3 | Export JSON con prompt cancel → nessun download | |
+| I/O 5 | Persistenza DB: `currentBookId = null` → `_saveCollectionToDB()` ritorna subito | |
+
+---
+
+## 5. LEZIONI IMPARATE
+
+1. **`browser-use` agent inaffidabile** — bug in `wait_for` e `upload_file`. Puppeteer nativo è più stabile e deterministico.
+2. **Handle DOM stantii** — dopo `_renderCollectionList()`, `rendition.display()`, o `innerHTML = ''`, tutti gli handle Puppeteer vanno ri-acquisiti con `page.$()` fresco.
+3. **`cb.checked = true` non scatena `change`** — sia nel codice (Select All) che nei test (Puppeteer). Usare `cb.click()` o aggiornare lo stato esplicitamente.
+4. **W3 v1→v2**: il DOM query approach funziona solo per 1 livello di filtri. Per N cambi filtro serve stato persistente a livello modulo (`_checkedChunkIds`).
+5. **Server HTTP**: `setsid python3 -m http.server` è il modo più affidabile. Se il server si blocca, `fuser -k 8765/tcp` e riavviare.
+6. **Debug mode + page.reload()** = nuovo libro → collection persa. Per test di persistenza usare Back to Library + riapri lo stesso libro.
+7. **Dialog `prompt()` destabilizza Puppeteer** — dopo un `prompt()`, i successivi click DOM possono fallire. Per export/import test, usare `page.evaluate()` per chiamare direttamente le funzioni JS.
+
+---
+
+## 6. COMMIT DI OGGI
+
+### noesis-reader (9 commit)
+
+| Commit | Messaggio |
+|---|---|
+| `0be0aec` | feat: debug mode `?debug=1` auto-loads test.epub |
+| `21fc406` | docs: test infrastructure AGENTS.md + T1-T3 script |
+| `091934d` | test: T4-T6 drawer, selection, deletion 20/20 ✅ |
+| `80c952b` | test: T7-T9 viewer, export, import 25/25 ✅ |
+| `47381d8` | test: T10-T12 persistence, edge, UI 13/13 ✅ |
+| `58a58e7` | fix: B1 — cap canvas 4096px in `_blobToBase64()` |
+| `62e667a` | docs: PLAN.md resoconto 30 Luglio |
+| `f2940a2` | feat: W2 — deduplica chunk in `_addToCollection()` |
+| `755c764` | test: W2 deduplica — 14/14 PASS |
+| `3f9c8d8` | fix: W3 v1 — preserva selezione checkbox (DOM query) |
+| `341b2e0` | fix: W3 v2 — `_checkedChunkIds` persistente + Select All/Deselect sync |
+
+### noesis-multi (5 commit)
+
+| Commit | Messaggio |
+|---|---|
+| `167e676` | feat: debug mode `?debug=1` |
+| `39b5f2b` | fix: B1 — cap canvas 4096px |
+| `103507a` | feat: W2 — deduplica chunk |
+| `3788115` | fix: W3 v1 — preserva selezione checkbox |
+| `0d75f21` | fix: W3 v2 — `_checkedChunkIds` persistente |
+
+---
+
+## 7. PIANO — 31 Luglio 2026
+
+### Da completare (in ordine)
+
+1. **T5.6-T5.7**: test export con selezione (solo chunk checkati)
+2. **Aggiornare PLAN.md** con esito test rimanenti
+3. **Valutare prossimo fix**:
+   - W4: fallback img viewer senza src
+   - W5: export HTML con resize immagini (ridurre file size)
+   - M1: export ZIP con HTML + cartella `images/`
+   - W8: undo delete (soft delete con `_trash[]`)
+
+### Script test disponibili
+
+```bash
+# Eseguire dalla root del progetto, con server HTTP attivo su :8765
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js
+```
 
 ---
 

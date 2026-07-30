@@ -190,6 +190,108 @@ NODE_PATH=/home/vigliafg/.nvm/versions/node/v24.18.0/lib/node_modules \
   node test_collection_T1T3.js
 ```
 
+### Test Script: `test_W2_deduplica.js`
+
+Tests W2 deduplication fix (14 tests): same image/table collected twice → badge stays 1/2, same text+color blocked, different color = new chunk.
+
+**Flow:**
+1. Load reader + navigate to chapter 26
+2. Collect image → badge=1. Collect same image → badge still 1 (blocked)
+3. Collect table → badge=2. Collect same table → badge still 2 (blocked)
+4. Text dedup via `window._showMediaDialog('text', ...)` → Preview → Collect
+   - Same text+color → blocked
+   - Different color → added as new chunk
+
+### Test Script: `test_W3_selezione.js`
+
+Tests W3 checkbox selection persistence (20 tests): selection survives filter changes.
+
+**Flow:**
+1. Collect image + table (2 chunks)
+2. Open drawer, check both checkboxes → "2 selected"
+3. Filter → Images: 1 visible, 1 checked ✅
+4. Filter → Tables: 1 visible, 1 checked ✅
+5. Back to All: 2 visible, 2 checked ✅
+6. Filter → Text (no text chunks): 0 visible, 0 checked
+7. Back to All: 2 visible, 2 checked ✅ (restored even after empty filter)
+
+### Critical Pattern: cb.checked vs cb.click()
+
+**`cb.checked = true` does NOT fire the `change` event.** This means:
+- In **test scripts**: use `cb.click()` to toggle checkboxes (fires change → updates `_checkedChunkIds`)
+- In **Select All/Deselect handlers**: update `_checkedChunkIds` explicitly alongside setting `cb.checked`
+
+```javascript
+// WRONG in tests — _checkedChunkIds not updated
+await page.evaluate(() => {
+  document.querySelectorAll('.coll-checkbox input').forEach(cb => cb.checked = true);
+});
+
+// CORRECT in tests
+await page.evaluate(() => {
+  document.querySelectorAll('.coll-checkbox input').forEach(cb => { if (!cb.checked) cb.click(); });
+});
+
+// CORRECT in Select All handler
+cb.checked = true;
+var item = cb.closest('.coll-item');
+if (item) _checkedChunkIds[item.dataset.chunkId] = true;
+```
+
+### W3 Architecture: _checkedChunkIds
+
+Module-level persistent object (not DOM query) for checkbox state:
+
+```
+var _checkedChunkIds = {};   // Defined alongside _collFilterType
+
+// On checkbox change:
+if (this.checked) _checkedChunkIds[c.id] = true;
+else delete _checkedChunkIds[c.id];
+
+// On re-render:
+cb.checked = !!_checkedChunkIds[c.id];
+
+// Reset on:
+// - _openCollectionDrawer(): _checkedChunkIds = {};
+// - _clearCollection(): _checkedChunkIds = {};
+```
+
+This survives any number of filter changes because IDs of hidden checkboxes are preserved in the object even when their DOM elements don't exist.
+
+### Dialog Handling in Puppeteer
+
+**prompt() / confirm() destabilize the page** — after a native dialog, subsequent `page.click()` calls may fail silently.
+
+**Solution for export/import tests**: use `page.evaluate()` to call JS functions directly, bypassing DOM clicks:
+```javascript
+// Instead of clicking Export button → dialog → handler
+await page.evaluate(() => {
+  _exportCollectionJSON();  // Direct call, no DOM interaction needed
+});
+```
+
+**General dialog handler**: register once at page creation:
+```javascript
+page.on('dialog', async dialog => { await dialog.dismiss(); });
+```
+
+### Server Startup
+
+The HTTP server must be running on port 8765 before any test script. If it hangs or the port is busy:
+
+```bash
+# Kill any process on port 8765
+fuser -k 8765/tcp
+
+# Start server (detached)
+setsid python3 -m http.server 8765 -d /home/vigliafg/Documenti/GitHub/noesis-reader > /dev/null 2>&1 &
+
+# Verify
+curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/index.html
+# Expected: 200
+```
+
 ### Known Issues
 
 | Issue | Impact | Workaround |
@@ -198,3 +300,7 @@ NODE_PATH=/home/vigliafg/.nvm/versions/node/v24.18.0/lib/node_modules \
 | epub.js `selected` event not triggered by Puppeteer | Highlight popup won't appear | Call `window._showMediaDialog()` directly |
 | `contentFrame()` stale after navigation | Wrong/no content in iframe | Re-acquire iframe + frame after `rendition.display()` |
 | `test.epub` first page is cover (no tables/text) | T2/T3 skip on default load | Navigate to chapter 26 "Pain" (spine[44]) |
+| `cb.checked = true` doesn't fire `change` event | `_checkedChunkIds` not updated | Use `cb.click()` in tests, update `_checkedChunkIds` explicitly in Select All |
+| `prompt()`/`confirm()` destabilize Puppeteer page | Subsequent DOM clicks fail silently | Use `page.evaluate()` to call JS functions directly |
+| Server port 8765 can hang | Tests time out | `fuser -k 8765/tcp` then restart with `setsid` |
+| `page.reload()` with debug mode = new book instance | Collection lost in persist tests | Use Back to Library + re-open same book instead |
