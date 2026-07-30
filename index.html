@@ -7436,6 +7436,14 @@ ${htmlContent}
         return;
       }
 
+      // Preserve checkbox selection across re-renders (filter changes)
+      var checkedIds = [];
+      var currentChecked = list.querySelectorAll('.coll-checkbox input[type="checkbox"]:checked');
+      currentChecked.forEach(function(cb) {
+        var item = cb.closest('.coll-item');
+        if (item) checkedIds.push(item.dataset.chunkId);
+      });
+
       list.innerHTML = '';
       filtered.forEach(function(c) {
         var item = document.createElement('div');
@@ -7448,6 +7456,7 @@ ${htmlContent}
         cbWrap.addEventListener('click', function(e) { e.stopPropagation(); });
         var cb = document.createElement('input');
         cb.type = 'checkbox';
+        cb.checked = (checkedIds.indexOf(String(c.id)) !== -1);
         cb.addEventListener('change', function() { _updateCollSelBadge(); });
         cbWrap.appendChild(cb);
         item.appendChild(cbWrap);
