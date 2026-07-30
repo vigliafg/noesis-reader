@@ -1,3 +1,73 @@
+# Resoconto — 30 Luglio 2026
+
+## ✅ Completato oggi
+
+### Infrastruttura di test Puppeteer
+
+- **Debug mode `?debug=1`**: flag URL che auto-carica `test.epub` senza file picker. Nessun effetto in produzione (nessun autocaricamento, nessun duplicato DB). Loading overlay mostra "🔧 Debug: loading test.epub...".
+- **Script Puppeteer riutilizzabili**: 4 script di test che caricano il reader, navigano a spine[44] (capitolo 26 "Pain": 10 immagini, 9 tabelle), e verificano il DOM.
+- **Pattern chiave**: riacquisizione iframe dopo `rendition.display()`, `page.$()` fresh per evitare handle DOM stantii, `page.evaluate()` per chiamate dirette a funzioni JS, handler dialog centralizzato (`page.on('dialog', ...)`) per gestire `prompt()` / `confirm()`.
+- **Lesson learned**: `browser-use` agent ha bug interni (`wait_for`, `upload_file`), abbandonato in favore di Puppeteer nativo.
+
+### Test completati — 61/61 PASS
+
+| Script | # | Area | Risultato |
+|---|---|---|---|
+| `test_collection_T1T3.js` | 3 test | T1-T3: image, table, highlight collect | **3/3 ✅** |
+| `test_collection_T4T6.js` | 20 test | T4-T6: drawer, filtri, selezione, delete | **20/20 ✅** |
+| `test_collection_T7T9.js` | 25 test | T7-T9: viewer, export JSON/HTML/MD, import | **25/25 ✅** |
+| `test_collection_T10T12.js` | 13 test | T10-T12: persistenza, edge case, UI | **13/13 ✅** |
+| **Totale** | **61** | | **61/61 ✅** |
+
+### T1-T3: Aggiunta chunk da immagine, tabella, highlight
+
+- Click su immagine → dialog → Preview → fullscreen → **Collect** → badge=1
+- Click su tabella → dialog → Preview → fullscreen → **Collect** → badge=2
+- Highlight: `_showMediaDialog('text', ...)` (bypassa evento epub.js non triggerabile da Puppeteer) → Preview → **Collect** → badge=3
+
+### T4-T6: Drawer, selezione, eliminazione
+
+- Drawer si apre/chiude via ✕ e click fuori
+- Filtri tipo (All/Text/Images/Tables) e capitolo funzionano correttamente
+- Filtri resettati alla riapertura
+- Checkbox singolo, multiplo, Select All, Deselect
+- Cambio filtro resetta selezione
+- Eliminazione singolo chunk, Clear all con conferma, badge aggiornato
+- Persistenza delete dopo reload
+
+### T7-T9: Viewer, export, import
+
+- Viewer chunk per img, table, text con formattazione corretta
+- Chiusura viewer: ✕, Escape, backdrop click
+- Export JSON con tutti i metadati, prompt nome file, gestione cancel
+- Export HTML con immagini base64 e colori highlight preservati
+- Export MD con sintassi immagini e blocchi codice
+- Export vuoto → toast (no prompt)
+- Import JSON valido → confirm → chunk accodati + persistenza
+- Import con validazione: JSON corrotto, chunks mancanti, tipi invalidi filtrati
+- Due import consecutivi: nessuna collisione ID
+
+### T10-T12: Persistenza, edge case, UI
+
+- Chunk persistono dopo close/reopen libro (via Back to Library + riapri)
+- Delete persiste dopo close/reopen
+- Import persiste dopo close/reopen
+- 102 chunk renderizzati in 1139ms 🚀
+- Chunk duplicati permessi (by design)
+- Tabella vuota / highlight vuoto non crashano
+- Reader view nascosto correttamente in library
+- Badge consistente toolbar/hamburger
+- Dropdown Export/JSON modali
+
+### Bug fixato: B1 — Canvas 4096px cap
+
+- **File**: `index.html` — `_blobToBase64()`
+- **Problema**: immagini enormi (>4096px) causano `canvas.toDataURL()` failure, rompendo la conversione blob→base64 durante l'aggiunta alla collection.
+- **Fix**: cappato canvas a 4096px con scaling proporzionale, stesso pattern già usato in `copyMedia()` e `_doDownload()`.
+- **Commit**: `58a58e7` (noesis-reader), `39b5f2b` (noesis-multi)
+
+---
+
 # Resoconto — 27 Luglio 2026
 
 ## ✅ Completato oggi
