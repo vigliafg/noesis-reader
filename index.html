@@ -5453,6 +5453,7 @@ ${htmlContent}
 
     function _clearCollection() {
       _collection = [];
+      _checkedChunkIds = {};
       _saveCollectionToDB();
       _updateCollectionBadge();
     }
@@ -5465,6 +5466,7 @@ ${htmlContent}
     // ── Collection filters state ──
     var _collFilterType = 'all';
     var _collFilterChapter = 'all';
+    var _checkedChunkIds = {}; // Persist checkbox selection across filter re-renders
 
     function _getSelectedOrAll() {
       if (!_collection.length) return [];
@@ -7370,9 +7372,10 @@ ${htmlContent}
       const headerH = header ? header.getBoundingClientRect().height : 0;
       drawer.style.setProperty('--coll-header-height', headerH + 'px');
       drawer.classList.add('coll-open');
-      // Reset filters
+      // Reset filters and selection
       _collFilterType = 'all';
       _collFilterChapter = 'all';
+      _checkedChunkIds = {};
       var activeBtn = document.querySelector('.coll-ft-btn.active');
       if (activeBtn) activeBtn.classList.remove('active');
       var allBtn = document.querySelector('.coll-ft-btn[data-type="all"]');
@@ -7436,14 +7439,7 @@ ${htmlContent}
         return;
       }
 
-      // Preserve checkbox selection across re-renders (filter changes)
-      var checkedIds = [];
-      var currentChecked = list.querySelectorAll('.coll-checkbox input[type="checkbox"]:checked');
-      currentChecked.forEach(function(cb) {
-        var item = cb.closest('.coll-item');
-        if (item) checkedIds.push(item.dataset.chunkId);
-      });
-
+      // Restore checkbox state from persistent _checkedChunkIds
       list.innerHTML = '';
       filtered.forEach(function(c) {
         var item = document.createElement('div');
@@ -7456,8 +7452,12 @@ ${htmlContent}
         cbWrap.addEventListener('click', function(e) { e.stopPropagation(); });
         var cb = document.createElement('input');
         cb.type = 'checkbox';
-        cb.checked = (checkedIds.indexOf(String(c.id)) !== -1);
-        cb.addEventListener('change', function() { _updateCollSelBadge(); });
+        cb.checked = !!_checkedChunkIds[c.id];
+        cb.addEventListener('change', function() {
+          if (this.checked) _checkedChunkIds[c.id] = true;
+          else delete _checkedChunkIds[c.id];
+          _updateCollSelBadge();
+        });
         cbWrap.appendChild(cb);
         item.appendChild(cbWrap);
 
@@ -8128,11 +8128,19 @@ ${htmlContent}
 
       // ── Select All / Deselect ──
       document.getElementById('collSelectAllBtn').addEventListener('click', function() {
-        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) { cb.checked = true; });
+        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) {
+          cb.checked = true;
+          var item = cb.closest('.coll-item');
+          if (item) _checkedChunkIds[item.dataset.chunkId] = true;
+        });
         _updateCollSelBadge();
       });
       document.getElementById('collDeselectAllBtn').addEventListener('click', function() {
-        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+        document.querySelectorAll('#collList .coll-checkbox input[type="checkbox"]').forEach(function(cb) {
+          cb.checked = false;
+          var item = cb.closest('.coll-item');
+          if (item) delete _checkedChunkIds[item.dataset.chunkId];
+        });
         _updateCollSelBadge();
       });
 
