@@ -7977,6 +7977,25 @@ ${htmlContent}
     })();
 
     window.addEventListener('DOMContentLoaded', () => {
+      // ── Debug mode: auto-load test.epub (bypass file picker for testing) ──
+      if (new URL(location.href).searchParams.get('debug') === '1') {
+        (async () => {
+          try {
+            const resp = await fetch('test.epub');
+            if (!resp.ok) throw new Error('test.epub not found (HTTP ' + resp.status + ')');
+            const blob = await resp.blob();
+            const file = new File([blob], 'test.epub', { type: 'application/epub+zip' });
+            showLoading('🔧 Debug: loading test.epub...');
+            const bookRecord = await saveBookToDB(file);
+            hideLoading();
+            await openBookFromLibrary(bookRecord);
+          } catch (e) {
+            console.error('Debug auto-load failed:', e);
+            hideLoading();
+          }
+        })();
+      }
+
       // Init elements
       const libraryInput = document.getElementById('libraryInput');
       const floatingPrevBtn = document.getElementById('floatingPrevBtn');
