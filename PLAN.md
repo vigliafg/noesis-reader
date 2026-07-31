@@ -173,48 +173,87 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 |---|---|
 | **Test totali** | 126 (61 T1-T12 + 14 W2 + 20 W3 + 10 remaining + 14 secondary + 7 M1) |
 | **Test PASS** | 126/126 ✅ |
-| **Bug fixati totali** | 7 (B1, W2, W3, W4, W5, M1, ZIP Extract) |
+| **Bug fixati totali** | 8 (B1, W2, W3, W4, W5, M1, ZIP Extract + brand anim visibility) |
 | **Script test creati** | 9 |
-| **Commit oggi** | 4 |
+| **Commit totali oggi** | 18 (14 noesis-reader + 4 noesis-multi) |
 
 ---
 
-### Commit di oggi
+### Commit di oggi — noesis-reader
 
-| Commit | Messaggio |
-|---|---|
-| `7047d70` | feat: W4+W5 — placeholder img viewer senza src + resize immagini export HTML (1200px JPEG) |
-| `8e9aee2` | feat: M1 — export ZIP con HTML + cartella images/ |
-| `8863131` | test: M1 — ZIP export verification (7/7 PASS) |
-| `616d4a0` | feat: aggiunto formato ZIP al menu Extract della toolbar principale |
+| # | Commit | Area |
+|---|---|---|
+| 1 | `7047d70` | feat: W4+W5 — placeholder img viewer + resize export HTML |
+| 2 | `8e9aee2` | feat: M1 — export ZIP con HTML + images/ |
+| 3 | `8863131` | test: M1 ZIP export (7/7 PASS) |
+| 4 | `616d4a0` | feat: ZIP nel menu Extract toolbar |
+| 5 | `dd807af` | docs: resoconto prima parte 31 Luglio |
+| 6 | `cc04b14` | docs: propagazione Collection in standby |
+| 7 | `47cdc8f` | refactor: rimosso doppio trigger Display (👁) |
+| 8 | `2db2b4a` | feat: touch target Display menu mobile (44px) |
+| 9 | `fd17108` | fix: swatch temi 80×52px mobile |
+| 10 | `3fabcdb` | feat: aumentate dimensioni Display desktop |
+| 11 | `b0dda19` | feat: touch target Navigate + Extract mobile |
+| 12 | `0e75756` | feat: aumentate dimensioni Navigate + Extract desktop |
+| 13 | `9880089` | chore: commento displayBtn obsoleto |
+| 14 | `a2d66e2` | chore: rimosso branding "Noesis" vecchio |
+| 15 | `a04245d` | feat: brand animato "Noesis reader" (3 anim casuali) |
+| 16 | `6c2d7f6` | tweak: brand font-size +2px |
+| 17 | `03a5b64` | fix: brand visibile al primo load (opacity:0 default) |
+| 18 | `3b54cb2` | fix: anim 19 reader ora visibile (opacity in keyframe) |
+| 19 | `9f4ffdc` | tweak: brand mobile font-size +2px |
+| 20 | `ef023e9` | tweak: brand desktop font-size +2px |
+
+### Commit di oggi — noesis-multi
+
+| # | Commit | Area |
+|---|---|---|
+| 1 | `b4ff019` | propagate: fix UI dropdown (6 commit) +304/-160 |
+| 2 | `fd87686` | propagate: brand animato (4 commit) +284/-4 |
+| 3 | `7014970` | propagate: brand font-size +2px mobile/desktop |
 
 ---
 
-### Fix implementati oggi
+### Fix implementati oggi (parte 1 — mattina)
 
 | # | Fix | Descrizione |
 |---|---|---|
 | **W4** | Fallback img viewer | Placeholder `cv-placeholder` quando `chunk.src` è vuoto |
-| **W5** | Resize export HTML | `_resizeBase64Image` (max 1200px, JPEG 0.85), `_exportCollectionHTML` async con `Promise.all` |
-| **M1** | Export ZIP collezioni | `_exportCollectionZIP()`: ZIP con `index.html` + `images/` (JSZip) |
-| **ZIP Extract** | ZIP nella toolbar Extract | Bottone `data-fmt="zip"`, `_extractChapterZip()` per capitolo intero |
+| **W5** | Resize export HTML | `_resizeBase64Image` (max 1200px, JPEG 0.85), `Promise.all` |
+| **M1** | Export ZIP collezioni | ZIP con `index.html` + `images/` (JSZip) |
+| **ZIP Extract** | ZIP nella toolbar Extract | Bottone `data-fmt="zip"`, `_extractChapterZip()` capitolo intero |
+
+### Miglioramenti UI (parte 2 — pomeriggio)
+
+| Area | Modifiche |
+|---|---|
+| **Menu Display** | Rimosso doppio trigger 👁, touch target 44px mobile, pulsanti 32px desktop |
+| **Menu Navigate** | min-height 44px mobile, font 14px desktop |
+| **Menu Extract** | Bottoni formato 44px mobile, padding aumentato desktop |
+| **Swatch temi** | 80×52px mobile, 50×36px desktop |
+| **Branding** | Rimosso vecchio "📚 NOESIS", sostituito con animazione casuale |
+
+### Brand animato "Noesis reader"
+
+- **3 animazioni casuali** ad ogni apertura library (primo load + ritorno dal reader)
+  - 17: Up + Down ("Noesis" scende, "reader" sale)
+  - 19: Ink + Spotlight ("Noesis" sfocato→nitido, "reader" spotlight)
+  - 30: Shake + Settle ("Noesis" vibra, "reader" calmo)
+- **Posizionamento**: desktop sinistra, mobile centro (`position: absolute`)
+- **Font**: 19px/17px desktop, 15px/14px mobile
+- **Trigger**: `_triggerBrandAnim()` in `showLibrary()` + a fine script
+- **File showcase**: `noesis_brand_animations.html` (40 animazioni totali)
 
 ---
 
-### Test completati oggi
+### Test completati oggi (parte 1)
 
 | Script | Test | Risultato |
 |---|---|---|
 | `test_remaining.js` | T5.6, T5.7, T10.2, T10.3, I/O 3, I/O 5 | **10/10 ✅** |
 | `test_secondary.js` | T1.4-T1.8, T2.4, T3.4, T4.7, T4.11, T7.2, T10.6, T11.3 | **14/14 ✅** |
-| `test_M1_zip.js` | M1.1-M1.6: funzione ZIP, bottone, handler, blob valido, regression MD | **7/7 ✅** |
+| `test_M1_zip.js` | M1.1-M1.6 | **7/7 ✅** |
 | **Totale** | | **31/31 ✅** |
-
----
-
-### Note
-- W4+W5+M1+ZIP Extract non propagati a noesis-multi: il codice Collection non è presente nei file target
-- `_exportCollectionMD` è stato accidentalmente cancellato e ripristinato durante W5
 
 ---
 
@@ -225,7 +264,8 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 
 ### In standby / Forse in futuro
 
-- **Propagazione Collection a noesis-multi** (4 file: `noesis816.html`, `noesis816-full.html`, `noesis816-reader.html`, `noesis816-full-reader.html`). In standby per decisione del 31 Luglio — i file target non contengono il codice Collection, la propagazione richiederebbe un merge sostanziale. Da rivalutare in futuro.
+- **Propagazione Collection a noesis-multi** — i file target non contengono il codice Collection. Da rivalutare.
+- **M2**: export collezione come EPUB
 
 ### Script test disponibili
 
