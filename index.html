@@ -4025,6 +4025,7 @@
               <button class="extract-fmt-btn" data-fmt="md">MD</button>
               <button class="extract-fmt-btn" data-fmt="epub">EPUB</button>
               <button class="extract-fmt-btn" data-fmt="pdf">PDF 🖨️</button>
+              <button class="extract-fmt-btn" data-fmt="zip">ZIP</button>
             </div>
             <div class="extract-divider"></div>
             <div class="extract-menu-item" data-mode="current">
@@ -5127,11 +5128,56 @@ ${htmlContent}
         case 'pdf':
           _printPDF(htmlContent);
           break;
+        case 'zip':
+          _extractChapterZip(htmlContent, bookName, chapterName, timestamp);
+          break;
       }
     }
 
     // ── Download automatico file HTML (no dialog, per coppie automatiche) ────
-    // ── Current extract format (html|txt|md|epub|pdf) ────────────────────
+    // ── Extract chapter as ZIP: HTML + images/ folder ─────────────
+    async function _extractChapterZip(htmlContent, bookName, chapterName, timestamp) {
+      var sBook = bookName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      var sCh = chapterName.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 40);
+      var filename = 'noesis-zip-' + sBook + '__' + sCh + '__' + timestamp + '.zip';
+
+      var zip = new JSZip();
+      var imgIndex = 0;
+
+      // Parse images from HTML and replace with local paths
+      var temp = document.createElement('div');
+      temp.innerHTML = htmlContent;
+      var imgs = temp.querySelectorAll('img[src^="data:image/"]');
+
+      for (var i = 0; i < imgs.length; i++) {
+        var src = imgs[i].getAttribute('src');
+        var match = src.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
+        if (!match) continue;
+        var ext = (match[1] === 'jpeg') ? 'jpg' : match[1];
+        var base64Data = match[2];
+        var imgFilename = 'image_' + (++imgIndex) + '.' + ext;
+        try {
+          zip.file('images/' + imgFilename, base64Data, { base64: true });
+          imgs[i].setAttribute('src', 'images/' + imgFilename);
+        } catch(e) {
+          // leave embedded if ZIP fails
+        }
+      }
+
+      zip.file('index.html', temp.innerHTML);
+
+      try {
+        showToast('📦 Creating ZIP...', 'saving', 1000);
+        var blob = await zip.generateAsync({ type: 'blob' });
+        _downloadFile(filename, blob, 'application/zip');
+        showToast('📦 ZIP exported (' + imgIndex + ' images)', 'saved', 2500);
+      } catch(e) {
+        showToast('❌ Failed to create ZIP', 'error', 3000);
+        console.warn('ZIP extract failed:', e);
+      }
+    }
+
+    // ── Current extract format (html|txt|md|epub|pdf|zip) ─────────
     let _extractFormat = 'html-clean';
 
     // ── Generic file download helper ─────────────────────────────────────
