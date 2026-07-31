@@ -164,6 +164,58 @@
       gap: 8px;
     }
 
+    /* ── Brand animation container ── */
+    #libBrand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.35em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .lib-brand-noesis {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 15px;
+      font-weight: 600;
+      font-style: italic;
+      color: white;
+      letter-spacing: 0.03em;
+    }
+    .lib-brand-reader {
+      font-family: 'system-ui', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Brand keyframes (3 animations, random) ── */
+    /* 17: Up + Down */
+    @keyframes libBr17N { 0%{opacity:0;transform:translateY(-10px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes libBr17R { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+    .lib-br-17 .lib-brand-noesis { animation: libBr17N 3s ease-out both; }
+    .lib-br-17 .lib-brand-reader { animation: libBr17R 3s ease-out both; }
+    /* 19: Ink + Spotlight */
+    @keyframes libBr19N { 0%{opacity:0;filter:blur(6px)} 100%{opacity:1;filter:blur(0)} }
+    @keyframes libBr19R { 0%{clip-path:inset(0 100% 0 0)} 100%{clip-path:inset(0 0 0 0)} }
+    .lib-br-19 .lib-brand-noesis { animation: libBr19N 3s ease-out both; }
+    .lib-br-19 .lib-brand-reader { clip-path:inset(0 100% 0 0); animation: libBr19R 3s ease-out both; }
+    /* 30: Shake + Settle */
+    @keyframes libBr30N { 0%{opacity:0;transform:translateX(0)} 15%{opacity:.5;transform:translateX(-6px)} 30%{opacity:.8;transform:translateX(5px)} 45%{opacity:1;transform:translateX(-3px)} 60%{opacity:1;transform:translateX(1px)} 100%{opacity:1;transform:translateX(0)} }
+    @keyframes libBr30R { 0%{opacity:0} 65%{opacity:0} 85%{opacity:.7} 100%{opacity:1} }
+    .lib-br-30 .lib-brand-noesis { animation: libBr30N 3s ease-out both; }
+    .lib-br-30 .lib-brand-reader { animation: libBr30R 3s ease-out both; }
+
+    /* ── Mobile: brand centered in header ── */
+    @media (max-width: 600px) {
+      #libBrand {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .lib-brand-noesis { font-size: 11px; }
+      .lib-brand-reader { font-size: 10px; }
+    }
+
     /* ── Unified Library Header Buttons (flat, borderless, text only) ── */
     .lib-header-btn {
       padding: 6px 14px;
@@ -3790,6 +3842,8 @@
       <div class="library-header-left">
         <!-- Hamburger button (mobile only) — positioned at extreme left -->
         <button id="hamburgerBtnLib" class="lib-header-btn" aria-label="Menu" title="Menu" style="display:none;">☰</button>
+        <!-- Brand: animazione casuale ad ogni apertura -->
+        <span id="libBrand"><span class="lib-brand-noesis">Noesis</span><span class="lib-brand-reader">reader</span></span>
       </div>
       <div class="library-header-right">
         <!-- ADD BOOKS -->
@@ -4933,6 +4987,20 @@
       _hideDisplaySavePrompt();
       readerView.classList.add('hidden');
       libraryView.classList.remove('hidden');
+
+      // ── Random brand animation ──
+      (function _triggerBrandAnim() {
+        var brand = document.getElementById('libBrand');
+        if (!brand) return;
+        // Remove any previous animation class
+        brand.classList.remove('lib-br-17', 'lib-br-19', 'lib-br-30');
+        // Force reflow to restart animation
+        void brand.offsetWidth;
+        // Pick random animation
+        var pick = Math.floor(Math.random() * 3);
+        var cls = pick === 0 ? 'lib-br-17' : (pick === 1 ? 'lib-br-19' : 'lib-br-30');
+        brand.classList.add(cls);
+      })();
 
       // Save annotations before resetting
       if (currentBookId && readerHighlights.length > 0) {
