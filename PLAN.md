@@ -167,27 +167,83 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 
 ## 7. PIANO — 31 Luglio 2026
 
-### Da completare (in ordine)
+### ✅ Completato oggi
 
-1. **T5.6-T5.7**: test export con selezione (solo chunk checkati)
-2. **Aggiornare PLAN.md** con esito test rimanenti
-3. **Valutare prossimo fix**:
-   - W4: fallback img viewer senza src
-   - W5: export HTML con resize immagini (ridurre file size)
+#### Test rimanenti — 10/10 PASS
+
+| Test | Descrizione | Risultato |
+|---|---|---|
+| T5.6 | Export con selezione: solo chunk checkati esportati | ✅ PASS |
+| T5.6b | Export JSON contiene count e chunks array corretti | ✅ PASS |
+| T5.7 | Export senza selezione: esporta tutti | ✅ PASS |
+| T5.7b | Export JSON completo: count=4, chunks.length=4 | ✅ PASS |
+| T10.2 | Cambio libro → collection vuota (per-book storage) | ✅ PASS |
+| T10.3 | Ritorno al primo libro → collection ripristinata (4 chunk) | ✅ PASS |
+| I/O 3 | Tutti i chunk hanno type valido (img/text/table) | ✅ PASS |
+| I/O 5 | `_saveCollectionToDB` non crasha con bookId valido | ✅ PASS |
+| I/O 5b | `_saveCollectionToDB` ha guard `currentBookId` (code-verified) | ✅ PASS |
+| Setup | 4 chunk creati correttamente | ✅ PASS |
+
+**Script**: `test_remaining.js`
+
+#### Test secondari — 14/14 PASS
+
+| Test | Descrizione | Risultato |
+|---|---|---|
+| T1.4 | Hamburger badge mostra conteggio corretto | ✅ PASS |
+| T1.6 | Riapertura drawer preserva tutti gli item | ✅ PASS |
+| T1.7 | Thumbnail immagine nel drawer con src base64 (930 chars) | ✅ PASS |
+| T1.8 | Viewer immagine mostra img con autofit | ✅ PASS |
+| T2.4 | Viewer tabella: cv-table-wrap con scroll (3013×1264px) | ✅ PASS |
+| T3.4 | Testo preservato integralmente nel viewer (87 chars) | ✅ PASS |
+| T7.2 | Viewer testo: bordo sinistro giallo per highlight | ✅ PASS |
+| T4.7 | Filtri combinati tipo + capitolo entrambi attivi | ✅ PASS |
+| T4.11 | Hamburger Collection item accessibile in mobile | ✅ PASS |
+| T10.6 | `_loadCollectionFromDB` ha try/catch + fallback `[]` | ✅ PASS |
+| T10.6b | DB corrotto → `_collection = []` senza crash | ✅ PASS |
+| T10.6c | Collection ripristinata dopo simulazione errore DB | ✅ PASS |
+| T11.3 | Canvas 4096px cap verificato nel fix B1 (commit 58a58e7) | ✅ PASS |
+| Setup | 3 chunk raccolti (image + table + text) | ✅ PASS |
+
+**Script**: `test_secondary.js`
+
+### Da completare
+
+1. ~~T5.6-T5.7: test export con selezione~~ ✅ FATTO
+2. ~~Aggiornare PLAN.md~~ ✅ FATTO
+3. ~~Valutare prossimo fix~~ → **W4+W5 IMPLEMENTATI** ✅
+   - ~~W4: fallback img viewer senza src~~ ✅ FATTO (placeholder + CSS)
+   - ~~W5: export HTML con resize immagini (1200px max, JPEG 0.85)~~ ✅ FATTO
    - M1: export ZIP con HTML + cartella `images/`
    - W8: undo delete (soft delete con `_trash[]`)
+
+**Note**: W4+W5 non propagati a noesis-multi — il codice Collection non è presente nei file target.
 
 ### Script test disponibili
 
 ```bash
-# Eseguire dalla root del progetto, con server HTTP attivo su :8765
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js
 NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_remaining.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_secondary.js
 ```
+
+### Riepilogo numerico aggiornato
+
+| Categoria | Dettaglio |
+|---|---|
+| **Test totali eseguiti** | 119 (61 T1-T12 + 14 W2 + 20 W3 + 10 remaining + 14 secondary) |
+| **Test PASS** | 119/119 ✅ |
+| **Bug fixati** | 3 (B1 canvas 4096px, W2 deduplica, W3 selezione filtri) |
+| **Script test creati** | 8 |
+
+---
+
+## 7. PIANO — 31 Luglio 2026 (originale)
 
 ---
 

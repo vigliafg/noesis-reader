@@ -1383,6 +1383,24 @@
       display: block;
       margin: 0 auto;
     }
+    .coll-viewer-content .cv-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: #6b7280;
+    }
+    .coll-viewer-content .cv-placeholder i {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: 12px;
+    }
+    .coll-viewer-content .cv-placeholder p {
+      margin: 0;
+      font-size: 14px;
+      color: #9ca3af;
+    }
     .coll-viewer-content .cv-text {
       color: #e5e7eb;
       font-size: 18px;
@@ -5552,9 +5570,46 @@ ${htmlContent}
       reader.readAsText(file);
     }
 
-    function _exportCollectionHTML() {
+    // ── Image resizer for export (reduces base64 bloat) ───────────────
+    // Converts to JPEG to shrink file size; PNG transparency is lost on resize.
+    function _resizeBase64Image(src, maxDim) {
+      maxDim = maxDim || 1200;
+      return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() {
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if (w <= maxDim && h <= maxDim) { resolve(src); return; }
+          var scale = Math.min(maxDim / w, maxDim / h);
+          var canvas = document.createElement('canvas');
+          canvas.width = Math.round(w * scale);
+          canvas.height = Math.round(h * scale);
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.onerror = function() { resolve(src); };
+        img.src = src;
+      });
+    }
+
+    async function _exportCollectionHTML() {
       var chunks = _getSelectedOrAll();
       if (!chunks.length) { showToast('No items to export', 'error', 2000); return; }
+
+      // Resize images before embedding (reduces HTML file size)
+      var MAX_DIM = 1200;
+      var processed = await Promise.all(chunks.map(function(c) {
+        if (c.type === 'img' && c.src && c.src.startsWith('data:image/')) {
+          return _resizeBase64Image(c.src, MAX_DIM).then(function(resized) {
+            var copy = {};
+            for (var k in c) copy[k] = c[k];
+            copy.src = resized;
+            return copy;
+          });
+        }
+        return c;
+      }));
+
       var parts = [];
       parts.push('<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>' + (currentBookTitle || 'Collection') + '</title>');
       parts.push('<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1f2937}');
@@ -5568,8 +5623,8 @@ ${htmlContent}
       parts.push('.chunk-content td,.chunk-content th{border:1px solid #d1d5db;padding:6px 10px}');
       parts.push('</style></head><body>');
       parts.push('<h1>📦 ' + (currentBookTitle || 'Collection') + '</h1>');
-      parts.push('<p>' + chunks.length + ' chunks exported on ' + new Date().toLocaleString() + '</p>');
-      chunks.forEach(function(c, i) {
+      parts.push('<p>' + processed.length + ' chunks exported on ' + new Date().toLocaleString() + '</p>');
+      processed.forEach(function(c, i) {
         parts.push('<div class="chunk">');
         parts.push('<div class="chunk-meta"><span class="chunk-type">' + c.type + '</span> ' + (c.chapter || '') + ' · ' + new Date(c.date).toLocaleString() + '</div>');
         parts.push('<div class="chunk-content">');
@@ -5585,7 +5640,7 @@ ${htmlContent}
       });
       parts.push('</body></html>');
       _downloadFile(_sanitizeExportName(currentBookTitle) + '-collection.html', parts.join('\n'), 'text/html;charset=utf-8');
-      showToast('📦 Exported ' + chunks.length + ' chunks as HTML', 'saved');
+      showToast('📦 Exported ' + processed.length + ' chunks as HTML', 'saved');
     }
 
     function _exportCollectionMD() {
@@ -7572,10 +7627,17 @@ ${htmlContent}
       content.innerHTML = '';
 
       if (chunk.type === 'img') {
-        var img = document.createElement('img');
-        img.src = chunk.src;
-        img.alt = chunk.alt || '';
-        content.appendChild(img);
+        if (chunk.src) {
+          var img = document.createElement('img');
+          img.src = chunk.src;
+          img.alt = chunk.alt || '';
+          content.appendChild(img);
+        } else {
+          var placeholder = document.createElement('div');
+          placeholder.className = 'cv-placeholder';
+          placeholder.innerHTML = '<i class="bi bi-image"></i><p>No image available</p>';
+          content.appendChild(placeholder);
+        }
       } else if (chunk.type === 'text') {
         var div = document.createElement('div');
         div.className = 'cv-text';
