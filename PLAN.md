@@ -221,8 +221,11 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 ### Da fare (prossima sessione)
 
 - **W8**: undo delete con soft delete (`_trash[]` + toast Undo)
-- **Propagazione Collection** a noesis-multi (4 file)
 - **Script `test_all.js`** unificato per tutti i 9 script
+
+### In standby / Forse in futuro
+
+- **Propagazione Collection a noesis-multi** (4 file: `noesis816.html`, `noesis816-full.html`, `noesis816-reader.html`, `noesis816-full-reader.html`). In standby per decisione del 31 Luglio — i file target non contengono il codice Collection, la propagazione richiederebbe un merge sostanziale. Da rivalutare in futuro.
 
 ### Script test disponibili
 
