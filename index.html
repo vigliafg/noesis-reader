@@ -4358,6 +4358,7 @@
           <div class="coll-export-menu" id="collExportMenu">
             <button data-fmt="html"><i class="bi bi-filetype-html"></i> HTML</button>
             <button data-fmt="md"><i class="bi bi-filetype-md"></i> Markdown</button>
+            <button data-fmt="zip"><i class="bi bi-file-zip"></i> ZIP</button>
           </div>
         </div>
         <button id="collClearBtn" title="Clear all"><i class="bi bi-trash"></i> Clear</button>
@@ -5651,7 +5652,8 @@ ${htmlContent}
       lines.push('');
       lines.push('*' + chunks.length + ' chunks exported on ' + new Date().toLocaleString() + '*');
       lines.push('');
-      chunks.forEach(function(c, i) {
+      for (var i = 0; i < chunks.length; i++) {
+        var c = chunks[i];
         lines.push('---');
         lines.push('');
         lines.push('### ' + (i + 1) + '. ' + c.type.toUpperCase() + ' — ' + (c.chapter || 'Unknown chapter'));
@@ -5666,9 +5668,75 @@ ${htmlContent}
           lines.push((c.content || '').replace(/<[^>]*>/g, ''));
         }
         lines.push('');
-      });
+      }
       _downloadFile(_sanitizeExportName(currentBookTitle) + '-collection.md', lines.join('\n'), 'text/markdown;charset=utf-8');
       showToast('📦 Exported ' + chunks.length + ' chunks as Markdown', 'saved');
+    }
+
+    // ── Export as ZIP: HTML + images/ folder ──────────────────────
+    async function _exportCollectionZIP() {
+      var chunks = _getSelectedOrAll();
+      if (!chunks.length) { showToast('No items to export', 'error', 2000); return; }
+
+      var zip = new JSZip();
+      var imgIndex = 0;
+      var parts = [];
+
+      parts.push('<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>' + (currentBookTitle || 'Collection') + '</title>');
+      parts.push('<style>body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#1f2937}');
+      parts.push('h1{color:#065f46;border-bottom:2px solid #10b981;padding-bottom:8px}');
+      parts.push('.chunk{border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0}');
+      parts.push('.chunk-meta{font-size:12px;color:#6b7280;margin-bottom:8px}');
+      parts.push('.chunk-type{background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase}');
+      parts.push('.chunk-content{margin-top:8px;line-height:1.6}');
+      parts.push('.chunk-content img{max-width:100%;border-radius:4px}');
+      parts.push('.chunk-content table{border-collapse:collapse;width:100%}');
+      parts.push('.chunk-content td,.chunk-content th{border:1px solid #d1d5db;padding:6px 10px}');
+      parts.push('</style></head><body>');
+      parts.push('<h1>📦 ' + (currentBookTitle || 'Collection') + '</h1>');
+      parts.push('<p>' + chunks.length + ' chunks exported on ' + new Date().toLocaleString() + '</p>');
+
+      chunks.forEach(function(c, i) {
+        parts.push('<div class="chunk">');
+        parts.push('<div class="chunk-meta"><span class="chunk-type">' + c.type + '</span> ' + (c.chapter || '') + ' · ' + new Date(c.date).toLocaleString() + '</div>');
+        parts.push('<div class="chunk-content">');
+
+        if (c.type === 'img' && c.src && c.src.startsWith('data:image/')) {
+          var match = c.src.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
+          var ext = (match && match[1] === 'jpeg') ? 'jpg' : ((match && match[1]) || 'png');
+          var base64Data = match ? match[2] : c.src.split(',')[1] || '';
+          var imgFilename = 'image_' + (++imgIndex) + '.' + ext;
+
+          try {
+            zip.file('images/' + imgFilename, base64Data, { base64: true });
+            parts.push('<img src="images/' + imgFilename + '" alt="' + (c.alt || '') + '">');
+          } catch(e) {
+            parts.push('<img src="' + c.src + '" alt="' + (c.alt || '') + '">');
+          }
+          if (c.alt) parts.push('<p>' + c.alt + '</p>');
+        } else if (c.type === 'img') {
+          parts.push(c.src ? '<img src="' + c.src + '" alt="' + (c.alt || '') + '">' : '');
+          if (c.alt) parts.push('<p>' + c.alt + '</p>');
+        } else if (c.type === 'text') {
+          parts.push('<blockquote style="border-left:4px solid ' + ({yellow:'#ffeb3b',green:'#a5d6a7',pink:'#f8bbd9'}[c.color]||'#ffeb3b') + ';padding-left:12px;margin:0;white-space:pre-wrap;">' + (c.content || '') + '</blockquote>');
+        } else {
+          parts.push(c.content || '');
+        }
+        parts.push('</div></div>');
+      });
+      parts.push('</body></html>');
+
+      zip.file('index.html', parts.join('\n'));
+
+      try {
+        showToast('📦 Creating ZIP...', 'saving', 1000);
+        var blob = await zip.generateAsync({ type: 'blob' });
+        _downloadFile(_sanitizeExportName(currentBookTitle) + '-collection.zip', blob, 'application/zip');
+        showToast('📦 Exported ' + chunks.length + ' chunks as ZIP (' + imgIndex + ' images)', 'saved');
+      } catch(e) {
+        showToast('❌ Failed to create ZIP file', 'error', 3000);
+        console.warn('ZIP export failed:', e);
+      }
     }
 
     // --- READER HIGHLIGHTS ---
@@ -8229,6 +8297,7 @@ ${htmlContent}
           var fmt = btn.dataset.fmt;
           if (fmt === 'html') _exportCollectionHTML();
           else if (fmt === 'md') _exportCollectionMD();
+          else if (fmt === 'zip') _exportCollectionZIP();
         });
       });
       document.addEventListener('click', function(e) {

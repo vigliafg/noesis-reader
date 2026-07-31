@@ -211,10 +211,10 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 
 1. ~~T5.6-T5.7: test export con selezione~~ ✅ FATTO
 2. ~~Aggiornare PLAN.md~~ ✅ FATTO
-3. ~~Valutare prossimo fix~~ → **W4+W5 IMPLEMENTATI** ✅
+3. ~~Valutare prossimo fix~~ → **W4+W5+M1 IMPLEMENTATI** ✅
    - ~~W4: fallback img viewer senza src~~ ✅ FATTO (placeholder + CSS)
    - ~~W5: export HTML con resize immagini (1200px max, JPEG 0.85)~~ ✅ FATTO
-   - M1: export ZIP con HTML + cartella `images/`
+   - ~~M1: export ZIP con HTML + cartella `images/`~~ ✅ FATTO (JSZip, base64 → file separati)
    - W8: undo delete (soft delete con `_trash[]`)
 
 **Note**: W4+W5 non propagati a noesis-multi — il codice Collection non è presente nei file target.
