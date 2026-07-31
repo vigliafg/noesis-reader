@@ -165,7 +165,82 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 
 ---
 
-## 7. PIANO — 31 Luglio 2026
+## 7. RESOCONTO — 31 Luglio 2026 ✅
+
+### Riepilogo numerico
+
+| Categoria | Dettaglio |
+|---|---|
+| **Test totali** | 126 (61 T1-T12 + 14 W2 + 20 W3 + 10 remaining + 14 secondary + 7 M1) |
+| **Test PASS** | 126/126 ✅ |
+| **Bug fixati totali** | 7 (B1, W2, W3, W4, W5, M1, ZIP Extract) |
+| **Script test creati** | 9 |
+| **Commit oggi** | 4 |
+
+---
+
+### Commit di oggi
+
+| Commit | Messaggio |
+|---|---|
+| `7047d70` | feat: W4+W5 — placeholder img viewer senza src + resize immagini export HTML (1200px JPEG) |
+| `8e9aee2` | feat: M1 — export ZIP con HTML + cartella images/ |
+| `8863131` | test: M1 — ZIP export verification (7/7 PASS) |
+| `616d4a0` | feat: aggiunto formato ZIP al menu Extract della toolbar principale |
+
+---
+
+### Fix implementati oggi
+
+| # | Fix | Descrizione |
+|---|---|---|
+| **W4** | Fallback img viewer | Placeholder `cv-placeholder` quando `chunk.src` è vuoto |
+| **W5** | Resize export HTML | `_resizeBase64Image` (max 1200px, JPEG 0.85), `_exportCollectionHTML` async con `Promise.all` |
+| **M1** | Export ZIP collezioni | `_exportCollectionZIP()`: ZIP con `index.html` + `images/` (JSZip) |
+| **ZIP Extract** | ZIP nella toolbar Extract | Bottone `data-fmt="zip"`, `_extractChapterZip()` per capitolo intero |
+
+---
+
+### Test completati oggi
+
+| Script | Test | Risultato |
+|---|---|---|
+| `test_remaining.js` | T5.6, T5.7, T10.2, T10.3, I/O 3, I/O 5 | **10/10 ✅** |
+| `test_secondary.js` | T1.4-T1.8, T2.4, T3.4, T4.7, T4.11, T7.2, T10.6, T11.3 | **14/14 ✅** |
+| `test_M1_zip.js` | M1.1-M1.6: funzione ZIP, bottone, handler, blob valido, regression MD | **7/7 ✅** |
+| **Totale** | | **31/31 ✅** |
+
+---
+
+### Note
+- W4+W5+M1+ZIP Extract non propagati a noesis-multi: il codice Collection non è presente nei file target
+- `_exportCollectionMD` è stato accidentalmente cancellato e ripristinato durante W5
+
+---
+
+### Da fare (prossima sessione)
+
+- **W8**: undo delete con soft delete (`_trash[]` + toast Undo)
+- **Propagazione Collection** a noesis-multi (4 file)
+- **Script `test_all.js`** unificato per tutti i 9 script
+
+### Script test disponibili
+
+```bash
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_remaining.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_secondary.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_M1_zip.js
+```
+
+---
+
+## 📦 Vecchio piano 31 Luglio (completato)
 
 ### ✅ Completato oggi
 
