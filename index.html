@@ -179,6 +179,7 @@
       font-style: italic;
       color: white;
       letter-spacing: 0.03em;
+      opacity: 0;
     }
     .lib-brand-reader {
       font-family: 'system-ui', sans-serif;
@@ -186,6 +187,7 @@
       font-weight: 400;
       color: rgba(255,255,255,0.75);
       letter-spacing: 0.05em;
+      opacity: 0;
     }
 
     /* ── Brand keyframes (3 animations, random) ── */
@@ -4989,18 +4991,7 @@
       libraryView.classList.remove('hidden');
 
       // ── Random brand animation ──
-      (function _triggerBrandAnim() {
-        var brand = document.getElementById('libBrand');
-        if (!brand) return;
-        // Remove any previous animation class
-        brand.classList.remove('lib-br-17', 'lib-br-19', 'lib-br-30');
-        // Force reflow to restart animation
-        void brand.offsetWidth;
-        // Pick random animation
-        var pick = Math.floor(Math.random() * 3);
-        var cls = pick === 0 ? 'lib-br-17' : (pick === 1 ? 'lib-br-19' : 'lib-br-30');
-        brand.classList.add(cls);
-      })();
+      _triggerBrandAnim();
 
       // Save annotations before resetting
       if (currentBookId && readerHighlights.length > 0) {
@@ -10215,6 +10206,19 @@ ${htmlContent}
     })();
 
     // ── END MOBILE RESPONSIVE HANDLERS ───────────────────────────
+
+    // ── Shared brand animation trigger ──
+    function _triggerBrandAnim() {
+      var brand = document.getElementById('libBrand');
+      if (!brand) return;
+      brand.classList.remove('lib-br-17', 'lib-br-19', 'lib-br-30');
+      void brand.offsetWidth;
+      var pick = Math.floor(Math.random() * 3);
+      brand.classList.add(pick === 0 ? 'lib-br-17' : (pick === 1 ? 'lib-br-19' : 'lib-br-30'));
+    }
+
+    // ── Initial brand animation on page load ──
+    _triggerBrandAnim();
 
   </script>
 </body>
