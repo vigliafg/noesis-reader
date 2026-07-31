@@ -157,12 +157,6 @@
       gap: 2px;
     }
 
-    .lib-brand {
-      font-size: 13px;
-      opacity: 0.85;
-      letter-spacing: 0.05em;
-      font-family: system-ui;
-    }
 
     .library-header-right {
       display: flex;
@@ -3569,11 +3563,8 @@
       justify-content: space-between;
       flex-shrink: 0;
     }
-    #hamburgerDrawer .hamburger-title {
-      font-size: 18px;
-      font-weight: 400;
-      font-style: italic;
-      color: #e2e8f0;
+    #hamburgerDrawer .hamburger-header {
+      justify-content: flex-end;
     }
     #hamburgerDrawer .hamburger-close {
       background: none;
@@ -3768,7 +3759,6 @@
   <!-- ═══════════ HAMBURGER DRAWER (mobile menu) ═══════════ -->
   <div id="hamburgerDrawer">
     <div class="hamburger-header">
-      <span class="hamburger-title">Noesis</span>
       <button class="hamburger-close" id="hamburgerClose" aria-label="Close menu">✕</button>
     </div>
     <!-- Context-aware items: .hmb-lib = library only, .hmb-rdr = reader only, no class = both -->
@@ -3800,7 +3790,6 @@
       <div class="library-header-left">
         <!-- Hamburger button (mobile only) — positioned at extreme left -->
         <button id="hamburgerBtnLib" class="lib-header-btn" aria-label="Menu" title="Menu" style="display:none;">☰</button>
-        <span class="lib-brand">📚 NOESIS</span>
       </div>
       <div class="library-header-right">
         <!-- ADD BOOKS -->
