@@ -3049,8 +3049,6 @@
     /* ═══════════════════════════════════════════════════════
        DISPLAY MENU — accordion, popup content inline
        ═══════════════════════════════════════════════════════ */
-    .display-dropdown { position: relative; display: inline-block; }
-
     .display-menu {
       display: none;
       position: absolute;
@@ -4079,12 +4077,6 @@
             <i class="bi bi-highlighter"></i>
           </button>
           <!-- readerHighlightMenu è ora nel menubar -->
-        </div>
-        <div class="display-dropdown">
-          <button class="btn btn-icon" id="displayBtn" title="Display Settings">
-            <i class="bi bi-eye"></i>
-          </button>
-          <!-- displayMenu è ora nel menubar -->
         </div>
         <button class="btn btn-icon" id="typographyBtn" title="Typography" style="display:none"><i class="bi bi-type"></i></button>
         <button class="btn btn-icon" id="themeBtn" title="Themes" style="display:none"><i class="bi bi-palette"></i></button>
@@ -9421,7 +9413,6 @@ ${htmlContent}
       var nm = document.getElementById('rmbNavigateMenu');
       var nw = document.getElementById('rmbNavigateWrap');
       var xb = document.getElementById('extractChapterBtn');
-      var db = document.getElementById('displayBtn');
       var dw = document.getElementById('displayDropdownWrap');
       var rd = document.getElementById('rmbDisplay');
       var re = document.getElementById('rmbExtract');
@@ -9435,7 +9426,7 @@ ${htmlContent}
       if (!anyOpen) return;
 
       var inside = false;
-      if ((dm && dm.contains(target)) || (db && db.contains(target)) || target === rd || (dw && dw.contains(target))) inside = true;
+      if ((dm && dm.contains(target)) || target === rd || (dw && dw.contains(target))) inside = true;
       if ((em && em.contains(target)) || (xb && xb.contains(target)) || target === re || (rw && rw.contains(target))) inside = true;
       if ((nm && nm.contains(target)) || (nw && nw.contains(target))) inside = true;
       if (typeof navModePopover !== 'undefined' && navModePopover && navModePopover.contains(target)) inside = true;
@@ -9448,9 +9439,9 @@ ${htmlContent}
        ═══════════════════════════════════════════════════════ */
     (function initDisplayMenu() {
 
-      var displayBtn  = document.getElementById('displayBtn');
       var displayMenu = document.getElementById('displayMenu');
-      if (!displayBtn || !displayMenu) return;
+      var rmbDisplay  = document.getElementById('rmbDisplay');
+      if (!displayMenu || !rmbDisplay) return;
 
       var SECTIONS = [
         { headerId: 'displaySecTypo',      bodyId: 'displayBodyTypo',      popupId: 'typographyPopupMain' },
@@ -9501,18 +9492,6 @@ ${htmlContent}
       }
 
       /* Open / close the whole Display menu */
-      displayBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var wasOpen = displayMenu.classList.contains('open');
-        _closeAllReaderMenus(true); // suppress: handled below
-        if (!wasOpen) {
-          displayMenu.classList.add('open');
-        } else {
-          _showDisplaySavePrompt();
-        }
-      });
-
-
 
       /* Section header clicks */
       SECTIONS.forEach(function(sec) {
