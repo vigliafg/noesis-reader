@@ -267,6 +267,140 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 - **Propagazione Collection a noesis-multi** — i file target non contengono il codice Collection. Da rivalutare.
 - **M2**: export collezione come EPUB
 
+---
+
+## 8. PIANO — 1 Agosto 2026: TEST BOOKMARK
+
+### Analisi preliminare
+
+Sistema bookmark completo, mai testato. Funzionalità: creazione in posizione corrente, navigazione al CFI, persistenza IndexedDB, drawer UI con badge counter. Integrato con menu Navigate (desktop + mobile/hamburger).
+
+### Dettaglio architettura
+
+```javascript
+// Struttura dati
+let userBookmarks = [];  // [{ cfi, href, chapter, preview, label, createdAt }]
+
+// Funzioni chiave
+createUserBookmark()            // line 7511 — crea in posizione corrente
+saveUserBookmarksToDB()         // line 7369 — persistenza IndexedDB
+loadUserBookmarksFromDB(bookId) // line 7399 — caricamento da DB
+renderUbmList()                 // line 7422 — render drawer + badge
+openUbmDrawer()                 // line 7615 — slide-in sotto header
+closeUbmDrawer()                // line 7626
+findBreadcrumbInToc()           // line 7209 — cerca capitolo da href
+
+// UI elements
+#userBookmarksDrawer   // drawer fisso, slide da top (z-index: 600)
+#userBookmarksBtn      // toggle button nella toolbar
+#ubmBadge              // badge rosso con count
+#ubmNewBtn             // "New Bookmark" nel drawer header
+#ubmCloseBtn           // ✕ close nel drawer header
+#ubmList               // lista scrollabile di .ubm-item
+#rmbBookmarks          // voce "Bookmarks" nel dropdown Navigate
+
+// Integrazione
+openBookFromLibrary() → loadUserBookmarksFromDB() → renderUbmList()  (line 5378)
+showLibrary() → closeUbmDrawer(); userBookmarks = []; renderUbmList() (line 5031)
+```
+
+---
+
+### TEST PLAN — Bookmark
+
+#### B1: Creazione (Create)
+
+| # | Test | Verifica |
+|---|---|---|
+| **B1.1** | Crea bookmark senza libro aperto | `showToast('No book open', 'error')` |
+| **B1.2** | Crea bookmark in posizione corrente | `userBookmarks.length = 1`, badge = 1, ha CFI |
+| **B1.3** | Verifica dati salvati | Campi: cfi, href, chapter, preview, createdAt non vuoti |
+| **B1.4** | Crea multiple bookmark (3+) | badge = N, drawer mostra N item |
+| **B1.5** | Crea bookmark su capitoli diversi | `chapter` corrisponde al titolo TOC del capitolo corrente |
+| **B1.6** | Preview bookmark | `preview` contiene testo effettivo della pagina corrente (100 chars max) |
+
+#### B2: Navigazione (Navigate)
+
+| # | Test | Verifica |
+|---|---|---|
+| **B2.1** | Click su bookmark item → naviga al CFI | Rendition cambia pagina, iframe si aggiorna |
+| **B2.2** | Dopo navigazione, drawer si chiude | `#userBookmarksDrawer` non ha classe `ubm-open` |
+| **B2.3** | Bookmark senza CFI (solo href) | Usa `navigateToHref()` fallback, non crasha |
+| **B2.4** | Clicca un bookmark, poi un altro | Navigazione sequenziale funziona (non stale state) |
+| **B2.5** | Clicca bookmark già nella posizione corrente | Non crasha, `rendition.display()` chiamato comunque |
+
+#### B3: Cancellazione (Delete)
+
+| # | Test | Verifica |
+|---|---|---|
+| **B3.1** | Click ✕ su bookmark → rimosso | badge--, `userBookmarks.length` diminuito, DB aggiornato |
+| **B3.2** | Cancella ultimo bookmark | Drawer mostra empty state: "No bookmarks yet" |
+| **B3.3** | Cancella bookmark di mezzo (non primo/ultimo) | Array corretto, indici shiftati, badge=N-1 |
+| **B3.4** | Cancella tutti i bookmark uno a uno | Dopo ultimo: empty state, badge nascosto |
+
+#### B4: Drawer UI
+
+| # | Test | Verifica |
+|---|---|---|
+| **B4.1** | Apri drawer → classe `ubm-open` presente | `transform: translateY(var(--ubm-header-height))` |
+| **B4.2** | Chiudi drawer → `ubm-open` rimosso | `transform: translateY(-200%)` |
+| **B4.3** | Click su Close button (✕) | Drawer chiuso correttamente |
+| **B4.4** | Toggle button: apri → chiudi → apri | Toggle corretto senza race condition |
+| **B4.5** | Empty state drawer (0 bookmark) | Messaggio "No bookmarks yet" con icona |
+| **B4.6** | Lista overflow (10+ bookmark) | Scroll funzionante in `#ubmList` |
+
+#### B5: Badge Counter
+
+| # | Test | Verifica |
+|---|---|---|
+| **B5.1** | 0 bookmark | `#ubmBadge` → `display: none` |
+| **B5.2** | 1 bookmark | `#ubmBadge` → `display: flex`, textContent = "1" |
+| **B5.3** | N bookmark (N > 1) | `#ubmBadge` → textContent = "N" |
+| **B5.4** | Dopo delete, badge si aggiorna | Count decrementato in tempo reale |
+| **B5.5** | Badge nel Navigate menu (`#rmbBookmarks`) | Stesso valore di `#ubmBadge` |
+
+#### B6: Persistenza IndexedDB
+
+| # | Test | Verifica |
+|---|---|---|
+| **B6.1** | Crea bookmark → chiudi libro → riapri | Bookmark ancora presente nel drawer |
+| **B6.2** | Crea bookmark → torna a library → riapri stesso libro | Bookmark caricati da DB |
+| **B6.3** | Cancella bookmark → chiudi → riapri | Bookmark non più presente |
+| **B6.4** | Due libri diversi con bookmark propri | Libro A ha i suoi, libro B ha i suoi (no cross-contamination) |
+| **B6.5** | Torna alla library → `userBookmarks` azzerato | `showLibrary()` chiama `userBookmarks = []` |
+
+#### B7: Integrazione Menu Navigate (mobile)
+
+| # | Test | Verifica |
+|---|---|---|
+| **B7.1** | Click su "Bookmarks" nel menu Navigate | Drawer si apre (delega a `#userBookmarksBtn.click()`) |
+| **B7.2** | Badge nel Navigate menu mostra count | `#rmbBookmarks` contiene `#ubmBadge` con count corretto |
+| **B7.3** | Apri drawer da Navigate → chiudi → riapri da toolbar | Entrambi i trigger funzionano indipendentemente |
+
+#### B8: Edge Cases
+
+| # | Test | Verifica |
+|---|---|---|
+| **B8.1** | Capitolo troppo lungo nel titolo | Troncato a 55 caratteri + `…` |
+| **B8.2** | Preview vuota (nessun testo nella pagina corrente) | Bookmark creato con `preview = ''`, non crasha |
+| **B8.3** | `rendition.currentLocation()` restituisce `null` per CFI | Bookmark creato con `cfi = null`, `href` popolato |
+| **B8.4** | Bookmark duplicato (stesso CFI) | Creazione consentita — nessun dedup (comportamento attuale) |
+| **B8.5** | Crea bookmark, cambia capitolo, crea altro | Entrambi i bookmark puntano a capitoli diversi |
+| **B8.6** | Drawer aperto + cambia libro (Back to Library) | Drawer si chiude automaticamente |
+
+#### B9: Nuovi Test — Funzionalità non ancora testate
+
+| # | Test | Verifica |
+|---|---|---|
+| **B9.1** | `createdAt` timestamp è ISO valido | `new Date(bm.createdAt).toString() !== 'Invalid Date'` |
+| **B9.2** | Ordine bookmark nel drawer | Ordine di inserimento preservato (più recente in fondo) |
+| **B9.3** | Date format nel drawer | `.ubm-date` mostra data formattata |
+| **B9.4** | Tasto "New Bookmark" funziona anche con drawer già aperto | Crea bookmark, re-render lista con nuovo item |
+| **B9.5** | Bookmark su prima pagina del libro | CFI valido, preview estratta correttamente |
+| **B9.6** | Bookmark su ultima pagina del libro | CFI valido, calcolo anchor non va fuori range |
+
+---
+
 ### Script test disponibili
 
 ```bash
