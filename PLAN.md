@@ -1270,3 +1270,287 @@ Campo:     bookData.collections = Array<chunk>
    - Prioritizzare fix
    - Valutare opportunità di miglioramento (sezione 5)
    - Pianificare prossima iterazione di sviluppo
+
+---
+
+## 9. PIANO — 1 Agosto 2026
+
+### Obiettivi della giornata
+
+1. **Completamento test bookmark** — B9 rimanenti + fix prompt() mobile-friendly
+2. **Test struttura archiviazione** — IndexedDB (2 DB) + localStorage
+3. **Warning scroll PDF/traduzione** — avviso all'utente prima dell'export
+
+---
+
+### 9.1 COMPLETAMENTO TEST BOOKMARK (B9)
+
+#### Risultati già ottenuti (31 Luglio sera)
+
+| Script | Test | Risultato |
+|---|---|---|
+| `test_bookmarks.js` | B1-B8 (40 test) | **40/40 ✅** |
+
+**Bug scoperto**: `createUserBookmark()` chiama `window.prompt()` (linea 7595). Se il dialog viene dismissato (Esc), la funzione ritorna senza creare il bookmark. Nei test, il dialog handler deve fare `dialog.accept('')` per i prompt.
+
+#### Test B9 ancora da implementare
+
+| # | Test | Note |
+|---|---|---|
+| B9.1 | `createdAt` formato ISO valido | Già testato in B8.3 ✅ |
+| B9.2 | Ordine inverso (`unshift`) | Già testato in B8.4 ✅ |
+| B9.3 | Date format nel drawer (`.ubm-date`) | Il campo `createdAt` è salvato ma non renderizzato nel drawer |
+| B9.4 | New Bookmark con drawer già aperto | Già testato in B8.6 ✅ |
+| B9.5 | Bookmark su prima pagina del libro | Richiede navigazione a `spine[0]` |
+| B9.6 | Bookmark su ultima pagina: anchor non va fuori range | Test di robustezza su calcolo offset preview |
+
+Azioni:
+- Aggiungere B9.3, B9.5, B9.6 a `test_bookmarks.js` (~20 righe)
+- Opzionale: mini-fix per mostrare `.ubm-date` nel drawer
+
+#### Fix `prompt()` in `createUserBookmark()` (opzionale)
+
+- **Problema**: `window.prompt()` blocca l'UI, non mobile-friendly, causa bug nei test Puppeteer
+- **Soluzione proposta**: Rimuovere il `prompt()`, usare label vuota di default, aggiungere edit-in-place nel drawer
+- **Impatto test**: Semplifica `test_bookmarks.js` (niente più `dialog.accept('')`)
+
+---
+
+### 9.2 TEST STRUTTURA ARCHIVIAZIONE (IndexedDB + localStorage)
+
+#### Panoramica Storage
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      IndexedDB                           │
+├────────────────────────┬────────────────────────────────┤
+│  EpubLibraryDB (v1)    │     noesisDB (v1)               │
+│  STORE: 'books'        │     STORE: 'extractedChapters'  │
+│  keyPath: 'id'         │     keyPath: 'chapterId'        │
+│                        │     index: 'bookName'           │
+├────────────────────────┼────────────────────────────────┤
+│  Contiene:             │  Contiene:                      │
+│  • EPUB binario        │  • Capitoli estratti             │
+│  • metadata            │  • Snapshots                    │
+│  • userBookmarks[]     │  • bookName, chapterName,       │
+│  • savedState {}       │    htmlContent, timestamp        │
+│  • visualSettings      │                                 │
+│  • collections[]       │                                 │
+│  • readerHighlights[]  │                                 │
+└────────────────────────┴────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│                     localStorage                         │
+├─────────────────────────────────────────────────────────┤
+│  'noesis-lib-theme'          → 'light' | 'dark'         │
+│  'noesis-help-library-seen'  → '1' (banner dismiss)     │
+│  'noesis-help-reader-seen'   → '1' (banner dismiss)     │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Schema dettagliato record IndexedDB
+
+**EpubLibraryDB** (`DB_NAME = 'EpubLibraryDB'`, versione 1):
+```javascript
+// Object store: 'books' (keyPath: 'id')
+{
+  id: 'timestamp',              // chiave primaria
+  name: 'book.epub',
+  author: '...',
+  title: '...',
+  cover: 'data:image/...',       // base64
+  fileData: ArrayBuffer,          // EPUB binario (64MB per test.epub)
+  chapters: [...],                // struttura capitoli dal TOC
+  userBookmarks: [                // bookmark utente (linea 7383)
+    { cfi, href, chapter, preview, label, createdAt }
+  ],
+  savedState: {                   // ultima posizione lettura
+    cfi: 'epubcfi(...)',
+    href: '...',
+    chapterName: '...'
+  },
+  visualSettings: {               // preferenze visuali
+    fontSize: 100,
+    lineHeight: 1.2,
+    scrollMode: false,
+    theme: 'normal',
+    // ... altri campi
+  },
+  collections: [...],             // chunk collection (W2)
+  readerHighlights: [...],        // annotazioni highlight
+  extractedChapters: [...]        // duplicato anche in noesisDB
+}
+```
+
+#### Test Plan — Storage (script: `test_storage.js`)
+
+**S1: Integrità dati IndexedDB**
+
+| # | Test | Verifica |
+|---|---|---|
+| S1.1 | `bookData.fileData` è ArrayBuffer valido | `byteLength > 0` |
+| S1.2 | `bookData.userBookmarks` è array | `Array.isArray()` true |
+| S1.3 | `bookData.savedState.cfi` è stringa valida | Matcha pattern `epubcfi(` |
+| S1.4 | `bookData.visualSettings` ha campi obbligatori | fontSize, lineHeight, theme |
+| S1.5 | `bookData.collections` è array (anche vuoto) | `Array.isArray()` true |
+| S1.6 | `bookData.readerHighlights` è array (anche vuoto) | `Array.isArray()` true |
+| S1.7 | Save → reload → bookmark identici | Deep equal dopo roundtrip DB |
+| S1.8 | `saveVisualSettings()` persiste | fontSize dopo reload = fontSize salvato |
+
+**S2: Isolamento per-book**
+
+| # | Test | Verifica |
+|---|---|---|
+| S2.1 | Due libri → `getAll()` = 2 record | ID e nomi diversi |
+| S2.2 | Bookmark libro A non visibili in libro B | `loadUserBookmarksFromDB(idB)` = [] |
+| S2.3 | Collection libro A non visibile in libro B | `_loadCollectionFromDB(idB)` = [] |
+| S2.4 | Elimina libro → record rimosso da DB | `store.get(deletedId)` = undefined |
+
+**S3: Gestione errori DB**
+
+| # | Test | Verifica |
+|---|---|---|
+| S3.1 | `VersionError` → delete + retry automatico | `openDB()` non lancia eccezione fatale |
+| S3.2 | `saveUserBookmarksToDB()` con `currentBookId = null` | Guard precoce, return immediato |
+| S3.3 | `loadUserBookmarksFromDB()` con ID inesistente | `catch` → `userBookmarks = []` |
+| S3.4 | `_saveCollectionToDB()` con `currentBookId = null` | Guard precoce, return immediato |
+
+**S4: localStorage**
+
+| # | Test | Verifica |
+|---|---|---|
+| S4.1 | Toggle tema → `getItem('noesis-lib-theme')` | 'light' o 'dark' |
+| S4.2 | Dismiss banner → key = '1' | Persiste dopo `page.reload()` |
+| S4.3 | localStorage non perde dati dopo close/reopen | Tutte le key integre dopo reload |
+| S4.4 | Nessun dato sensibile in localStorage | Solo valori ≤ 10 chars, no base64/binari |
+
+**S5: Quota storage**
+
+| # | Test | Verifica |
+|---|---|---|
+| S5.1 | EPUB 64MB → `fileData` salvato integro | `byteLength` identico all'originale |
+| S5.2 | `navigator.storage.estimate()` accessibile | `quota > 0`, `usage > 0` |
+| S5.3 | Storage bar nella library mostra % | Testo `#libStorageText` contiene % o MB |
+
+---
+
+### 9.3 WARNING SCROLL PDF / TRADUZIONE
+
+#### Contesto tecnico
+
+Google Translate integrato nel browser modifica il DOM dell'iframe EPUB:
+- Imposta `html.classList.add('translated-ltr')` (o `translated-rtl`)
+- **La traduzione funziona solo sul DOM già renderizzato** — le pagine non ancora scrollate non vengono tradotte
+
+epub.js usa **column/page layout** → solo il contenuto visibile è nel DOM. Se il capitolo ha 40 pagine e l'utente è a pagina 5, solo ~6 pagine sono caricate nel DOM.
+
+**Impatto sull'export PDF**:
+- `_printPDF()` raccoglie HTML da tutti gli iframe (linea 9860): `idoc.body.innerHTML`
+- Se il capitolo ha pagine non renderizzate → PDF incompleto
+- Se la traduzione è attiva e le pagine non sono state scrollate → **mix di lingue nel PDF** (parte tradotta, parte originale)
+
+**Codice rilevante**:
+```javascript
+// Linea 6058-6063: _isBrowserTranslated() — già usato per skippare auto-save
+function _isBrowserTranslated() {
+  const html = document.documentElement;
+  return html.classList.contains('translated-ltr') ||
+         html.classList.contains('translated-rtl') ||
+         html.classList.contains('translated');
+}
+
+// Linea 5175-5198: _printPDF() raccoglie HTML dagli iframe
+// Linea 9856-9873: extractChapter raccoglie HTML dagli iframe
+```
+
+#### Soluzione proposta
+
+Implementare **due `confirm()` warning** prima dell'export PDF:
+
+**Flusso**:
+```
+Click "PDF 🖨️" nel menu Extract
+  │
+  ├─ Controllo 1: _isBrowserTranslated()?
+  │   └─ SÌ → confirm: "⚠️ Translation is active. The PDF may contain
+  │            mixed languages. Scroll to the end of the chapter
+  │            first to ensure complete translation.
+  │            [OK = continue] [Cancel = go back]"
+  │
+  ├─ Controllo 2: _isChapterFullyScrolled()?
+  │   └─ NO → confirm: "⚠️ Chapter may not be fully loaded. Scroll
+  │            to the end before exporting to PDF.
+  │            [OK = export what's visible] [Cancel = go back]"
+  │
+  └─ Procedi con _printPDF(htmlContent)
+```
+
+**Nuova funzione helper**:
+```javascript
+function _isChapterFullyScrolled() {
+  const iframes = document.querySelectorAll('#viewer iframe');
+  for (const iframe of iframes) {
+    const doc = iframe.contentDocument;
+    if (!doc || !doc.documentElement) continue;
+    const bottom = doc.documentElement.scrollTop + doc.documentElement.clientHeight;
+    const max = doc.documentElement.scrollHeight;
+    if ((max - bottom) > 200) return false;  // >200px from end
+  }
+  return true;
+}
+```
+
+**Modifica `_dispatchExtractDownload`**:
+```javascript
+case 'pdf':
+  if (_isBrowserTranslated()) {
+    if (!confirm('⚠️ Translation is active.\n\n'
+      + 'The PDF may contain mixed languages. Please scroll manually\n'
+      + 'to the end of the chapter first for complete translation.\n\n'
+      + 'Click OK to continue anyway, or Cancel to go back.')) return;
+  }
+  if (!_isChapterFullyScrolled()) {
+    if (!confirm('⚠️ Chapter may not be fully loaded.\n\n'
+      + 'Scroll to the end before exporting to PDF for best results.\n\n'
+      + 'Click OK to export what is currently visible, or Cancel.')) return;
+  }
+  _printPDF(htmlContent);
+  break;
+```
+
+**Stima effort**: 30-45 minuti
+
+---
+
+### Riepilogo task — 1 Agosto 2026
+
+| # | Task | Priorità | Effort stimato |
+|---|---|---|---|
+| **A** | Aggiungere B9.3, B9.5, B9.6 a `test_bookmarks.js` | Media | 30 min |
+| **B** | Mini-fix: mostrare `.ubm-date` nel drawer | Bassa | 10 min |
+| **C** | Creare `test_storage.js` (S1-S5, ~20 test) | Alta | 60 min |
+| **D** | Implementare `_isChapterFullyScrolled()` + warning in `_dispatchExtractDownload` | Alta | 45 min |
+| **E** | Test warning PDF (confirm dialog, scroll check) | Media | 30 min |
+| **F** | Aggiornare PLAN.md e committare | — | 15 min |
+
+**Totale stimato**: ~3 ore
+
+**Script test attuali**:
+```bash
+# Bookmark
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_bookmarks.js  # 40/40 ✅
+
+# Collection
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_remaining.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_secondary.js
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_M1_zip.js
+
+# Domani:
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_storage.js  # NUOVO
+```
