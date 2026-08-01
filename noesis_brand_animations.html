@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Noesis reader — 40 brand animations</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a20;
+    color: #e5e7eb;
+    padding: 24px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 22px;
+    margin-bottom: 4px;
+    color: #f1f5f9;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .ld-purple { background: linear-gradient(135deg,#667eea,#764ba2); }
+  .ld-gold   { background: linear-gradient(135deg,#f59e0b,#d97706); }
+  .ld-cyan   { background: linear-gradient(135deg,#06b6d4,#0891b2); }
+  .ld-rose   { background: linear-gradient(135deg,#f43f5e,#e11d48); }
+  .ld-white  { background: white; border: 1px solid #555; }
+
+  .section-title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #667eea;
+    margin: 36px 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(102,126,234,0.2);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: #252530;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header bar ── simula la library toolbar */
+  .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    gap: 8px;
+  }
+  .card-header.gold  { background: linear-gradient(135deg, #92400e 0%, #b45309 100%); }
+  .card-header.cyan  { background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%); }
+  .card-header.rose  { background: linear-gradient(135deg, #9f1239 0%, #be123c 100%); }
+  .card-header.white { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+  .card-header.white .card-hamburger,
+  .card-header.white .card-add-btn { color: #334155; }
+  .card-header.white .brand-text { color: #1e293b; }
+  .card-header.white .brand-text2 { color: #1e293b; }
+
+  .card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+  .card-hamburger {
+    font-size: 17px;
+    opacity: 0.55;
+    flex-shrink: 0;
+    color: white;
+  }
+
+  /* ── Brand ── */
+  .brand-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35em;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .brand-text {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 400;
+    font-style: italic;
+    color: white;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .brand-text2 {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 13px;
+    font-weight: 400;
+    font-style: normal;
+    color: rgba(255,255,255,0.75);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .card-add-btn {
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.55;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Card body ── */
+  .card-body {
+    padding: 12px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #818cf8;
+  }
+  .card-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+  .card-footer {
+    margin-top: auto;
+    padding-top: 6px;
+  }
+  .replay-btn {
+    padding: 5px 12px;
+    background: #4338ca;
+    color: #e0e7ff;
+    border: 1px solid rgba(129,140,248,0.25);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .replay-btn:hover { background: #4f46e5; }
+
+  /* ═══════════════════════════════════════════════════════
+     KEYFRAMES LIBRARY
+     ═══════════════════════════════════════════════════════ */
+
+  /* A1 — Fade + slide up */
+  @keyframes k1  { 0%{opacity:0;transform:translateY(8px)} 40%{opacity:.35} 100%{opacity:1;transform:translateY(0)} }
+  /* A2 — Typewriter */
+  @keyframes k2t { 0%{width:0} 85%{width:14ch} 100%{width:14ch} }
+  @keyframes k2c { 0%,100%{border-right-color:rgba(255,255,255,.7)} 50%{border-right-color:transparent} }
+  /* A3 — Shimmer */
+  @keyframes k3  { 0%{background-position:200% 0} 60%{background-position:0% 0} 100%{background-position:0% 0;-webkit-text-fill-color:inherit} }
+  /* A4 — Breathing glow */
+  @keyframes k4  { 0%{opacity:0;text-shadow:0 0 0px transparent} 20%{opacity:.6;text-shadow:0 0 6px currentColor} 40%{opacity:1;text-shadow:0 0 14px currentColor} 60%{opacity:.75;text-shadow:0 0 6px currentColor} 80%{opacity:1;text-shadow:0 0 12px currentColor} 100%{opacity:1;text-shadow:0 0 4px currentColor} }
+  /* A5 — Ink blur → sharp */
+  @keyframes k5  { 0%{opacity:0;filter:blur(8px);transform:scale(1.04)} 50%{opacity:.7;filter:blur(3px)} 100%{opacity:1;filter:blur(0);transform:scale(1)} }
+  /* A6 — Underline draw */
+  @keyframes k6f { 0%{opacity:0} 30%{opacity:0} 100%{opacity:1} }
+  @keyframes k6l { 0%{width:0} 40%{width:0} 100%{width:100%} }
+  /* A7 — Scale bounce */
+  @keyframes k7  { 0%{opacity:0;transform:scale(1.25)} 50%{opacity:.8;transform:scale(.95)} 65%{opacity:1;transform:scale(1.03)} 80%{opacity:1;transform:scale(.99)} 100%{opacity:1;transform:scale(1)} }
+  /* A8 — Spotlight */
+  @keyframes k8  { 0%{clip-path:inset(0 100% 0 0)} 60%{clip-path:inset(0 0% 0 0)} 100%{clip-path:inset(0 0% 0 0)} }
+  /* A9 — Cascade chars */
+  @keyframes k9  { 0%{opacity:0;transform:translateY(-12px)} 35%{opacity:0} 60%{opacity:1;transform:translateY(0)} 100%{opacity:1;transform:translateY(0)} }
+  /* A10 — Curtain reveal */
+  @keyframes k10 { 0%{transform:translateY(100%)} 50%{transform:translateY(100%)} 70%{transform:translateY(0)} 100%{transform:translateY(0)} }
+
+  /* A11 — Rotate 3D flip */
+  @keyframes k11 { 0%{opacity:0;transform:rotateX(-90deg)} 50%{opacity:.5;transform:rotateX(10deg)} 70%{transform:rotateX(-4deg)} 100%{opacity:1;transform:rotateX(0)} }
+  /* A12 — Swing from left */
+  @keyframes k12 { 0%{opacity:0;transform:translateX(-40px) rotate(-8deg)} 60%{opacity:1;transform:translateX(3px) rotate(1deg)} 80%{transform:translateX(-1px)} 100%{opacity:1;transform:translateX(0) rotate(0)} }
+  /* A13 — Glitch RGB split */
+  @keyframes k13 { 0%{opacity:0;text-shadow:-2px 0 red,2px 0 cyan} 30%{opacity:.8;text-shadow:-1px 0 red,1px 0 cyan} 60%{opacity:1;text-shadow:-4px 0 red,4px 0 cyan} 80%{text-shadow:-1px 0 red,1px 0 cyan} 100%{text-shadow:0 0 transparent,0 0 transparent} }
+  /* A14 — Zoom in from center */
+  @keyframes k14 { 0%{opacity:0;transform:scale(.3);filter:blur(4px)} 70%{opacity:1;transform:scale(1.04);filter:blur(0)} 100%{opacity:1;transform:scale(1)} }
+  /* A15 — Float up + settle */
+  @keyframes k15 { 0%{opacity:0;transform:translateY(20px)} 50%{opacity:.6;transform:translateY(-4px)} 80%{opacity:1;transform:translateY(2px)} 100%{opacity:1;transform:translateY(0)} }
+
+  /* A16 — Split words: Noesis from left, reader from right */
+  @keyframes k16L { 0%{opacity:0;transform:translateX(-30px)} 50%{opacity:.5;transform:translateX(2px)} 100%{opacity:1;transform:translateX(0)} }
+  @keyframes k16R { 0%{opacity:0;transform:translateX(30px)} 50%{opacity:.5} 100%{opacity:1;transform:translateX(0)} }
+  /* A17 — Split: Noesis fade-up, reader fade-down */
+  @keyframes k17U { 0%{opacity:0;transform:translateY(-10px)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes k17D { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+  /* A18 — Split: Noesis scale-up, reader delayed */
+  @keyframes k18  { 0%{opacity:0;transform:scale(.7)} 100%{opacity:1;transform:scale(1)} }
+  /* A19 — Split: Noesis ink, reader spotlight */
+  @keyframes k19i { 0%{opacity:0;filter:blur(6px)} 100%{opacity:1;filter:blur(0)} }
+  @keyframes k19s { 0%{clip-path:inset(0 100% 0 0)} 100%{clip-path:inset(0 0 0 0)} }
+  /* A20 — Split: Noesis rotate, reader slide */
+  @keyframes k20r { 0%{opacity:0;transform:rotateY(90deg)} 100%{opacity:1;transform:rotateY(0)} }
+  @keyframes k20s { 0%{opacity:0;transform:translateX(20px)} 100%{opacity:1;transform:translateX(0)} }
+
+  /* ── Split additional (21–30) ── */
+  /* A21 — Split: Noesis drop from above, reader rise from below */
+  @keyframes k21L { 0%{opacity:0;transform:translateY(-20px)} 50%{opacity:.5} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes k21R { 0%{opacity:0;transform:translateY(20px)} 50%{opacity:.5} 100%{opacity:1;transform:translateY(0)} }
+  /* A22 — Split: Noesis pulse glow, reader delayed fade (gold header) */
+  @keyframes k22L { 0%{opacity:0;transform:scale(.9);text-shadow:0 0 0px #fbbf24} 40%{opacity:.8;transform:scale(1.05);text-shadow:0 0 12px #fbbf24} 70%{opacity:1;transform:scale(.98)} 100%{opacity:1;transform:scale(1);text-shadow:0 0 4px #fbbf24} }
+  @keyframes k22R { 0%{opacity:0} 55%{opacity:0} 100%{opacity:1} }
+  /* A23 — Split: Noesis elastic stretch, reader simple fade */
+  @keyframes k23L { 0%{opacity:0;transform:scaleX(1.4) scaleY(.6)} 50%{opacity:.7;transform:scaleX(.9) scaleY(1.1)} 80%{opacity:1;transform:scaleX(1.02) scaleY(.98)} 100%{opacity:1;transform:scaleX(1) scaleY(1)} }
+  @keyframes k23R { 0%{opacity:0;transform:translateX(6px)} 60%{opacity:0} 100%{opacity:1;transform:translateX(0)} }
+  /* A24 — Split: Noesis cascade chars, reader slide */
+  @keyframes k24c { 0%{opacity:0;transform:translateY(-8px)} 30%{opacity:0} 50%{opacity:1;transform:translateY(0)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes k24R { 0%{opacity:0;transform:translateX(12px)} 60%{opacity:.5} 100%{opacity:1;transform:translateX(0)} }
+  /* A25 — Split: Noesis typewriter, reader scale (white header) */
+  @keyframes k25t { 0%{width:0} 70%{width:6ch} 100%{width:6ch} }
+  @keyframes k25c { 0%,100%{border-right-color:rgba(30,41,59,.6)} 50%{border-right-color:transparent} }
+  @keyframes k25R { 0%{opacity:0;transform:scale(.7)} 75%{opacity:0} 100%{opacity:1;transform:scale(1)} }
+  /* A26 — Split: Noesis 3D rotateX, reader slide right (rose header) */
+  @keyframes k26L { 0%{opacity:0;transform:perspective(400px) rotateX(60deg)} 60%{opacity:.6;transform:perspective(400px) rotateX(-5deg)} 80%{opacity:1;transform:perspective(400px) rotateX(2deg)} 100%{opacity:1;transform:perspective(400px) rotateX(0)} }
+  @keyframes k26R { 0%{opacity:0;transform:translateX(30px)} 55%{opacity:0} 100%{opacity:1;transform:translateX(0)} }
+  /* A27 — Split: Noesis blur→sharp, reader zoom tiny (cyan header) */
+  @keyframes k27L { 0%{opacity:0;filter:blur(10px);transform:scale(1.08)} 60%{opacity:.8;filter:blur(2px);transform:scale(1.01)} 100%{opacity:1;filter:blur(0);transform:scale(1)} }
+  @keyframes k27R { 0%{opacity:0;transform:scale(.5);filter:blur(6px)} 60%{opacity:.5;transform:scale(.8);filter:blur(3px)} 100%{opacity:1;transform:scale(1);filter:blur(0)} }
+  /* A28 — Split: Noesis neon pink glow, reader delayed (rose header) */
+  @keyframes k28L { 0%{text-shadow:0 0 18px #f43f5e,0 0 36px #f43f5e;opacity:0} 30%{opacity:.8;text-shadow:0 0 24px #f43f5e,0 0 48px #f43f5e} 70%{opacity:1;text-shadow:0 0 12px #f43f5e,0 0 24px #f43f5e} 100%{opacity:1;text-shadow:0 0 6px #f43f5e,0 0 12px #f43f5e} }
+  @keyframes k28R { 0%{opacity:0} 50%{opacity:0} 100%{opacity:.85} }
+  /* A29 — Split: Noesis swipe reveal, reader float up */
+  @keyframes k29L { 0%{clip-path:inset(0 100% 0 0)} 60%{clip-path:inset(0 0 0 0)} 100%{clip-path:inset(0 0 0 0)} }
+  @keyframes k29R { 0%{opacity:0;transform:translateY(10px)} 55%{opacity:0} 100%{opacity:1;transform:translateY(0)} }
+  /* A30 — Split: Noesis shake/tension, reader calm settle */
+  @keyframes k30L { 0%{opacity:0;transform:translateX(0)} 15%{opacity:.5;transform:translateX(-6px)} 30%{opacity:.8;transform:translateX(5px)} 45%{opacity:1;transform:translateX(-3px)} 60%{opacity:1;transform:translateX(1px)} 100%{opacity:1;transform:translateX(0)} }
+  @keyframes k30R { 0%{opacity:0} 65%{opacity:0} 85%{opacity:.7} 100%{opacity:1;transform:translateY(0)} }
+
+  /* ── Solo "Noesis" anims ── */
+  @keyframes k31 { 0%{opacity:0;letter-spacing:.3em} 60%{opacity:.8;letter-spacing:.05em} 100%{opacity:1;letter-spacing:0} }
+  @keyframes k32 { 0%{opacity:0;transform:skewX(-15deg)} 100%{opacity:1;transform:skewX(0)} }
+  @keyframes k33 { 0%{background:linear-gradient(90deg,#f59e0b,#fbbf24);background-clip:text;-webkit-text-fill-color:transparent;opacity:0;transform:translateY(6px)} 100%{opacity:1;transform:translateY(0);background-clip:text;-webkit-text-fill-color:transparent} }
+  @keyframes k34 { 0%{opacity:0;transform:scale(1.6) translateY(-10px)} 50%{opacity:.7;transform:scale(.9) translateY(3px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+  @keyframes k35 { 0%{opacity:0;filter:brightness(3) saturate(0)} 60%{opacity:1;filter:brightness(1) saturate(.5)} 100%{filter:brightness(1) saturate(1)} }
+  @keyframes k36 { 0%{opacity:0;clip-path:circle(0% at 0% 50%)} 100%{opacity:1;clip-path:circle(100% at 0% 50%)} }
+  @keyframes k37 { 0%{text-shadow:0 0 20px #f59e0b,0 0 40px #f59e0b;opacity:0} 40%{opacity:.8;text-shadow:0 0 30px #f59e0b,0 0 60px #f59e0b} 100%{opacity:1;text-shadow:0 0 8px #f59e0b,0 0 16px #f59e0b} }
+  @keyframes k38 { 0%{opacity:0;transform:perspective(300px) rotateX(30deg)} 100%{opacity:1;transform:perspective(300px) rotateX(0)} }
+  @keyframes k39 { 0%{opacity:0;transform:translateY(6px);text-decoration-color:transparent} 50%{opacity:.8;transform:translateY(-2px)} 100%{opacity:1;transform:translateY(0);text-decoration-color:currentColor} }
+  @keyframes k40 { 0%{opacity:0;transform:translateX(-8px)} 20%{opacity:.4;transform:translateX(6px)} 35%{opacity:.7;transform:translateX(-3px)} 50%{opacity:1;transform:translateX(1px)} 100%{opacity:1;transform:translateX(0)} }
+
+  /* ═══════ Utility classes ═══════ */
+  .a1  { animation: k1  3s ease-out both; }
+  .a2  { display:inline-block; overflow:hidden; white-space:nowrap; width:0; border-right:2px solid transparent; animation: k2t 3s steps(14) forwards, k2c .5s step-end 6 forwards; }
+  .a3  { background:linear-gradient(90deg,transparent 0%,transparent 40%,rgba(255,255,255,.35) 50%,transparent 60%,transparent 100%); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation: k3 3s ease-in-out both; }
+  .a4  { animation: k4 3s ease-in-out both; color:#fbbf24; }
+  .a5  { animation: k5 3s cubic-bezier(.22,1,.36,1) both; }
+  .a6-fade { animation: k6f 3s ease-out both; }
+  .a6-line { position:absolute; bottom:-2px; left:0; height:1.5px; border-radius:1px; width:0; animation: k6l 3s ease-out both; }
+  .a7  { animation: k7 3s cubic-bezier(.34,1.56,.64,1) both; }
+  .a8  { clip-path:inset(0 100% 0 0); animation: k8 3s ease-in-out both; }
+  .a9c { display:inline-block; opacity:0; animation: k9 3s ease-out both; }
+  .a10 { display:inline-block; transform:translateY(100%); animation: k10 3s cubic-bezier(.22,1,.36,1) both; }
+
+  .a11 { animation: k11 3s ease-out both; }
+  .a12 { animation: k12 3s cubic-bezier(.22,1,.36,1) both; }
+  .a13 { animation: k13 3s ease-out both; }
+  .a14 { animation: k14 3s cubic-bezier(.22,1,.36,1) both; }
+  .a15 { animation: k15 3s ease-out both; }
+
+  .a16L { animation: k16L 3s ease-out both; }
+  .a16R { animation: k16R 3s ease-out both; }
+  .a17U { animation: k17U 3s ease-out both; }
+  .a17D { animation: k17D 3s ease-out both; }
+  .a18  { animation: k18 3s ease-out both; }
+  .a19i { animation: k19i 3s ease-out both; }
+  .a19s { clip-path:inset(0 100% 0 0); animation: k19s 3s ease-out both; }
+  .a20r { animation: k20r 3s ease-out both; }
+  .a20s { animation: k20s 3s ease-out both; }
+
+  /* split continued (21–30) */
+  .a21L { animation: k21L 3s ease-out both; }
+  .a21R { animation: k21R 3s ease-out both; }
+  .a22L { animation: k22L 3s ease-out both; }
+  .a22R { animation: k22R 3s ease-out both; }
+  .a23L { animation: k23L 3s ease-out both; }
+  .a23R { animation: k23R 3s ease-out both; }
+  .a24c { display:inline-block; opacity:0; animation: k24c 3s ease-out both; }
+  .a24R { animation: k24R 3s ease-out both; }
+  .a25t { display:inline-block; overflow:hidden; white-space:nowrap; width:0; border-right:2px solid transparent; animation: k25t 3s steps(6) forwards, k25c .5s step-end 4 forwards; }
+  .a25R { animation: k25R 3s ease-out both; }
+  .a26L { animation: k26L 3s ease-out both; }
+  .a26R { animation: k26R 3s ease-out both; }
+  .a27L { animation: k27L 3s ease-out both; }
+  .a27R { animation: k27R 3s ease-out both; }
+  .a28L { animation: k28L 3s ease-out both; color:#fecdd3; }
+  .a28R { animation: k28R 3s ease-out both; }
+  .a29L { clip-path:inset(0 100% 0 0); animation: k29L 3s ease-out both; }
+  .a29R { animation: k29R 3s ease-out both; }
+  .a30L { animation: k30L 3s ease-out both; }
+  .a30R { animation: k30R 3s ease-out both; }
+
+  /* solo Noesis */
+  .a31 { animation: k31 3s ease-out both; }
+  .a32 { animation: k32 3s ease-out both; }
+  .a33 { animation: k33 3s ease-out both; }
+  .a34 { animation: k34 3s cubic-bezier(.34,1.56,.64,1) both; }
+  .a35 { animation: k35 3s ease-out both; }
+  .a36 { animation: k36 3s ease-in-out both; }
+  .a37 { animation: k37 3s ease-out both; color:#fbbf24; }
+  .a38 { animation: k38 3s ease-out both; }
+  .a39 { animation: k39 3s ease-out both; text-decoration:underline; text-decoration-color:rgba(255,255,255,.4); text-underline-offset:3px; }
+  .a40 { animation: k40 3s ease-out both; }
+
+  /* Wrappers */
+  .rel { position: relative; display: inline-block; }
+  .oh  { overflow: hidden; display: inline-block; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    body { padding: 10px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>✦ Noesis reader — 40 brand animations</h1>
+<p class="subtitle">Ogni animazione dura 3 secondi • clicca «Replay» per rivederla • 10 insieme • 20 split • 10 solo</p>
+<div class="legend">
+  <span><span class="legend-dot ld-purple"></span> header viola</span>
+  <span><span class="legend-dot ld-gold"></span> header oro</span>
+  <span><span class="legend-dot ld-cyan"></span> header ciano</span>
+  <span><span class="legend-dot ld-rose"></span> header rosa</span>
+  <span><span class="legend-dot ld-white"></span> header chiaro</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GROUP A — "Noesis reader" insieme (1–10: classici + nuovi)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="section-title">A — «Noesis reader» insieme</div>
+<div class="grid">
+
+  <!-- 1: Fade + slide up -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a1" data-a="1">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">1 — Fade + slide</div><div class="card-desc">Appare dal basso con fade-in morbido. Semplice, pulito.</div><div class="card-footer"><button class="replay-btn" data-a="1">↻ Replay</button></div></div></div>
+
+  <!-- 2: Typewriter -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a2" data-a="2">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">2 — Typewriter</div><div class="card-desc">Lettere una dopo l'altra con cursore. Vintage.</div><div class="card-footer"><button class="replay-btn" data-a="2">↻ Replay</button></div></div></div>
+
+  <!-- 3: Gradient shimmer -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a3" data-a="3">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">3 — Shimmer</div><div class="card-desc">Onda luminosa da destra a sinistra. Moderno.</div><div class="card-footer"><button class="replay-btn" data-a="3">↻ Replay</button></div></div></div>
+
+  <!-- 4: Breathing glow (gold) -->
+  <div class="card"><div class="card-header gold"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a4" data-a="4" style="color:#fbbf24;">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">4 — Breathing glow • oro</div><div class="card-desc">Pulsa con alone dorato. Header oro, testo caldo.</div><div class="card-footer"><button class="replay-btn" data-a="4">↻ Replay</button></div></div></div>
+
+  <!-- 5: Ink spread -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a5" data-a="5">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">5 — Ink spread</div><div class="card-desc">Sfocato → nitido, come inchiostro su carta.</div><div class="card-footer"><button class="replay-btn" data-a="5">↻ Replay</button></div></div></div>
+
+  <!-- 6: Underline draw (white header) -->
+  <div class="card"><div class="card-header white"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="rel"><span class="brand-text a6-fade" data-a="6" style="color:#1e293b;">Noesis reader</span><span class="a6-line" style="background:rgba(102,126,234,.6);"></span></span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">6 — Underline draw • chiaro</div><div class="card-desc">Linea viola si disegna sotto. Header bianco, elegante.</div><div class="card-footer"><button class="replay-btn" data-a="6">↻ Replay</button></div></div></div>
+
+  <!-- 7: Scale bounce -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a7" data-a="7">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">7 — Scale &amp; bounce</div><div class="card-desc">Parte grande, rimbalza due volte, si assesta.</div><div class="card-footer"><button class="replay-btn" data-a="7">↻ Replay</button></div></div></div>
+
+  <!-- 8: Spotlight -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a8" data-a="8">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">8 — Spotlight</div><div class="card-desc">Luce scorre da sinistra svelando il testo. Deciso.</div><div class="card-footer"><button class="replay-btn" data-a="8">↻ Replay</button></div></div></div>
+
+  <!-- 9: Cascade chars -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text" data-a="9" id="a9t">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">9 — Cascade</div><div class="card-desc">Ogni lettera cade dall'alto con ritardo progressivo.</div><div class="card-footer"><button class="replay-btn" data-a="9">↻ Replay</button></div></div></div>
+
+  <!-- 10: Curtain reveal -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="oh"><span class="brand-text a10" data-a="10">Noesis reader</span></span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">10 — Curtain reveal</div><div class="card-desc">Sale da dietro un sipario invisibile. Stiloso.</div><div class="card-footer"><button class="replay-btn" data-a="10">↻ Replay</button></div></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GROUP A — continued: animazioni 11–15 (nuovi effetti insieme)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="grid">
+
+  <!-- 11: 3D flip -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a11" data-a="11">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">11 — 3D flip</div><div class="card-desc">Ruota in 3D sull'asse X come una carta che si gira.</div><div class="card-footer"><button class="replay-btn" data-a="11">↻ Replay</button></div></div></div>
+
+  <!-- 12: Swing from left -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a12" data-a="12">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">12 — Swing</div><div class="card-desc">Entra da sinistra con leggera rotazione. Dinamico.</div><div class="card-footer"><button class="replay-btn" data-a="12">↻ Replay</button></div></div></div>
+
+  <!-- 13: Glitch RGB (cyan header) -->
+  <div class="card"><div class="card-header cyan"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a13" data-a="13">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">13 — Glitch RGB • ciano</div><div class="card-desc">Split rosso/ciano che converge. Header ciano.</div><div class="card-footer"><button class="replay-btn" data-a="13">↻ Replay</button></div></div></div>
+
+  <!-- 14: Zoom in -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a14" data-a="14">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">14 — Zoom in</div><div class="card-desc">Parte minuscolo e sfocato, zoomma al centro.</div><div class="card-footer"><button class="replay-btn" data-a="14">↻ Replay</button></div></div></div>
+
+  <!-- 15: Float + settle -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a15" data-a="15">Noesis reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">15 — Float &amp; settle</div><div class="card-desc">Galleggia verso l'alto, poi si posa dolcemente.</div><div class="card-footer"><button class="replay-btn" data-a="15">↻ Replay</button></div></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GROUP B — Split "Noesis" + "reader" (16–20)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="section-title">B — Split: «Noesis» + «reader» separati</div>
+<div class="grid">
+
+  <!-- 16: Left + Right collision (rose header) -->
+  <div class="card"><div class="card-header rose"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a16L" data-a="16" style="color:#fecdd3;">Noesis</span><span class="brand-text2 a16R" data-a="16b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">16 — Collision • rosa</div><div class="card-desc">"Noesis" da sinistra, "reader" da destra → si incontrano. Header rosa.</div><div class="card-footer"><button class="replay-btn" data-a="16">↻ Replay</button></div></div></div>
+
+  <!-- 17: Fade up + down -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a17U" data-a="17">Noesis</span><span class="brand-text2 a17D" data-a="17b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">17 — Up + Down</div><div class="card-desc">"Noesis" scende, "reader" sale. S'incontrano al centro.</div><div class="card-footer"><button class="replay-btn" data-a="17">↻ Replay</button></div></div></div>
+
+  <!-- 18: Scale staggered (gold header) -->
+  <div class="card"><div class="card-header gold"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a18" data-a="18" style="color:#fde68a;animation-delay:0s;">Noesis</span><span class="brand-text2 a18" data-a="18b" style="color:#fde68a;animation-delay:.4s;">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">18 — Scale staggered • oro</div><div class="card-desc">"Noesis" scala su, poi "reader" con ritardo. Header oro.</div><div class="card-footer"><button class="replay-btn" data-a="18">↻ Replay</button></div></div></div>
+
+  <!-- 19: Ink + Spotlight (cyan header) -->
+  <div class="card"><div class="card-header cyan"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a19i" data-a="19">Noesis</span><span class="brand-text2 a19s" data-a="19b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">19 — Ink + Spotlight • ciano</div><div class="card-desc">"Noesis" emerge sfocato, "reader" con spotlight. Header ciano.</div><div class="card-footer"><button class="replay-btn" data-a="19">↻ Replay</button></div></div></div>
+
+  <!-- 20: Rotate + Slide (white header) -->
+  <div class="card"><div class="card-header white"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a20r" data-a="20" style="color:#1e293b;font-weight:700;">Noesis</span><span class="brand-text2 a20s" data-a="20b" style="color:#475569;">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">20 — Rotate + Slide • chiaro</div><div class="card-desc">"Noesis" ruota 3D, "reader" scivola da destra. Elegante su bianco.</div><div class="card-footer"><button class="replay-btn" data-a="20">↻ Replay</button></div></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GROUP B — continued: split 21–30
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="grid">
+
+  <!-- 21: Drop + Rise (crossing paths) -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a21L" data-a="21">Noesis</span><span class="brand-text2 a21R" data-a="21b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">21 — Drop + Rise</div><div class="card-desc">"Noesis" scende dall'alto, "reader" sale dal basso. S'incrociano.</div><div class="card-footer"><button class="replay-btn" data-a="21">↻ Replay</button></div></div></div>
+
+  <!-- 22: Pulse glow + delayed (gold header) -->
+  <div class="card"><div class="card-header gold"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a22L" data-a="22" style="color:#fde68a;">Noesis</span><span class="brand-text2 a22R" data-a="22b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">22 — Pulse + Delayed • oro</div><div class="card-desc">"Noesis" pulsa con glow dorato, "reader" appare dopo. Header oro.</div><div class="card-footer"><button class="replay-btn" data-a="22">↻ Replay</button></div></div></div>
+
+  <!-- 23: Elastic stretch + fade -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a23L" data-a="23">Noesis</span><span class="brand-text2 a23R" data-a="23b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">23 — Elastic + Fade</div><div class="card-desc">"Noesis" si allunga elasticamente, "reader" fade-in ritardato.</div><div class="card-footer"><button class="replay-btn" data-a="23">↻ Replay</button></div></div></div>
+
+  <!-- 24: Cascade chars + slide -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text" data-a="24" id="a24t">Noesis</span><span class="brand-text2 a24R" data-a="24b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">24 — Cascade + Slide</div><div class="card-desc">"Noesis" lettera per lettera in cascata, "reader" scivola da destra.</div><div class="card-footer"><button class="replay-btn" data-a="24">↻ Replay</button></div></div></div>
+
+  <!-- 25: Typewriter + scale (white header) -->
+  <div class="card"><div class="card-header white"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a25t" data-a="25" style="color:#1e293b;">Noesis</span><span class="brand-text2 a25R" data-a="25b" style="color:#475569;">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">25 — Typewriter + Scale • chiaro</div><div class="card-desc">"Noesis" typewriter, "reader" scala dopo. Elegante su bianco.</div><div class="card-footer"><button class="replay-btn" data-a="25">↻ Replay</button></div></div></div>
+
+  <!-- 26: 3D rotate + slide (rose header) -->
+  <div class="card"><div class="card-header rose"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a26L" data-a="26" style="color:#fecdd3;">Noesis</span><span class="brand-text2 a26R" data-a="26b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">26 — 3D + Slide • rosa</div><div class="card-desc">"Noesis" ruota in prospettiva 3D, "reader" arriva da destra.</div><div class="card-footer"><button class="replay-btn" data-a="26">↻ Replay</button></div></div></div>
+
+  <!-- 27: Blur + Zoom (cyan header) -->
+  <div class="card"><div class="card-header cyan"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a27L" data-a="27">Noesis</span><span class="brand-text2 a27R" data-a="27b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">27 — Blur + Zoom • ciano</div><div class="card-desc">"Noesis" sfocato→nitido, "reader" zoomma da minuscolo. Profondità.</div><div class="card-footer"><button class="replay-btn" data-a="27">↻ Replay</button></div></div></div>
+
+  <!-- 28: Neon pink + delayed (rose header) -->
+  <div class="card"><div class="card-header rose"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a28L" data-a="28">Noesis</span><span class="brand-text2 a28R" data-a="28b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">28 — Neon pink • rosa</div><div class="card-desc">"Noesis" glow neon rosa intenso, "reader" appare dopo. Drammatico.</div><div class="card-footer"><button class="replay-btn" data-a="28">↻ Replay</button></div></div></div>
+
+  <!-- 29: Swipe reveal + float -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a29L" data-a="29">Noesis</span><span class="brand-text2 a29R" data-a="29b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">29 — Swipe + Float</div><div class="card-desc">"Noesis" svelato da spotlight swipe, "reader" galleggia su.</div><div class="card-footer"><button class="replay-btn" data-a="29">↻ Replay</button></div></div></div>
+
+  <!-- 30: Shake + Settle -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a30L" data-a="30">Noesis</span><span class="brand-text2 a30R" data-a="30b">reader</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">30 — Shake + Settle</div><div class="card-desc">"Noesis" vibra/oscilla (tensione), "reader" appare calmo. Contrasto.</div><div class="card-footer"><button class="replay-btn" data-a="30">↻ Replay</button></div></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     GROUP C — Solo "Noesis" (31–40, colori vari)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="section-title">C — Solo «Noesis»</div>
+<div class="grid">
+
+  <!-- 31: Letter spacing -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a31" data-a="31">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">31 — Letter spacing</div><div class="card-desc">Le lettere partono distanziate e si avvicinano. Respira.</div>
+<div class="card-footer"><button class="replay-btn" data-a="31">↻ Replay</button></div></div></div>
+
+  <!-- 32: Skew -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a32" data-a="32">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">32 — Skew</div><div class="card-desc">Entra inclinato (corsivo forzato) e si raddrizza.</div><div class="card-footer"><button class="replay-btn" data-a="32">↻ Replay</button></div></div></div>
+
+  <!-- 33: Gradient text (gold) -->
+  <div class="card"><div class="card-header gold"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a33" data-a="33" style="background:linear-gradient(90deg,#fbbf24,#f59e0b);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">33 — Gradient text • oro</div><div class="card-desc">Testo sfumato oro che appare dal basso. Caldo e premium.</div>
+<div class="card-footer"><button class="replay-btn" data-a="33">↻ Replay</button></div></div></div>
+
+  <!-- 34: Elastic drop -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a34" data-a="34">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">34 — Elastic drop</div><div class="card-desc">Cade dall'alto con rimbalzo elastico. Giocoso.</div>
+<div class="card-footer"><button class="replay-btn" data-a="34">↻ Replay</button></div></div></div>
+
+  <!-- 35: Desaturate → color (rose header) -->
+  <div class="card"><div class="card-header rose"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a35" data-a="35" style="color:#fecdd3;">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">35 — Desaturate • rosa</div><div class="card-desc">Parte sovraesposto/bianco e poi prende colore. Header rosa.</div>
+<div class="card-footer"><button class="replay-btn" data-a="35">↻ Replay</button></div></div></div>
+
+  <!-- 36: Circle reveal (cyan header) -->
+  <div class="card"><div class="card-header cyan"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a36" data-a="36">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">36 — Circle reveal • ciano</div><div class="card-desc">Un cerchio si espande da sinistra svelando il testo. Header ciano.</div>
+<div class="card-footer"><button class="replay-btn" data-a="36">↻ Replay</button></div></div></div>
+
+  <!-- 37: Neon glow (gold on dark) -->
+  <div class="card"><div class="card-header gold"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a37" data-a="37">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">37 — Neon glow • oro</div><div class="card-desc">Glow neon dorato intenso che si attenua. Impatto forte.</div>
+<div class="card-footer"><button class="replay-btn" data-a="37">↻ Replay</button></div></div></div>
+
+  <!-- 38: 3D perspective -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a38" data-a="38">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">38 — 3D perspective</div><div class="card-desc">Ruota in prospettiva 3D sull'asse X. Cinematografico.</div>
+<div class="card-footer"><button class="replay-btn" data-a="38">↻ Replay</button></div></div></div>
+
+  <!-- 39: Underline + float (white header) -->
+  <div class="card"><div class="card-header white"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a39" data-a="39" style="color:#1e293b;">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">39 — Underline + float • chiaro</div><div class="card-desc">Appare con sottolineatura già pronta. Leggero movimento up. Sobrio.</div>
+<div class="card-footer"><button class="replay-btn" data-a="39">↻ Replay</button></div></div></div>
+
+  <!-- 40: Gentle shake settle -->
+  <div class="card"><div class="card-header"><div class="card-header-left"><span class="card-hamburger">☰</span><div class="brand-wrap"><span class="brand-text a40" data-a="40">Noesis</span></div></div><span class="card-add-btn">+ Add books</span></div><div class="card-body"><div class="card-label">40 — Gentle shake</div><div class="card-desc">Oscilla orizzontalmente 4 volte e si ferma. Sottile, elegante.</div>
+<div class="card-footer"><button class="replay-btn" data-a="40">↻ Replay</button></div></div></div>
+
+</div>
+
+<script>
+  /* ═══════ Cascade: wrap each char ═══════ */
+  (function setupCascade() {
+    var el = document.getElementById('a9t');
+    if (!el) return;
+    var text = el.textContent;
+    el.textContent = '';
+    for (var i = 0; i < text.length; i++) {
+      var span = document.createElement('span');
+      span.className = 'a9c';
+      span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+      span.style.animationDelay = (0.07 * i) + 's';
+      el.appendChild(span);
+    }
+  })();
+
+  /* ═══════ Cascade 24: wrap Noesis chars ═══════ */
+  (function setupCascade24() {
+    var el = document.getElementById('a24t');
+    if (!el) return;
+    var text = el.textContent;
+    el.textContent = '';
+    for (var i = 0; i < text.length; i++) {
+      var span = document.createElement('span');
+      span.className = 'a24c';
+      span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+      span.style.animationDelay = (0.08 * i) + 's';
+      el.appendChild(span);
+    }
+  })();
+
+  /* ═══════ Replay engine ═══════ */
+  function resetAnim(el, cls) {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  }
+  function resetAnimWithCls(el) {
+    // Remove class, reflow, re-add
+    var cls = el.className;
+    // Store original class list minus animation classes
+    var animClasses = [];
+    var nonAnim = [];
+    cls.split(/\s+/).forEach(function(c) {
+      if (/^a\d/.test(c) || c === 'a6-fade' || c === 'a6-line' || c === 'a9c' || c === 'a10' || c === 'a24c') animClasses.push(c);
+      else nonAnim.push(c);
+    });
+    el.className = nonAnim.join(' ');
+    void el.offsetWidth;
+    el.className = nonAnim.concat(animClasses).join(' ');
+  }
+
+  document.querySelectorAll('.replay-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var id = this.dataset.a;
+
+      if (id === '6') {
+        // Underline draw: reset wrap children
+        var card = this.closest('.card');
+        var fadeEl = card.querySelector('.a6-fade');
+        var lineEl = card.querySelector('.a6-line');
+        if (fadeEl) resetAnimWithCls(fadeEl);
+        if (lineEl) resetAnimWithCls(lineEl);
+      } else if (id === '9') {
+        var chars = document.querySelectorAll('#a9t .a9c');
+        chars.forEach(function(c) { resetAnimWithCls(c); });
+      } else if (id === '10') {
+        var el10 = document.querySelector('[data-a="10"]');
+        if (el10) resetAnimWithCls(el10);
+      } else if (id === '16') {
+        var elL = document.querySelector('[data-a="16"]');
+        var elR = document.querySelector('[data-a="16b"]');
+        if (elL) resetAnimWithCls(elL);
+        if (elR) resetAnimWithCls(elR);
+      } else if (id === '17') {
+        var el17a = document.querySelector('[data-a="17"]');
+        var el17b = document.querySelector('[data-a="17b"]');
+        if (el17a) resetAnimWithCls(el17a);
+        if (el17b) resetAnimWithCls(el17b);
+      } else if (id === '18') {
+        var el18a = document.querySelector('[data-a="18"]');
+        var el18b = document.querySelector('[data-a="18b"]');
+        if (el18a) resetAnimWithCls(el18a);
+        if (el18b) resetAnimWithCls(el18b);
+      } else if (id === '19') {
+        var el19a = document.querySelector('[data-a="19"]');
+        var el19b = document.querySelector('[data-a="19b"]');
+        if (el19a) resetAnimWithCls(el19a);
+        if (el19b) resetAnimWithCls(el19b);
+      } else if (id === '20') {
+        var el20a = document.querySelector('[data-a="20"]');
+        var el20b = document.querySelector('[data-a="20b"]');
+        if (el20a) resetAnimWithCls(el20a);
+        if (el20b) resetAnimWithCls(el20b);
+      } else if (id === '21') {
+        var a = document.querySelector('[data-a="21"]');
+        var b = document.querySelector('[data-a="21b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '22') {
+        var a = document.querySelector('[data-a="22"]');
+        var b = document.querySelector('[data-a="22b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '23') {
+        var a = document.querySelector('[data-a="23"]');
+        var b = document.querySelector('[data-a="23b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '24') {
+        var chars = document.querySelectorAll('#a24t .a24c');
+        chars.forEach(function(c) { resetAnimWithCls(c); });
+        var b = document.querySelector('[data-a="24b"]');
+        if (b) resetAnimWithCls(b);
+      } else if (id === '25') {
+        var a = document.querySelector('[data-a="25"]');
+        var b = document.querySelector('[data-a="25b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '26') {
+        var a = document.querySelector('[data-a="26"]');
+        var b = document.querySelector('[data-a="26b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '27') {
+        var a = document.querySelector('[data-a="27"]');
+        var b = document.querySelector('[data-a="27b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '28') {
+        var a = document.querySelector('[data-a="28"]');
+        var b = document.querySelector('[data-a="28b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '29') {
+        var a = document.querySelector('[data-a="29"]');
+        var b = document.querySelector('[data-a="29b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else if (id === '30') {
+        var a = document.querySelector('[data-a="30"]');
+        var b = document.querySelector('[data-a="30b"]');
+        if (a) resetAnimWithCls(a);
+        if (b) resetAnimWithCls(b);
+      } else {
+        var el = document.querySelector('[data-a="' + id + '"]');
+        if (el) resetAnimWithCls(el);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

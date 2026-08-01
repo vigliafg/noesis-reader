@@ -1701,6 +1701,41 @@
       box-shadow: 0 1px 3px rgba(102,126,234,0.35);
     }
 
+    /* ── Extract action buttons (visible for html-clean/html-annotated) ── */
+    .extract-actions {
+      display: none;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .extract-actions.visible { display: flex; }
+    .extract-action-btn {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .extract-action-extract {
+      background: #667eea;
+      color: white;
+    }
+    .extract-action-extract:hover { background: #5a6fd6; transform: translateY(-1px); }
+    .extract-action-edit {
+      background: #10b981;
+      color: white;
+    }
+    .extract-action-edit:hover { background: #059669; transform: translateY(-1px); }
+
     /* ── Extract divider ── */
     .extract-divider {
       height: 1px;
@@ -4136,6 +4171,15 @@
               <i class="bi bi-diagram-3"></i>
               <span>Current + all sublevels</span>
             </div>
+            <div class="extract-divider"></div>
+            <div class="extract-actions" id="extractActions">
+              <button class="extract-action-btn extract-action-extract" id="extractActionExtract">
+                <i class="bi bi-download"></i> Extract
+              </button>
+              <button class="extract-action-btn extract-action-edit" id="extractActionEdit">
+                <i class="bi bi-pencil-square"></i> Extract + Edit
+              </button>
+            </div>
           </div>
         </div>
 
@@ -5230,6 +5274,11 @@ ${htmlContent}
           _extractChapterZip(htmlContent, bookName, chapterName, timestamp);
           break;
       }
+      // After dispatch: open editor if Extract+Edit was requested
+      if (_shouldOpenEditor) {
+        _shouldOpenEditor = false;
+        _openChapterInEditor(htmlContent, bookName, chapterName, chapterId);
+      }
     }
 
     // ── Download automatico file HTML (no dialog, per coppie automatiche) ────
@@ -5275,8 +5324,31 @@ ${htmlContent}
       }
     }
 
-    // ── Current extract format (html|txt|md|epub|pdf|zip) ─────────
+    // ── Open chapter in Noesis Editor (new tab via sessionStorage) ──────
+    function _openChapterInEditor(htmlContent, bookName, chapterName, chapterId) {
+      var payload = {
+        mode: 'chapter',
+        bookName: bookName,
+        chapterName: chapterName,
+        chapterId: chapterId,
+        bookId: currentBookId || '',
+        htmlContent: htmlContent
+      };
+      try {
+        sessionStorage.setItem('noesisEditorPayload', JSON.stringify(payload));
+      } catch(e) {
+        showToast('❌ Chapter too large for editor (sessionStorage full)', 'error', 4000);
+        console.warn('sessionStorage quota exceeded for editor payload:', e);
+        return;
+      }
+      window.open('noesis816-editor.html', '_blank');
+      setStatus('✅ Editor opened in new tab');
+    }
+
+    // ── Current extract format (html|txt|md|epub|pdf|zip|editor) ───
     let _extractFormat = 'html-clean';
+    var _shouldOpenEditor = false;
+    var _extractMode = null;
 
     // ── Generic file download helper ─────────────────────────────────────
     function _downloadFile(filename, data, mimeType) {
@@ -9246,6 +9318,19 @@ ${htmlContent}
       const extractMenu = document.getElementById('extractMenu');      extractChapterBtn.onclick = (e) => {
         e.stopPropagation();
         extractMenu.classList.toggle('show');
+        // Reset mode highlight and sync action buttons on menu open
+        if (extractMenu.classList.contains('show')) {
+          extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; });
+          _extractMode = null;
+          var actions = document.getElementById('extractActions');
+          if (actions) {
+            if (_extractFormat === 'html-clean' || _extractFormat === 'html-annotated') {
+              actions.classList.add('visible');
+            } else {
+              actions.classList.remove('visible');
+            }
+          }
+        }
       };
 
       // Format selector buttons
@@ -9255,6 +9340,16 @@ ${htmlContent}
           document.querySelectorAll('#extractFormatRow .extract-fmt-btn').forEach(function(b) { b.classList.remove('active'); });
           btn.classList.add('active');
           _extractFormat = btn.dataset.fmt;
+          // Show action buttons only for html-clean / html-annotated
+          var actions = document.getElementById('extractActions');
+          if (actions) {
+            if (_extractFormat === 'html-clean' || _extractFormat === 'html-annotated') {
+              actions.classList.add('visible');
+            } else {
+              actions.classList.remove('visible');
+            }
+          }
+          _extractMode = null; // reset mode on format change
         });
       });
 
@@ -9262,9 +9357,19 @@ ${htmlContent}
       extractMenu.querySelectorAll('.extract-menu-item').forEach(item => {
         item.onclick = async (e) => {
           e.stopPropagation();
-          extractMenu.classList.remove('show');
           
           const mode = item.dataset.mode;
+          
+          // For html-clean / html-annotated: select mode, don't trigger yet (action buttons do)
+          if (_extractFormat === 'html-clean' || _extractFormat === 'html-annotated') {
+            _extractMode = mode;
+            // Highlight selected mode
+            extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; });
+            item.style.background = '#f0fdf4';
+            return;
+          }
+
+          extractMenu.classList.remove('show');
           
           if (mode === 'current') {
             // Extract current chapter only (leaf node)
@@ -9300,6 +9405,58 @@ ${htmlContent}
           }
         };
       });
+
+      // Action button: Extract only (download)
+      var extractActionExtract = document.getElementById('extractActionExtract');
+      if (extractActionExtract) {
+        extractActionExtract.onclick = async function(e) {
+          e.stopPropagation();
+          if (!_extractMode) { showToast('Select a chapter scope first', 'warn', 2000); return; }
+          _shouldOpenEditor = false;
+          extractMenu.classList.remove('show');
+          if (_extractMode === 'current') {
+            await extractCurrentChapter();
+          } else if (_extractMode === 'tree') {
+            try {
+              var eloc = rendition.currentLocation();
+              if (!eloc || !eloc.start) { alert('Cannot determine current position'); return; }
+              var enav = await book.loaded.navigation;
+              var etocEntry = findTocEntry(enav.toc, eloc.start.href);
+              if (!etocEntry) { alert('Cannot identify chapter in TOC'); return; }
+              var eallEntries = collectAllSubchapters(etocEntry);
+              if (!eallEntries.length) { alert('No subchapters found'); return; }
+              var eoverallTitle = etocEntry.label || 'Chapter';
+              await extractMultipleSections(eallEntries, eoverallTitle);
+            } catch (err) { alert('Extraction failed: ' + err.message); }
+          }
+        };
+      }
+
+      // Action button: Extract + Edit (download + open editor)
+      var extractActionEdit = document.getElementById('extractActionEdit');
+      if (extractActionEdit) {
+        extractActionEdit.onclick = async function(e) {
+          e.stopPropagation();
+          if (!_extractMode) { showToast('Select a chapter scope first', 'warn', 2000); return; }
+          _shouldOpenEditor = true;
+          extractMenu.classList.remove('show');
+          if (_extractMode === 'current') {
+            await extractCurrentChapter();
+          } else if (_extractMode === 'tree') {
+            try {
+              var eloc = rendition.currentLocation();
+              if (!eloc || !eloc.start) { alert('Cannot determine current position'); return; }
+              var enav = await book.loaded.navigation;
+              var etocEntry = findTocEntry(enav.toc, eloc.start.href);
+              if (!etocEntry) { alert('Cannot identify chapter in TOC'); return; }
+              var eallEntries = collectAllSubchapters(etocEntry);
+              if (!eallEntries.length) { alert('No subchapters found'); return; }
+              var eoverallTitle = etocEntry.label || 'Chapter';
+              await extractMultipleSections(eallEntries, eoverallTitle);
+            } catch (err) { alert('Extraction failed: ' + err.message); }
+          }
+        };
+      }
     });
 
     /* ═══════════════════════════════════════════════════════
