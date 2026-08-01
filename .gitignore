@@ -6,6 +6,7 @@ node_modules/
 test*.epub
 test*.pdf
 test*.js
+!test_e2e_complete.js
 _create_test_files.py
 
 # Docs / meta

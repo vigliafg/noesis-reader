@@ -5324,8 +5324,8 @@ ${htmlContent}
       }
     }
 
-    // ── Open chapter in Noesis Editor (new tab via sessionStorage) ──────
-    function _openChapterInEditor(htmlContent, bookName, chapterName, chapterId) {
+    // ── Open chapter in Noesis Editor (new tab via IndexedDB) ──────
+    async function _openChapterInEditor(htmlContent, bookName, chapterName, chapterId) {
       var payload = {
         mode: 'chapter',
         bookName: bookName,
@@ -5334,15 +5334,39 @@ ${htmlContent}
         bookId: currentBookId || '',
         htmlContent: htmlContent
       };
+      var payloadJson = JSON.stringify(payload);
+      // Always use IndexedDB (no sessionStorage 5MB limit)
       try {
-        sessionStorage.setItem('noesisEditorPayload', JSON.stringify(payload));
+        await _storeEditorPayload(payloadJson);
       } catch(e) {
-        showToast('❌ Chapter too large for editor (sessionStorage full)', 'error', 4000);
-        console.warn('sessionStorage quota exceeded for editor payload:', e);
+        showToast('❌ Failed to store chapter for editor', 'error', 4000);
+        console.warn('IndexedDB store failed for editor payload:', e);
         return;
       }
       window.open('noesis-editor.html', '_blank');
       setStatus('✅ Editor opened in new tab');
+    }
+
+    // ── Store editor payload in IndexedDB (bridge reader→editor) ──────────
+    function _storeEditorPayload(payloadJson) {
+      return new Promise(function(resolve, reject) {
+        var request = indexedDB.open('NoesisEditorBridgeDB', 1);
+        request.onupgradeneeded = function(e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains('payloads')) {
+            db.createObjectStore('payloads', { keyPath: 'id' });
+          }
+        };
+        request.onsuccess = function(e) {
+          var db = e.target.result;
+          var tx = db.transaction('payloads', 'readwrite');
+          var store = tx.objectStore('payloads');
+          store.put({ id: 'current', data: payloadJson });
+          tx.oncomplete = function() { db.close(); resolve(); };
+          tx.onerror = function() { db.close(); reject(tx.error); };
+        };
+        request.onerror = function(e) { reject(e.target.error); };
+      });
     }
 
     // ── Current extract format (html|txt|md|epub|pdf|zip|editor) ───
@@ -6481,6 +6505,18 @@ ${htmlContent}
       return result;
     }
 
+
+    // ── Unified tree extraction helper ──────────────────────────
+    async function _extractTree(location) {
+      if (!location || !location.start) throw new Error("Cannot determine current position");
+      const nav = await book.loaded.navigation;
+      const tocEntry = findTocEntry(nav.toc, location.start.href);
+      if (!tocEntry) throw new Error("Cannot identify chapter in TOC");
+      const allEntries = collectAllSubchapters(tocEntry);
+      if (!allEntries.length) throw new Error("No subchapters found");
+      const overallTitle = tocEntry.label || "Chapter";
+      return { entries: allEntries, title: overallTitle };
+    }
     // Extract multiple sections and combine into a single HTML document
     async function findAndLoadImage(srcPath, sectionPath) {
       const zip = book.archive.zip;
@@ -8370,6 +8406,36 @@ ${htmlContent}
         })();
       }
 
+      // ── Test hooks (expose internals for Puppeteer tests) ─────────
+      window.__test = {
+        get rendition() { return rendition; },
+        get book() { return book; },
+        get _collection() { return _collection; },
+        _saveCollectionToDB: _saveCollectionToDB,
+        _loadCollectionFromDB: _loadCollectionFromDB,
+        _openCollectionDrawer: _openCollectionDrawer,
+        _closeCollectionDrawer: _closeCollectionDrawer,
+        _renderCollectionList: _renderCollectionList,
+        _clearCollection: _clearCollection,
+        _saveChunk: _saveChunk,
+        _importCollectionFromJSON: _importCollectionFromJSON,
+        _exportCollectionJSON: _exportCollectionJSON,
+        _updateCollectionBadge: _updateCollectionBadge,
+        _openChapterInEditor: _openChapterInEditor,
+        _dispatchExtractDownload: _dispatchExtractDownload,
+        get currentBookId() { return currentBookId; },
+        get currentBookTitle() { return currentBookTitle; },
+        get _checkedChunkIds() { return _checkedChunkIds; },
+        get _extractMode() { return _extractMode; },
+        set _extractMode(v) { _extractMode = v; },
+        get _extractFormat() { return _extractFormat; },
+        set _extractFormat(v) { _extractFormat = v; },
+        get _shouldOpenEditor() { return _shouldOpenEditor; },
+        set _shouldOpenEditor(v) { _shouldOpenEditor = v; },
+        extractCurrentChapter: extractCurrentChapter,
+        extractMultipleSections: extractMultipleSections,
+      };
+
       // Init elements
       const libraryInput = document.getElementById('libraryInput');
       const floatingPrevBtn = document.getElementById('floatingPrevBtn');
@@ -9364,8 +9430,10 @@ ${htmlContent}
           if (_extractFormat === 'html-clean' || _extractFormat === 'html-annotated') {
             _extractMode = mode;
             // Highlight selected mode
-            extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; });
-            item.style.background = '#f0fdf4';
+            extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; mi.style.color = ''; });
+            item.style.background = '#667eea';
+            item.style.color      = '#ffffff';
+            item.style.fontWeight = '600';
             return;
           }
 
@@ -9383,17 +9451,8 @@ ${htmlContent}
                 return;
               }
 
-              const currentHref = location.start.href;
-              const nav = await book.loaded.navigation;
-
-              const tocEntry = findTocEntry(nav.toc, currentHref);
-              if (!tocEntry) {
-                alert('Cannot find current chapter in table of contents');
-                return;
-              }
-
-              const allEntries = collectAllSubchapters(tocEntry);
-              const overallTitle = `${tocEntry.label} (Complete)`;
+              const { entries: allEntries, title: tocLabel } = await _extractTree(location.start ? location : rendition.currentLocation());
+              const overallTitle = tocLabel + ' (Complete)';
               
               await extractMultipleSections(allEntries, overallTitle);
               
@@ -9418,14 +9477,7 @@ ${htmlContent}
             await extractCurrentChapter();
           } else if (_extractMode === 'tree') {
             try {
-              var eloc = rendition.currentLocation();
-              if (!eloc || !eloc.start) { alert('Cannot determine current position'); return; }
-              var enav = await book.loaded.navigation;
-              var etocEntry = findTocEntry(enav.toc, eloc.start.href);
-              if (!etocEntry) { alert('Cannot identify chapter in TOC'); return; }
-              var eallEntries = collectAllSubchapters(etocEntry);
-              if (!eallEntries.length) { alert('No subchapters found'); return; }
-              var eoverallTitle = etocEntry.label || 'Chapter';
+              var { entries: eallEntries, title: eoverallTitle } = await _extractTree(rendition.currentLocation());
               await extractMultipleSections(eallEntries, eoverallTitle);
             } catch (err) { alert('Extraction failed: ' + err.message); }
           }
@@ -9444,14 +9496,7 @@ ${htmlContent}
             await extractCurrentChapter();
           } else if (_extractMode === 'tree') {
             try {
-              var eloc = rendition.currentLocation();
-              if (!eloc || !eloc.start) { alert('Cannot determine current position'); return; }
-              var enav = await book.loaded.navigation;
-              var etocEntry = findTocEntry(enav.toc, eloc.start.href);
-              if (!etocEntry) { alert('Cannot identify chapter in TOC'); return; }
-              var eallEntries = collectAllSubchapters(etocEntry);
-              if (!eallEntries.length) { alert('No subchapters found'); return; }
-              var eoverallTitle = etocEntry.label || 'Chapter';
+              var { entries: eallEntries, title: eoverallTitle } = await _extractTree(rendition.currentLocation());
               await extractMultipleSections(eallEntries, eoverallTitle);
             } catch (err) { alert('Extraction failed: ' + err.message); }
           }

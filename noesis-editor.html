@@ -262,6 +262,8 @@ header {
 /* Variant: warning (orange) */
 .btn-editor-warning { background: #f59e0b !important; color: #fff !important; border-color: #f59e0b !important; }
 .btn-editor-warning:hover { background: #d97706 !important; }
+.btn-editor-danger { background: #ef4444 !important; color: #fff !important; border-color: #ef4444 !important; }
+.btn-editor-danger:hover { background: #dc2626 !important; }
 
 /* Variant: info (cyan) */
 .btn-editor-info { background: #06b6d4 !important; color: #fff !important; border-color: #06b6d4 !important; }
@@ -449,6 +451,51 @@ header {
   border-color: #93c5fd;
 }
 .chunk-item.selected .chunk-label { color: #1d4ed8; }
+
+/* ── Inspect filter bar ── */
+#inspectFilterBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+#inspectFilterTypes { display: flex; gap: 3px; }
+.insp-ft-btn {
+  padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: system-ui, sans-serif;
+  white-space: nowrap;
+}
+.insp-ft-btn:hover { background: #f3f4f6; }
+.insp-ft-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.insp-chapter-select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  font-family: system-ui, sans-serif;
+  max-width: 180px;
+  flex: 1;
+}
+.insp-date {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
 
 /* ── Inspect footer: selection bar ── */
 #inspectFooter {
@@ -1098,6 +1145,17 @@ header {
     <span id="inspectTitle">Collection</span>
     <button id="inspectClose">&#x2715;</button>
   </div>
+  <div id="inspectFilterBar">
+    <div id="inspectFilterTypes">
+      <button class="insp-ft-btn active" data-type="all">All</button>
+      <button class="insp-ft-btn" data-type="img"><i class="bi bi-image"></i> Img</button>
+      <button class="insp-ft-btn" data-type="text"><i class="bi bi-fonts"></i> Text</button>
+      <button class="insp-ft-btn" data-type="table"><i class="bi bi-table"></i> Table</button>
+    </div>
+    <select id="inspectChapterFilter" class="insp-chapter-select">
+      <option value="all">All chapters</option>
+    </select>
+  </div>
   <div id="inspectList"></div>
   <div id="inspectFooter">
     <span id="inspectSelCount">0 selected</span>
@@ -1157,6 +1215,9 @@ header {
 
     <!-- New — apre editor vuoto in nuova tab -->
     <button class="btn-editor" id="chNewBtn" title="New — editor vuoto in nuova tab">New</button>
+
+    <!-- Discard — cancella draft e resetta editor -->
+    <button class="btn-editor btn-editor-danger" id="chDiscardBtn" title="Discard current content and draft">Discard</button>
 
     <!-- Import capitolo -->
     <button class="btn-editor btn-editor-warning" id="chImportBtn" title="Import chapter">Import</button>
@@ -1299,34 +1360,107 @@ var _chapterName = '';
 var _chapterId   = '';
 var _mode        = 'standalone'; // 'chapter' | 'standalone'
 var _toastShown  = false;     // one-time session toast for chapter mode
-
+var _bookId      = '';        // current book id (for IndexedDB persistence)
 
 /* ════════════════════════════════════════════════
-   Load reader collections from shared IndexedDB
+   IndexedDB helpers — unified with reader
+   DB: EpubLibraryDB  |  Store: books  |  Key: book id
 ════════════════════════════════════════════════ */
-function _loadReaderCollections(bookId) {
-  if (!bookId) return;
-  var DB_NAME = 'noesisDB';
-  var request = indexedDB.open(DB_NAME, 1);
-  request.onsuccess = function(e) {
-    var db = e.target.result;
-    try {
-      var tx = db.transaction(['books'], 'readonly');
-      var store = tx.objectStore('books');
+var _COL_DB_NAME    = 'EpubLibraryDB';
+var _COL_DB_VERSION = 1;
+var _COL_STORE_NAME = 'books';
+
+function _openColDB() {
+  return new Promise(function(resolve, reject) {
+    var request = indexedDB.open(_COL_DB_NAME, _COL_DB_VERSION);
+    var blockedTimer = null;
+    request.onupgradeneeded = function(event) {
+      var db = event.target.result;
+      if (!db.objectStoreNames.contains(_COL_STORE_NAME)) {
+        db.createObjectStore(_COL_STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = function(event) {
+      if (blockedTimer) clearTimeout(blockedTimer);
+      var db = event.target.result;
+      db.onversionchange = function() { db.close(); console.warn('EpubLibraryDB: version changed externally, connection closed.'); };
+      resolve(db);
+    };
+    request.onerror = function(event) {
+      if (blockedTimer) clearTimeout(blockedTimer);
+      var error = event.target.error;
+      if (error.name === 'VersionError') {
+        console.warn('EpubLibraryDB VersionError, deleting old database...');
+        var deleteRequest = indexedDB.deleteDatabase(_COL_DB_NAME);
+        deleteRequest.onsuccess = function() {
+          var retryRequest = indexedDB.open(_COL_DB_NAME, _COL_DB_VERSION);
+          retryRequest.onupgradeneeded = function(event) {
+            var db = event.target.result;
+            if (!db.objectStoreNames.contains(_COL_STORE_NAME)) {
+              db.createObjectStore(_COL_STORE_NAME, { keyPath: 'id' });
+            }
+          };
+          retryRequest.onsuccess = function(event) { resolve(event.target.result); };
+          retryRequest.onerror = function(event) { reject(event.target.error); };
+        };
+        deleteRequest.onerror = function() { reject(error); };
+      } else {
+        reject(error);
+      }
+    };
+  });
+}
+
+function _saveCollectionToDB() {
+  if (!_bookId) return;
+  _openColDB().then(function(db) {
+    var tx = db.transaction(_COL_STORE_NAME, 'readonly');
+    var store = tx.objectStore(_COL_STORE_NAME);
+    var req = store.get(_bookId);
+    req.onsuccess = function() {
+      var bookData = req.result;
+      if (!bookData) { db.close(); return; }
+      bookData.collections = _collection.slice();
+      var tx2 = db.transaction(_COL_STORE_NAME, 'readwrite');
+      var store2 = tx2.objectStore(_COL_STORE_NAME);
+      var putReq = store2.put(bookData);
+      putReq.onsuccess = function() { db.close(); };
+      putReq.onerror = function() { db.close(); console.warn('Save collection failed:', putReq.error); };
+    };
+    req.onerror = function() { db.close(); console.warn('Read book for collection save failed:', req.error); };
+  }).catch(function(e) { console.warn('_saveCollectionToDB error:', e); });
+}
+
+function _loadCollectionFromDB(bookId) {
+  if (!bookId) return Promise.resolve();
+  return _openColDB().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var tx = db.transaction(_COL_STORE_NAME, 'readonly');
+      var store = tx.objectStore(_COL_STORE_NAME);
       var req = store.get(bookId);
       req.onsuccess = function() {
         var bookData = req.result;
-        if (bookData && bookData.collections && Array.isArray(bookData.collections)) {
-          _collection = bookData.collections;
-          _updateCounter();
-          snToast('Loaded ' + _collection.length + ' collection items from library');
-        }
+        _collection = (bookData && bookData.collections) ? bookData.collections : [];
+        _updateCounter();
+        db.close();
+        resolve();
       };
-      req.onerror = function() { console.warn('Failed to load reader collections'); };
-    } catch(e) { console.warn('Cannot access reader IndexedDB:', e); }
-    db.close();
-  };
-  request.onerror = function() { console.warn('Cannot open noesisDB for collections'); };
+      req.onerror = function() { db.close(); console.warn('Load collection failed:', req.error); _collection = []; _updateCounter(); resolve(); };
+    });
+  }).catch(function(e) { console.warn('_loadCollectionFromDB error:', e); _collection = []; _updateCounter(); });
+}
+
+/* ════════════════════════════════════════════════
+   Load reader collections from shared IndexedDB
+   (bridge: opens reader's EpubLibraryDB/books)
+════════════════════════════════════════════════ */
+function _loadReaderCollections(bookId) {
+  if (!bookId) return;
+  _loadCollectionFromDB(bookId).then(function() {
+    if (_collection.length > 0) {
+      snToast('Loaded ' + _collection.length + ' collection items from library');
+    }
+  });
 }
 
 
@@ -1345,11 +1479,18 @@ function _newDocument() {
     }
   }
 
+  // Delete existing draft before reset
+  _deleteContentDraft();
+  // Reset filters
+  _inspFilterType = 'all';
+  _inspFilterChapter = 'all';
+
   // Reset editor e variabili di contesto
   $('#editor').summernote('code', '');
   _bookName    = '';
   _chapterName = '';
   _chapterId   = '';
+  _bookId      = '';
   _mode        = 'standalone';
   _collection  = [];
   _updateCounter();
@@ -1361,6 +1502,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var btn = document.getElementById('chNewBtn');
   if (!btn) return;
   btn.addEventListener('click', function() { _newDocument(); });
+  var discardBtn = document.getElementById('chDiscardBtn');
+  if (discardBtn) discardBtn.addEventListener('click', function() { _discardDocument(); });
 });
 
 /* ════════════════════════════════════════════════
@@ -1413,28 +1556,44 @@ function _enrichChunk(chunk) {
   var c = chunk.content || '';
   var type = 'text';
   if (/<table[\s>]/i.test(c))    type = 'table';
-  else if (/<img[\s>]/i.test(c)) type = 'image';
+  else if (/<img[\s>]/i.test(c)) type = 'img';
+
+  var src = '', alt = '';
+  if (type === 'img') {
+    var mSrc = c.match(/src="([^"]*)"/);
+    var mAlt = c.match(/alt="([^"]*)"/);
+    if (mSrc) src = mSrc[1];
+    if (mAlt) alt = mAlt[1];
+  }
+
   return Object.assign({}, chunk, {
-    type:        type,
-    bookName:    _bookName,
-    chapterName: _chapterName,
-    timestamp:   chunk.timestamp || Date.now()
+    type:    type,
+    book:    _bookName,
+    chapter: _chapterName,
+    date:    new Date(chunk.timestamp || Date.now()).toISOString(),
+    src:     src,
+    alt:     alt,
+    color:   chunk.color || 'yellow'
   });
 }
 
 function _saveChunk(chunk) {
   var toStore = Object.assign({}, chunk);
-  toStore.id = Date.now() + '_' + Math.floor(Math.random() * 1e9);
+  toStore.id = Date.now();
   _collection.push(toStore);
+  _saveCollectionToDB();
+  _updateCounter();
   return toStore.id;
 }
 
 function _deleteChunkById(id) {
   _collection = _collection.filter(function(c) { return c.id !== id; });
+  _saveCollectionToDB();
 }
 
 function _clearCollection() {
   _collection = [];
+  _saveCollectionToDB();
   _updateCounter();
 }
 
@@ -1635,7 +1794,7 @@ function _generateCollectionMd(keepImages) {
   var md = '# ' + (_chapterName || _bookName || 'Collection') + nL + nL;
   _collection.forEach(function(c, i) {
     if (c.label) md += '### ' + c.label + nL + nL;
-    if (c.type === 'image') {
+    if (c.type === 'img') {
       if (keepImages) md += '![Image](images/image_' + i + '.png)' + nL + nL;
       else            md += '*[Image omitted]*' + nL + nL;
     } else if (c.type === 'table') {
@@ -1676,7 +1835,7 @@ function _exportCollectionMdZip() {
   var imgFolder = zip.folder('images');
   var md = _generateCollectionMd(true);
   _collection.forEach(function(c, i) {
-    if (c.type === 'image') {
+    if (c.type === 'img') {
       var tmp = document.createElement('div');
       tmp.innerHTML = c.content;
       var imgEl = tmp.querySelector('img');
@@ -1709,7 +1868,7 @@ function _exportCollectionHtml() {
   _collection.forEach(function(c, i) {
     html += '<div class="chunk">';
     if (c.label) html += '<h3>' + c.label + '</h3>';
-    if (c.type === 'image') {
+    if (c.type === 'img') {
       var tmp = document.createElement('div');
       tmp.innerHTML = c.content;
       var imgEl = tmp.querySelector('img');
@@ -1730,6 +1889,8 @@ function _exportCollectionHtml() {
 /* Tracks selected chunk ids in inspect panel */
 var _inspectSelected = {};
 var _savedRange = null; // range salvato all'apertura inspect (per inject al cursore)
+var _inspFilterType = 'all';
+var _inspFilterChapter = 'all';
 
 function _openInspect() {
   _inspectSelected = {};
@@ -1741,6 +1902,9 @@ function _openInspect() {
     _savedRange = false;
   }
   var panel = document.getElementById('inspectPanel');
+  // Show backdrop on mobile
+  var backdrop = document.getElementById('mobileOverlayBackdropEditor');
+  if (backdrop && window.innerWidth <= 768) backdrop.classList.add('visible');
   panel.classList.add('open');
   // Centra il panel la prima volta (o se non ha coordinate esplicite)
   if (!panel.style.left || panel.style.transform) {
@@ -1777,6 +1941,8 @@ function _injectChunkAtCursor(chunk) {
 }
 function _closeInspect() {
   document.getElementById('inspectPanel').classList.remove('open');
+  var backdrop = document.getElementById('mobileOverlayBackdropEditor');
+  if (backdrop) backdrop.classList.remove('visible');
 }
 document.getElementById('inspectClose').addEventListener('click', _closeInspect);
 
@@ -1891,6 +2057,25 @@ document.getElementById('inspectSelNone').addEventListener('click', function() {
   _updateInspectFooter();
 });
 
+// ── Inspect filter: type buttons ──
+document.querySelectorAll('#inspectFilterTypes .insp-ft-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#inspectFilterTypes .insp-ft-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _inspFilterType = btn.dataset.type;
+    _renderInspect();
+  });
+});
+
+// ── Inspect filter: chapter dropdown ──
+var inspChFilter = document.getElementById('inspectChapterFilter');
+if (inspChFilter) {
+  inspChFilter.addEventListener('change', function() {
+    _inspFilterChapter = inspChFilter.value;
+    _renderInspect();
+  });
+}
+
 document.getElementById('inspectInjectBtn').addEventListener('click', function() {
   var selected = _collection.filter(function(c) { return _inspectSelected[c.id]; });
   if (selected.length === 0) return;
@@ -1905,23 +2090,50 @@ document.getElementById('inspectInjectBtn').addEventListener('click', function()
   _closeInspect();
 });
 
+function _populateInspectChapterFilter() {
+  var sel = document.getElementById('inspectChapterFilter');
+  if (!sel) return;
+  var chapters = [];
+  _collection.forEach(function(c) {
+    var ch = c.chapter || 'Unknown';
+    if (chapters.indexOf(ch) === -1) chapters.push(ch);
+  });
+  chapters.sort();
+  var prev = sel.value;
+  sel.innerHTML = '<option value="all">All chapters</option>';
+  chapters.forEach(function(ch) {
+    sel.innerHTML += '<option value="' + ch + '">' + ch + '</option>';
+  });
+  if (chapters.indexOf(prev) !== -1) sel.value = prev;
+}
+
 function _renderInspect() {
   var list = document.getElementById('inspectList');
   var title = document.getElementById('inspectTitle');
   var chunks = _collection.slice();
+
+  // Apply filters
+  if (_inspFilterType !== 'all') chunks = chunks.filter(function(c) { return c.type === _inspFilterType; });
+  if (_inspFilterChapter !== 'all') chunks = chunks.filter(function(c) { return c.chapter === _inspFilterChapter; });
+
   title.textContent = 'Collection — ' + chunks.length + ' chunk' + (chunks.length !== 1 ? 's' : '');
   list.innerHTML = '';
+  _populateInspectChapterFilter();
   _updateInspectFooter();
   if (chunks.length === 0) {
-    list.innerHTML = '<div class="inspect-empty">No chunks in collection yet.</div>';
+    var msg = _collection.length === 0
+      ? '<div class="inspect-empty">No chunks in collection yet.</div>'
+      : '<div class="inspect-empty">No chunks match filters.</div>';
+    list.innerHTML = msg;
     return;
   }
   chunks.forEach(function(chunk, idx) {
     var typeLabel = (chunk.type || 'text');
+    if (typeLabel === 'img') typeLabel = 'image';
     typeLabel = typeLabel.charAt(0).toUpperCase() + typeLabel.slice(1);
     var meta = '';
-    if (chunk.bookName)    meta += ' · ' + chunk.bookName;
-    if (chunk.chapterName) meta += ' › ' + chunk.chapterName;
+    if (chunk.book)    meta += ' · ' + chunk.book;
+    if (chunk.chapter) meta += ' › ' + chunk.chapter;
 
     var item = document.createElement('div');
     item.className = 'chunk-item' + (_inspectSelected[chunk.id] ? ' selected' : '');
@@ -1954,8 +2166,24 @@ function _renderInspect() {
     preview.className = 'chunk-preview';
     preview.innerHTML = chunk.content || '';
 
+    // Color highlight preview for text chunks
+    if (chunk.type === 'text' && chunk.color) {
+      var hlMap = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
+      preview.style.borderLeft = '3px solid ' + (hlMap[chunk.color] || '#ffeb3b');
+      preview.style.paddingLeft = '8px';
+    }
+
     body.appendChild(label);
     body.appendChild(preview);
+
+    // Date
+    if (chunk.date) {
+      var dateEl = document.createElement('div');
+      dateEl.className = 'insp-date';
+      var d = new Date(chunk.date);
+      dateEl.textContent = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      body.appendChild(dateEl);
+    }
 
     /* ── Action buttons ── */
     var delBtn = document.createElement('button');
@@ -2098,7 +2326,12 @@ function initEditor() {
             reader.readAsDataURL(file);
           });
         },
-
+        onChange: function(contents) {
+          if (_draftTimer) clearTimeout(_draftTimer);
+          _draftTimer = setTimeout(function() {
+            _saveContentDraft();
+          }, 2000);
+        }
       }
     });
 
@@ -2110,56 +2343,186 @@ function initEditor() {
       var raw;
       if (payloadEl) {
         raw = payloadEl.textContent;
-      } else {
-        // Fallback: sessionStorage (payload iniettato da noesis-reader)
-        raw = sessionStorage.getItem('noesisEditorPayload');
-        if (raw) sessionStorage.removeItem('noesisEditorPayload');
       }
-      if (!raw) return; // standalone fallback: editor vuoto
-      var payload;
-      try { payload = JSON.parse(raw); } catch(e) { return; }
-      if (!payload) return;
-
-      _mode        = payload.mode        || 'standalone';
-      _bookName    = payload.bookName    || '';
-      _chapterName = payload.chapterName || '';
-      _chapterId   = payload.chapterId   || '';
-      var _bookId  = payload.bookId      || '';
-
-      // Carica contenuto in Summernote
-      if (payload.htmlContent) {
-        $('#editor').summernote('code', payload.htmlContent);
+      if (raw) {
+        // Payload from DOM element (inline injection), process synchronously
+        _processPayload(raw);
+        return;
       }
+      // Payload from IndexedDB (bridge reader→editor)
+      _loadEditorPayload().then(function(rawPayload) {
+        if (rawPayload) {
+          _processPayload(rawPayload);
+          return;
+        }
+        // No bridge payload → try loading saved draft
+        _loadContentDraft(function(draft) {
+          if (!draft) return; // standalone fallback: editor vuoto
+          if (!confirm('Unsaved draft found from ' + new Date(draft.savedAt).toLocaleString() + '. Restore it?')) {
+            _deleteContentDraft();
+            return;
+          }
+          _mode = 'standalone';
+          $('#editor').summernote('code', draft.content);
+          snToast('Draft restored');
+        });
+      });
 
-      // Carica collezioni dal reader (IndexedDB bridge)
-      if (_bookId) _loadReaderCollections(_bookId);
+      function _processPayload(raw) {
+        var payload;
+        try { payload = JSON.parse(raw); } catch(e) { return; }
+        if (!payload) return;
 
-      // Aggiorna titolo header con contesto
-      var headerEl = document.getElementById('appHeaderTitle');
-      if (headerEl && _bookName) {
-        headerEl.textContent = (_chapterName || _bookName) +
-          (_mode === 'chunks' ? ' — Report' : '');
-      }
+        _mode        = payload.mode        || 'standalone';
+        _bookName    = payload.bookName    || '';
+        _chapterName = payload.chapterName || '';
+        _chapterId   = payload.chapterId   || '';
+        _bookId      = payload.bookId      || '';
 
-      // In modalità chunks: disabilita snapshot export (nessun chapterId)
-      if (_mode === 'chunks') {
-        var btn = document.getElementById('chExportMainBtn');
-        if (btn) {
-          btn.disabled = true;
-          btn.title = 'Snapshot disabled in Report mode (no chapterId)';
-          btn.style.opacity = '0.4';
-          btn.style.cursor  = 'not-allowed';
+        // Carica contenuto in Summernote
+        if (payload.htmlContent) {
+          $('#editor').summernote('code', payload.htmlContent);
+        }
+
+        // Carica collezioni dal reader (IndexedDB bridge)
+        if (_bookId) _loadReaderCollections(_bookId);
+
+        // Aggiorna titolo header con contesto
+        var headerEl = document.getElementById('appHeaderTitle');
+        if (headerEl && _bookName) {
+          headerEl.textContent = (_chapterName || _bookName) +
+            (_mode === 'chunks' ? ' — Report' : '');
+        }
+
+        // In modalità chunks: disabilita snapshot export (nessun chapterId)
+        if (_mode === 'chunks') {
+          var btn = document.getElementById('chExportMainBtn');
+          if (btn) {
+            btn.disabled = true;
+            btn.title = 'Snapshot disabled in Report mode (no chapterId)';
+            btn.style.opacity = '0.4';
+            btn.style.cursor  = 'not-allowed';
+          }
+        }
+
+        // Toast informativo una volta per sessione, solo in chapter mode
+        if (_mode === 'chapter' && !_toastShown) {
+          _toastShown = true;
+          setTimeout(function() {
+            snToast('Save snapshots to filesystem to find them in the Noesis library.');
+          }, 1200);
         }
       }
-
-      // Toast informativo una volta per sessione, solo in chapter mode
-      if (_mode === 'chapter' && !_toastShown) {
-        _toastShown = true;
-        setTimeout(function() {
-          snToast('Save snapshots to filesystem to find them in the Noesis library.');
-        }, 1200);
-      }
     })();
+
+    // ── Load editor payload from IndexedDB (bridge reader→editor) ─────────
+    function _loadEditorPayload() {
+      return new Promise(function(resolve) {
+        var request = indexedDB.open('NoesisEditorBridgeDB', 1);
+        request.onsuccess = function(e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains('payloads')) { db.close(); resolve(null); return; }
+          var tx = db.transaction('payloads', 'readonly');
+          var store = tx.objectStore('payloads');
+          var req = store.get('current');
+          req.onsuccess = function() {
+            var entry = req.result;
+            if (!entry || !entry.data) { db.close(); resolve(null); return; }
+            var raw = entry.data;
+            // Clean up after reading
+            var tx2 = db.transaction('payloads', 'readwrite');
+            var store2 = tx2.objectStore('payloads');
+            store2.delete('current');
+            tx2.oncomplete = function() { db.close(); resolve(raw); };
+            tx2.onerror = function() { db.close(); resolve(raw); };
+          };
+          req.onerror = function() { db.close(); resolve(null); };
+        };
+        request.onerror = function() { resolve(null); };
+      });
+    }
+
+    // ── Content draft persistence (debounced auto-save) ──────────────
+    var _draftTimer = null;
+    var _DRAFT_KEY = '_draft_'; // fixed key — single draft, survives reload
+
+    function _saveContentDraft() {
+      var content = getContent();
+      if (!content || content === '<p><br></p>' || content === '<p>&nbsp;</p>') return;
+      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+      request.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('drafts')) {
+          db.createObjectStore('drafts', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = function(e) {
+        var db = e.target.result;
+        var tx = db.transaction('drafts', 'readwrite');
+        var store = tx.objectStore('drafts');
+        store.put({ id: _DRAFT_KEY, content: content, savedAt: new Date().toISOString() });
+        tx.oncomplete = function() { db.close(); };
+      };
+    }
+
+    function _loadContentDraft(callback) {
+      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+      request.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('drafts')) {
+          db.createObjectStore('drafts', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('drafts')) { db.close(); callback(null); return; }
+        var tx = db.transaction('drafts', 'readonly');
+        var store = tx.objectStore('drafts');
+        var req = store.get(_DRAFT_KEY);
+        req.onsuccess = function() {
+          var entry = req.result;
+          db.close();
+          callback(entry && entry.content ? entry : null);
+        };
+        req.onerror = function() { db.close(); callback(null); };
+      };
+      request.onerror = function() { callback(null); };
+    }
+
+    function _deleteContentDraft() {
+      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+      request.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('drafts')) {
+          db.createObjectStore('drafts', { keyPath: 'id' });
+        }
+      };
+      request.onsuccess = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains('drafts')) { db.close(); return; }
+        var tx = db.transaction('drafts', 'readwrite');
+        var store = tx.objectStore('drafts');
+        store.delete(_DRAFT_KEY);
+        tx.oncomplete = function() { db.close(); };
+      };
+    }
+
+    function _discardDocument() {
+      _deleteContentDraft();
+      _inspFilterType = 'all';
+      _inspFilterChapter = 'all';
+      $('#editor').summernote('code', '');
+      _bookName    = '';
+      _chapterName = '';
+      _chapterId   = '';
+      _bookId      = '';
+      _mode        = 'standalone';
+      _collection  = [];
+      _saveCollectionToDB();
+      _updateCounter();
+      document.getElementById('appHeaderTitle').textContent = 'Noesis Editor';
+      snToast('Draft discarded');
+    }
 
     // Ricalcola altezza editor al resize / cambio orientamento
     function _resizeEditor() {
@@ -2167,6 +2530,21 @@ function initEditor() {
       $('.note-editable').css('height', h + 'px');
     }
     window.addEventListener('resize', _resizeEditor);
+
+    // ── Test hooks (expose internals for Puppeteer tests) ───────
+    window.__test = {
+      _saveContentDraft: _saveContentDraft,
+      _loadContentDraft: _loadContentDraft,
+      _deleteContentDraft: _deleteContentDraft,
+      _discardDocument: _discardDocument,
+      get _collection() { return _collection; },
+      get _bookId() { return _bookId; },
+      get _bookName() { return _bookName; },
+      get _chapterId() { return _chapterId; },
+      get _chapterName() { return _chapterName; },
+      _saveCollectionToDB: (typeof _saveCollectionToDB === 'function') ? _saveCollectionToDB : null,
+      _loadCollectionFromDB: (typeof _loadCollectionFromDB === 'function') ? _loadCollectionFromDB : null,
+    };
     // Aspetta che Summernote abbia renderizzato toolbar e statusbar prima di misurare
     requestAnimationFrame(function() {
       requestAnimationFrame(_resizeEditor);
