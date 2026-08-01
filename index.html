@@ -5223,6 +5223,7 @@ ${htmlContent}
             .catch(e => { console.error('EPUB generation failed:', e); alert('EPUB generation failed: ' + e.message); });
           break;
         case 'pdf':
+          if (!confirm('⚠️ Make sure you\'ve scrolled all the way to the end of the chapter before exporting. Otherwise, the PDF may miss pages or show untranslated text.')) return;
           _printPDF(htmlContent);
           break;
         case 'zip':
