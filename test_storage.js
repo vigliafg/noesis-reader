@@ -39,7 +39,7 @@ async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
   page.on('pageerror', err => errors.push(err.message));
   page.on('dialog', async dialog => {
     if (dialog.type() === 'prompt') {
-      await dialog.accept('');
+      await dialog.accept('test');
     } else if (dialog.type() === 'confirm') {
       await dialog.accept();
     } else {
@@ -209,10 +209,12 @@ async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     await wait(2000);
 
     let s1_2 = await page.evaluate(() => {
-      return typeof userBookmarks !== 'undefined' && Array.isArray(userBookmarks);
+      const isArr = typeof userBookmarks !== 'undefined' && Array.isArray(userBookmarks);
+      const len = typeof userBookmarks !== 'undefined' ? userBookmarks.length : -1;
+      return { ok: isArr, len: len };
     });
-    results.push(R('S1.2: userBookmarks is Array', s1_2,
-      'len=' + (typeof userBookmarks !== 'undefined' ? userBookmarks.length : -1)));
+    results.push(R('S1.2: userBookmarks is Array', s1_2.ok,
+      'len=' + s1_2.len));
 
     // S1.7: Bookmark deep-equal after save→reload
     let bmBefore = await page.evaluate(() => {
