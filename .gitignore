@@ -1,0 +1,19 @@
+# Wrangler
+node_modules/
+.wrangler/
+
+# Test files (too large for Cloudflare Workers 25MB limit)
+test*.epub
+test*.pdf
+test*.js
+_create_test_files.py
+
+# Docs / meta
+*.md
+AGENTS.md
+PLAN.md
+_headers
+noesis_brand_animations.html
+
+# Logs
+server.log
