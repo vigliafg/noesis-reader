@@ -17,3 +17,6 @@ noesis_brand_animations.html
 
 # Logs
 server.log
+test_not_epub.pdf
+.gitattributes
+noesis-reader.png
