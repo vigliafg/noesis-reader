@@ -5618,6 +5618,7 @@ ${htmlContent}
     // --- CURRENT BOOK TRACKING ---
     let currentBookId = null;
     let currentBookTitle = '';
+    let _currentChapterName = ''; // tracked separately from DOM to avoid status-message pollution
 
     // --- COLLECTIONS ---
     let _collection = []; // [{id, type, src, alt, content, color, book, chapter, date}]
@@ -6257,10 +6258,11 @@ ${htmlContent}
       const nameEl = document.getElementById('statusChapterName');
       if (!fullPath) {
         nameEl.textContent = '';
+        _currentChapterName = '';
         return;
       }
       const parts = fullPath.split(' › ');
-      // Show parent context when available: "Part I → Chapter 1" instead of just "Chapter 1"
+      _currentChapterName = parts[parts.length - 1] || '';
       if (parts.length > 1) {
         nameEl.textContent = parts[parts.length - 2] + ' → ' + parts[parts.length - 1];
       } else {
@@ -7751,6 +7753,7 @@ ${htmlContent}
       _collFilterType = 'all';
       _collFilterChapter = 'all';
       _checkedChunkIds = {};
+      _populateChapterFilter();
       var activeBtn = document.querySelector('.coll-ft-btn.active');
       if (activeBtn) activeBtn.classList.remove('active');
       var allBtn = document.querySelector('.coll-ft-btn[data-type="all"]');
@@ -8139,8 +8142,7 @@ ${htmlContent}
 
       async function _addToCollection() {
         if (!_savedMedia) return;
-        var chapterEl = document.getElementById('statusChapterName');
-        var chapterName = chapterEl ? chapterEl.textContent : '';
+        var chapterName = _currentChapterName || '';
         var chunk = { type: _savedMedia.type, chapter: chapterName };
         if (_savedMedia.type === 'img') {
           var rawSrc = _savedMedia.data.src;
@@ -8425,6 +8427,7 @@ ${htmlContent}
         _dispatchExtractDownload: _dispatchExtractDownload,
         get currentBookId() { return currentBookId; },
         get currentBookTitle() { return currentBookTitle; },
+        get _currentChapterName() { return _currentChapterName; },
         get _checkedChunkIds() { return _checkedChunkIds; },
         get _extractMode() { return _extractMode; },
         set _extractMode(v) { _extractMode = v; },
@@ -9386,7 +9389,7 @@ ${htmlContent}
         extractMenu.classList.toggle('show');
         // Reset mode highlight and sync action buttons on menu open
         if (extractMenu.classList.contains('show')) {
-          extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; });
+          extractMenu.querySelectorAll('.extract-menu-item').forEach(function(mi) { mi.style.background = ''; mi.style.color = ''; mi.style.fontWeight = ''; });
           _extractMode = null;
           var actions = document.getElementById('extractActions');
           if (actions) {
