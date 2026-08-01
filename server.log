@@ -1,7 +1,0 @@
-127.0.0.1 - - [27/Jul/2026 12:55:17] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [27/Jul/2026 12:55:17] code 404, message File not found
-127.0.0.1 - - [27/Jul/2026 12:55:17] "GET /favicon.ico HTTP/1.1" 404 -
-127.0.0.1 - - [27/Jul/2026 12:56:26] "GET /test.epub HTTP/1.1" 200 -
-127.0.0.1 - - [27/Jul/2026 12:59:43] "GET /index.html HTTP/1.1" 200 -
-127.0.0.1 - - [27/Jul/2026 13:00:32] "GET /test_valid.epub HTTP/1.1" 200 -
-127.0.0.1 - - [27/Jul/2026 13:18:53] "GET /index.html HTTP/1.1" 200 -
