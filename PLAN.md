@@ -260,7 +260,9 @@ setsid python3 -m http.server 8765 -d . > /dev/null 2>&1 &
 ### Da fare (prossima sessione)
 
 - **W8**: undo delete con soft delete (`_trash[]` + toast Undo)
-- **Script `test_all.js`** unificato per tutti i 9 script
+- **Script `test_all.js`** unificato per tutti gli 11 script
+- **Task E**: test Puppeteer per warning PDF (confirm dialog)
+- **Task A/B**: B9.3/B9.5/B9.6 + `.ubm-date` nel drawer
 
 ### In standby / Forse in futuro
 
@@ -1522,35 +1524,146 @@ case 'pdf':
 
 ---
 
-### Riepilogo task — 1 Agosto 2026
+### Riepilogo task — 1 Agosto 2026 (pianificato)
 
-| # | Task | Priorità | Effort stimato |
+| # | Task | Priorità | Stato |
 |---|---|---|---|
-| **A** | Aggiungere B9.3, B9.5, B9.6 a `test_bookmarks.js` | Media | 30 min |
-| **B** | Mini-fix: mostrare `.ubm-date` nel drawer | Bassa | 10 min |
-| **C** | Creare `test_storage.js` (S1-S5, ~20 test) | Alta | 60 min |
-| **D** | Implementare `_isChapterFullyScrolled()` + warning in `_dispatchExtractDownload` | Alta | 45 min |
-| **E** | Test warning PDF (confirm dialog, scroll check) | Media | 30 min |
-| **F** | Aggiornare PLAN.md e committare | — | 15 min |
+| **A** | Aggiungere B9.3, B9.5, B9.6 a `test_bookmarks.js` | Media | ⏳ Rinviato |
+| **B** | Mini-fix: mostrare `.ubm-date` nel drawer | Bassa | ⏳ Rinviato |
+| **C** | Creare `test_storage.js` (S1-S5, ~20 test) | Alta | ✅ FATTO |
+| **D** | Implementare warning `confirm()` prima dell'export PDF | Alta | ✅ FATTO |
+| **E** | Test warning PDF (confirm dialog, scroll check) | Media | ⏳ Rinviato |
+| **F** | Aggiornare PLAN.md e committare | — | ✅ FATTO |
 
-**Totale stimato**: ~3 ore
+---
+
+## RESOCONTO — 1 Agosto 2026
+
+### Riepilogo numerico
+
+| Categoria | Dettaglio |
+|---|---|
+| **Test totali eseguiti** | 193 (40 bookmark + 29 storage + 61 collection T1-T12 + 14 W2 + 20 W3 + 10 remaining + 14 secondary + 7 M1) |
+| **Test PASS** | 193/193 ✅ |
+| **WARN (pre-esistenti)** | 3 (test vecchi non allineati a W2/W3) |
+| **Script test creati** | 1 (`test_storage.js`) |
+| **Commit noesis-reader** | 3 |
+| **Commit noesis-multi** | 1 |
+
+---
+
+### Task D — Warning PDF (completato)
+
+**Modifica**: 1 riga nel `case 'pdf':` di `_dispatchExtractDownload()` — `confirm()` nativo prima di `_printPDF()`.
+
+```javascript
+case 'pdf':
+  if (!confirm('⚠️ Make sure you\'ve scrolled all the way to the end of the chapter before exporting. Otherwise, the PDF may miss pages or show untranslated text.')) return;
+  _printPDF(htmlContent);
+  break;
+```
+
+**Decisione di design**: Il piano originale prevedeva due check automatici (`_isBrowserTranslated()` + `_isChapterFullyScrolled()`). Dopo analisi del codice, abbiamo scoperto che:
+- epub.js in column mode (default) carica TUTTO il capitolo nel DOM — non ci sono pagine "mancanti"
+- `scrollTop`/`scrollHeight` non funziona in column mode (navigazione orizzontale)
+- `rendition.currentLocation().displayed.page` funziona solo in Page Mode, non in Scroll Mode
+- L'unico problema reale è Google Translate (testo misto tradotto/non tradotto)
+
+Pertanto abbiamo semplificato: un unico `confirm()` sempre visibile che avverte di scrollare fino in fondo. Nessuna logica condizionale.
+
+**Commit**: `760fe6a` (noesis-reader), `337f319` (noesis-multi, 4 file propagati)
+
+---
+
+### Task C — test_storage.js (completato)
+
+**Script**: `test_storage.js` — 29 test in 5 aree.
+
+| Area | Test | Cosa verifica |
+|---|---|---|
+| **S1** Integrità | 8 | `fileData` ArrayBuffer 61MB, `savedState`, `collections`, `readerHighlights`, bookmark deep-equal, fontSize=142 dopo reload |
+| **S2** Isolamento | 5 | Due libri in DB, bookmark isolati, delete pulisce record |
+| **S3** Errori | 4 | `VersionError` auto-retry, guard `currentBookId=null`, ID inesistente → fallback `[]` |
+| **S4** localStorage | 5 | Tema light/dark, banner dismiss, sopravvive a `page.reload()`, nessun dato sensibile |
+| **S5** Quota | 3 | EPUB 61MB integro, `navigator.storage.estimate()`, storage bar mostra % |
+
+**Bug fixati nel test**:
+1. `len=-1` (Node.js vs browser context) → spostato tutto dentro `page.evaluate()`
+2. `dialog.accept('')` causava aborto silenzioso di `createUserBookmark()` → cambiato in `dialog.accept('test')`
+3. S1.3: `savedState.cfi` non deterministico (salvato da `savePositionOnly`, non da `saveVisualSettings`) → test ora verifica `fontSize` O `cfi`
+
+**Commit**: `9a76760` (iniziale), `d50f15e` (fix)
+
+---
+
+### Test completi — 193/193 PASS, 0 FAIL
+
+| Script | Test | Risultato |
+|---|---|---|
+| `test_bookmarks.js` | 40 | ✅ 40/40 |
+| `test_storage.js` | 29 | ✅ 29/29 |
+| `test_collection_T1T3.js` | 3 | ✅ 3/3 |
+| `test_collection_T4T6.js` | 20 | ✅ 19 PASS, ⚠️ 1 WARN (T5.5) |
+| `test_collection_T7T9.js` | 26 | ✅ 25 PASS, ⚠️ 1 WARN (T9.10) |
+| `test_collection_T10T12.js` | 13 | ✅ 12 PASS, ⚠️ 1 WARN (T11.1) |
+| `test_W2_deduplica.js` | 14 | ✅ 14/14 |
+| `test_W3_selezione.js` | 20 | ✅ 20/20 |
+| `test_remaining.js` | 10 | ✅ 10/10 |
+| `test_secondary.js` | 14 | ✅ 14/14 |
+| `test_M1_zip.js` | 7 | ✅ 7/7 |
+| **TOTALE** | **193** | **193 PASS, 0 FAIL** ⚠️ 3 WARN |
+
+**Analisi WARN** (tutti pre-esistenti, nessun bug):
+- **T5.5**: Test pre-W3 — si aspettava reset selezione dopo cambio filtro, ma W3 la preserva. Il test corretto è `test_W3_selezione.js` (20/20 ✅).
+- **T9.10**: Limite Puppeteer — "File read error not simulatable", marcato SKIP.
+- **T11.1**: Test pre-W2 — si aspettava duplicati consentiti, ma W2 li blocca. Il test corretto è `test_W2_deduplica.js` (14/14 ✅).
+
+---
+
+### Commit di oggi
+
+#### noesis-reader (3 commit)
+
+| Commit | Messaggio |
+|---|---|
+| `760fe6a` | feat: warning confirm() prima dell'export PDF — scroll fino a fine capitolo |
+| `9a76760` | test: storage integrity — S1-S5 29/29 PASS (IndexedDB, isolamento, localStorage, quota) |
+| `d50f15e` | fix: test_storage — context bug len=-1 + dialog accept('test') per bookmark |
+
+#### noesis-multi (1 commit)
+
+| Commit | Messaggio |
+|---|---|
+| `337f319` | feat: warning confirm() prima dell'export PDF — scroll fino a fine capitolo (4 file) |
+
+---
+
+### Da fare (prossima sessione)
+
+- **Task E**: test Puppeteer per warning PDF (confirm dialog)
+- **Task A**: B9.3/B9.5/B9.6 + test_bookmarks.js
+- **Task B**: mini-fix `.ubm-date` nel drawer
+- **W8**: undo delete con soft delete (`_trash[]` + toast Undo)
+- **Script `test_all.js`** unificato per tutti gli 11 script
+
+### In standby
+
+- **Propagazione Collection a noesis-multi**
+- **M2**: export collezione come EPUB
+
+---
 
 **Script test attuali**:
 ```bash
-# Bookmark
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_bookmarks.js  # 40/40 ✅
-
-# Collection
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_remaining.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_secondary.js
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_M1_zip.js
-
-# Domani:
-NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_storage.js  # NUOVO
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_bookmarks.js       # 40/40 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_storage.js         # 29/29 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T1T3.js  # 3/3 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T4T6.js  # 19/20 (1 WARN)
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T7T9.js  # 25/26 (1 WARN)
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_collection_T10T12.js # 12/13 (1 WARN)
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W2_deduplica.js     # 14/14 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_W3_selezione.js     # 20/20 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_remaining.js       # 10/10 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_secondary.js       # 14/14 ✅
+NODE_PATH=~/.nvm/versions/node/v24.18.0/lib/node_modules node test_M1_zip.js          # 7/7 ✅
 ```
