@@ -17,7 +17,7 @@
  *
  * Usage:
  *   # Start server first:
- *   setsid python3 -m http.server 8765 --bind 127.0.0.1 -d /home/vigliafg/Documents/noesis-reader &
+ *   setsid python3 -m http.server 8765 --bind 127.0.0.1 -d /home/vigliafg/Documenti/GitHub/noesis-reader &
  *
  *   # Run:
  *   NODE_PATH=/home/vigliafg/.nvm/versions/node/v24.18.0/lib/node_modules \
@@ -106,7 +106,7 @@ function assert(condition, msg) {
     log('INFO', 'Server is reachable at ' + BASE_URL);
   } catch (e) {
     log('FATAL', 'Cannot reach server at ' + BASE_URL + '. Start with:');
-    log('FATAL', '  setsid python3 -m http.server 8765 --bind 127.0.0.1 -d /home/vigliafg/Documents/noesis-reader &');
+    log('FATAL', '  setsid python3 -m http.server 8765 --bind 127.0.0.1 -d /home/vigliafg/Documenti/GitHub/noesis-reader &');
     process.exit(1);
   }
 

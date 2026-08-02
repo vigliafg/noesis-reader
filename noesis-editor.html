@@ -749,6 +749,7 @@ header {
 
 /* Print */
 @media print {
+  html, body { height: auto !important; overflow: visible !important; }
   body > * { display: none !important; }
   #print-container { display: block !important; }
 }
