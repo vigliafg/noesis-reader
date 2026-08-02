@@ -16,9 +16,8 @@ pick up without re-deriving context.
 - Source lives split up under `src/`; the repo-root `index.html`/`noesis-editor.html` are
   **build output** — never hand-edit them directly, edit `src/` and run `npm run build`.
 - `test.epub` (64MB fixture) and `node_modules/` are gitignored, present locally, not
-  meant to be committed. `*.md` is gitignored by default too — new `.md` files need
-  `git add -f` (see `.gitignore`, existing docs `AGENTS.md`/`PLAN.md`/`README.md` predate
-  that rule).
+  meant to be committed. (The old blanket `*.md` ignore rule — which silently untracked new
+  documentation — has been removed; docs are committed normally now.)
 
 ## Done so far (2026-08-02)
 
@@ -109,6 +108,29 @@ pick up without re-deriving context.
      server can't answer and every suite hangs. That cost 20 minutes here.
    - **Real E2E baseline, verified against this checkout: 31/31 (96s) and 140/140 (85s),
      ~3 minutes total.** The "~7 min" figure from the previous round was inflated.
+
+9. **Repo cleanup** (2026-08-02).
+   - `README.md` had **64 references of the form `openDB()` (line 3696)** pointing into the
+     generated `index.html`. All were wrong — `openDB` is at 4786 — and had been wrong
+     *before* this refactor (index.html is byte-identical, so the drift is older). 51 were
+     rewritten to point at the `src/` file that defines the thing; the remaining 13 were
+     prose references to line ranges and were dropped, since a wrong pointer is worse than
+     none. Added a banner telling the reader the root `.html` files are generated. **Don't
+     reintroduce line numbers into a generated file** — reference `src/` paths.
+   - Deleted `noesis816.html` (360KB stale copy of the reader — an agent grepping for a
+     function would find it there and edit the wrong file) and `PLAN.md` (a plan describing
+     the pre-integration state). Both remain in git history.
+   - Deleted `build/README.md`: it duplicated `src/README.md` and had gone stale (still
+     described `styles.css`/`app.js` as single files). `src/README.md` is the one doc.
+   - `.gitignore` rewritten. The blanket `*.md` rule was removed — it silently untracked new
+     documentation, and nearly dropped `src/README.md` from the first commit. Also dropped
+     rules for files that no longer exist and for files that are actually tracked
+     (`AGENTS.md`, `_headers`), which did nothing but mislead.
+   - `wrangler.jsonc` now excludes `src/**`, `build/**` and the package files from deploys;
+     it was uploading the entire split source tree alongside the built output.
+   - `sw.js` gained a header comment explaining it must NOT be deleted: it's a
+     self-unregistering service worker that cleans up the old PWA registration for returning
+     visitors. It looks dead — nothing registers it — which is exactly why it needs the note.
 
 ---
 
@@ -304,7 +326,10 @@ order is mandatory — which the byte-identity check enforces for free.
 - Decide whether to vendor the CDN libraries (jszip, epubjs, turndown, bootstrap-icons;
   jquery/summernote are already inlined) — removes the CDN-availability dependency (§1.4)
   at the cost of file size.
-- Decide what to do with the stale `noesis816.html` backup, and the `noesis-multi` repo's
-  4 hand-mirrored copies (§1.2) — out of scope for this repo alone.
-- CI: `npm run build` + `npm test` gating deploys; `wrangler.jsonc` currently serves the
-  repo root, which is also the build output dir — fine as-is, but worth stating (§1.2a).
+- The `noesis-multi` repo's 4 hand-mirrored copies (§1.2) are still unresolved — out of
+  scope for this repo alone, and now the largest remaining manual process: the source here
+  is split, those copies are not. (`noesis816.html`, the stale backup in *this* repo, has
+  been deleted — it's in git history if ever needed.)
+- CI: `npm run build` + `npm run check` + `npm test` gating deploys — still none (§1.2a).
+  `wrangler.jsonc` serves the repo root, which is also the build output dir; it now excludes
+  `src/`, `build/` and the package files so deploys ship only the site itself.

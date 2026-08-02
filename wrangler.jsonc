@@ -14,6 +14,13 @@
   "upload": {
     "exclude": [
       "node_modules/**",
+      // Build inputs — index.html/noesis-editor.html are generated FROM these, so
+      // shipping them would just serve a second, unused copy of the whole app.
+      "src/**",
+      "build/**",
+      "package.json",
+      "package-lock.json",
+      ".gitignore",
       ".wrangler/**",
       "*.epub",
       "*.pdf",

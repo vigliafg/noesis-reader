@@ -2,6 +2,16 @@
 
 A monolithic EPUB library and reader built as a single HTML file. Read, annotate, bookmark, extract EPUB chapters, and **translate pages using Chrome's built-in translation engine**.
 
+> **Editing the code?** `index.html` and `noesis-editor.html` are **generated** — they're
+> assembled from the pieces under `src/` by `npm run build`. Editing them directly does
+> nothing lasting; your changes are overwritten by the next build. **Read
+> [`src/README.md`](src/README.md) first.**
+>
+> This document describes how the application *works*. It points at source files
+> (`src/reader/js/…`) rather than line numbers, because line numbers in a generated file go
+> stale the moment anything above them changes — as every reference in this file previously
+> had.
+
 > **Primary browser: Google Chrome** (desktop and Android). The app is tested and optimized for Chrome, which provides the richest feature set including native page translation. Some features may be degraded in other browsers.
 
 > **Disclaimer**: This software is provided for personal, educational, and research purposes. It is the user's sole responsibility to ensure that their use of this application — including but not limited to EPUB file acquisition, content reproduction, chapter extraction, and translation — complies with all applicable laws and regulations in their jurisdiction. The authors assume no liability for any misuse or legal violations arising from the use of this software.
@@ -74,7 +84,7 @@ Chrome adds classes to <html> during translation:
   translated      → generic translation attribute
 ```
 
-**When translation is active**, the auto-save system **pauses itself** (`_isBrowserTranslated()`, line 4323) — it stops writing position updates to IndexedDB. This ensures that the pre-translation reading position (which is correct) is preserved. When translation ends, auto-save resumes automatically.
+**When translation is active**, the auto-save system **pauses itself** (`_isBrowserTranslated()`, src/reader/js/09-autosave.js) — it stops writing position updates to IndexedDB. This ensures that the pre-translation reading position (which is correct) is preserved. When translation ends, auto-save resumes automatically.
 
 The Table of Contents is also marked with `translate="yes"` attributes so chapter titles get translated alongside the content.
 
@@ -89,10 +99,10 @@ Noesis Reader is a single-page application with two main views that toggle via C
 - **Library View** (`#library-view`): Book management, import, display of extracted chapters and snapshots
 - **Reader View** (`#reader-view`): Full EPUB reader with menubar, viewer iframe, TOC sidebar, status bar
 
-View switching is handled by `showLibrary()` (line 3832) and `showReader()` (line 3876). The global `loadingOverlay` (`#loading-overlay`) provides visual feedback during async operations.
+View switching is handled by `showLibrary()` (src/reader/js/04-views.js) and `showReader()` (src/reader/js/04-views.js). The global `loadingOverlay` (`#loading-overlay`) provides visual feedback during async operations.
 
 ```javascript
-// Key state variables (lines 4114-4156)
+// Key state variables
 let book = null;           // epub.js Book instance
 let rendition = null;      // epub.js Rendition instance
 let fontSize = 100;        // Font size percentage
@@ -117,7 +127,7 @@ All loaded from jsDelivr CDN:
 | JSZip | 3.10.1 | `cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js` |
 | epub.js | 0.3.93 | `cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js` |
 
-Lines: CSS at line 19, JSZip at line 3555, epub.js at line 3556.
+
 
 ---
 
@@ -152,7 +162,7 @@ Schema for each book record:
 }
 ```
 
-Key functions: `openDB()` (line 3696), `saveBookToDB()` (line 3736), `getAllBooks()` (line 3787), `deleteBook()` (line 3799).
+Key functions: `openDB()` (src/reader/js/02-db.js), `saveBookToDB()` (src/reader/js/03-epub-library.js), `getAllBooks()` (src/reader/js/03-epub-library.js), `deleteBook()` (src/reader/js/03-epub-library.js).
 
 ### 2. noesisDB (`noesisDB`, version 1)
 
@@ -179,13 +189,13 @@ Schema for each chapter record:
 }
 ```
 
-Key functions: `openNoesisDB()` (line 3634), `saveExtractedChapterToDB()` (line 3650), `getExtractedChapterFromDB()` (line 3679), `deleteExtractedChapterFromDB()` (line 3661), `deleteSnapshotFromDB()` (line 3672).
+Key functions: `openNoesisDB()` (src/reader/js/02-db.js), `saveExtractedChapterToDB()` (src/reader/js/02-db.js), `getExtractedChapterFromDB()` (src/reader/js/02-db.js), `deleteExtractedChapterFromDB()` (src/reader/js/02-db.js), `deleteSnapshotFromDB()` (src/reader/js/02-db.js).
 
 ---
 
 ## Library View
 
-### DOM Structure (lines 2946-3117)
+### DOM Structure
 
 ```
 #library-view
@@ -207,10 +217,10 @@ Key functions: `openNoesisDB()` (line 3634), `saveExtractedChapterToDB()` (line 
 
 ### Book Import
 
-**Flow** (`libAddBooksBtn` click → `libraryInput.click()` → `change` event, lines 6169-6174):
+**Flow** (`libAddBooksBtn` click → `libraryInput.click()` → `change` event):
 
 1. User clicks "ADD BOOKS" → triggers hidden file input
-2. `saveBookToDB(file)` (line 3736): 
+2. `saveBookToDB(file)` (src/reader/js/03-epub-library.js): 
    - Reads file as ArrayBuffer
    - Instantiates `ePub(arrayBuffer)` for metadata extraction
    - Extracts cover image via `book.coverUrl()` → fetches blob → converts to base64
@@ -219,7 +229,7 @@ Key functions: `openNoesisDB()` (line 3634), `saveExtractedChapterToDB()` (line 
 
 ### Book Listing
 
-`loadLibraryBooks()` (line 3934) queries all books from EpubLibraryDB, sorts by `addedAt` descending, and renders each as a `.book-row`:
+`loadLibraryBooks()` (src/reader/js/06-library-view.js) queries all books from EpubLibraryDB, sorts by `addedAt` descending, and renders each as a `.book-row`:
 
 ```
 .book-row
@@ -233,14 +243,14 @@ Key functions: `openNoesisDB()` (line 3634), `saveExtractedChapterToDB()` (line 
 └── .chapters-section (extracted chapters, if any)
 ```
 
-Empty state: Shows centered message "Start by adding a book..." with book icon (line 3943).
+Empty state: Shows centered message "Start by adding a book..." with book icon.
 
 **Stats**: Lines 3956-3971 — each book row renders with cover (base64 image or Bootstrap icon), title, and author. 
 
-**Delete book** (line 3978-3984): Confirmation dialog, then calls `deleteBook(id)` which removes the EpubLibraryDB record. Also resets `currentBookId` if the deleted book was open.
+**Delete book**: Confirmation dialog, then calls `deleteBook(id)` which removes the EpubLibraryDB record. Also resets `currentBookId` if the deleted book was open.
 
 ### Cover Extraction
-During import (`saveBookToDB`, lines 3746-3766):
+During import (`saveBookToDB`):
 1. `book.coverUrl()` fetches a blob URL from the EPUB
 2. The blob is fetched via `fetch()`
 3. Converted to base64 via `FileReader.readAsDataURL()`
@@ -248,29 +258,29 @@ During import (`saveBookToDB`, lines 3746-3766):
 
 ### Library Themes
 
-**Light/Dark toggle** (lines 6094-6146): Managed via CSS custom properties. The `#library-view` element defines ~30 CSS variables for colors. Adding class `lib-dark` switches to dark theme values. Preference stored in `localStorage` under key `noesis-lib-theme`.
+**Light/Dark toggle**: Managed via CSS custom properties. The `#library-view` element defines ~30 CSS variables for colors. Adding class `lib-dark` switches to dark theme values. Preference stored in `localStorage` under key `noesis-lib-theme`.
 
 Theme variables include: background, header, text, import button, row borders, cover shadows, badges, chapter borders, snapshot indicators, delete buttons.
 
 ### Tools Dropdown
 
-Positioned as a dropdown menu (lines 2984-3004) with three external links:
+Positioned as a dropdown menu with three external links:
 1. **noesis-epub-tools** (`https://noesis-epub-tools.vercel.app/`) — EPUB editing web app
 2. **Pandoc Online** (`https://pandoc.org/app`) — Universal document converter
 3. **Mozilla PDF Viewer** (`https://mozilla.github.io/pdf.js/web/viewer.html`) — PDF reader
 
-Menu toggle at line 6954-6966. All links open in new tabs.
+All links open in new tabs.
 
 ### Help System (Library)
 
-- **Help button** (`#libHelpBtn`, line 3007): Opens overlay with button reference
-- **Help overlay** (`#libHelpOverlay`, lines 3037-3116): Full reference with groups for Adding/Opening Books, Extracted Chapters, Snapshots, and Interface
-- **Help banner** (`#libHelpBanner`, lines 3017-3034): First-run banner with key action hints (currently disabled — line 6920)
+- **Help button** (`#libHelpBtn`, src/reader/index.template.html): Opens overlay with button reference
+- **Help overlay** (`#libHelpOverlay`, src/reader/index.template.html): Full reference with groups for Adding/Opening Books, Extracted Chapters, Snapshots, and Interface
+- **Help banner** (`#libHelpBanner`, src/reader/index.template.html): First-run banner with key action hints
 - Close via Escape key, backdrop click, or close button
 
 ### Extracted Chapters Display
 
-The `loadLibraryBooks()` function currently only renders book headers (the extracted chapters rendering may be handled externally). The DOM structure at lines 434-529 defines:
+The `loadLibraryBooks()` function currently only renders book headers (the extracted chapters rendering may be handled externally). The DOM structure defines:
 - `.chapters-section` — container with left padding
 - `.chapter-entry` — each with left accent border
 - `.chapter-name-btn` — clickable chapter title
@@ -282,7 +292,7 @@ The `loadLibraryBooks()` function currently only renders book headers (the extra
 
 ## Reader View
 
-### DOM Structure (lines 3119-3528)
+### DOM Structure
 
 ```
 #reader-view
@@ -306,12 +316,12 @@ The `loadLibraryBooks()` function currently only renders book headers (the extra
 
 ### Opening a Book
 
-`openBookFromLibrary(bookData)` (line 3998):
+`openBookFromLibrary(bookData)` (src/reader/js/06-library-view.js):
 1. Switches to Reader view via `showReader()`
 2. Loads saved state from IndexedDB via `loadAndApplyBookState()`
 3. Loads user bookmarks via `loadUserBookmarksFromDB()`
 4. Syncs UI state (scroll mode button, dual page button, font info, line height)
-5. Creates epub.js instance: `book = ePub(bookData.data)` (line 4051)
+5. Creates epub.js instance: `book = ePub(bookData.data)`
 6. Calls `recreateRendition()` to create the reading iframe
 7. Restores saved CFI position if available
 8. Applies theme, renders TOC, starts auto-save timer
@@ -319,7 +329,7 @@ The `loadLibraryBooks()` function currently only renders book headers (the extra
 
 ### epub.js Rendition
 
-`recreateRendition()` (line 5374):
+`recreateRendition()` (src/reader/js/13-rendition.js):
 - Destroys existing rendition and clears viewer
 - Creates new rendition with:
   - `spread`: `'auto'` (dual page) or `'none'` (single page)
@@ -336,11 +346,11 @@ The `loadLibraryBooks()` function currently only renders book headers (the extra
 
 ### TOC Sidebar / Overlay
 
-**Desktop**: `#bookmarks` is a fixed sidebar (280px width) positioned from header top to bottom. Toggle via `toggleSidebarBtn` → `sidebarVisible` flag (line 6365). Slides in/out with CSS transition.
+**Desktop**: `#bookmarks` is a fixed sidebar (280px width) positioned from header top to bottom. Toggle via `toggleSidebarBtn` → `sidebarVisible` flag. Slides in/out with CSS transition.
 
 **Mobile** (≤768px): Becomes an overlay from the left edge (300px, max 85vw). Remounted as direct child of `#body` with forced inline styles for reliable visibility. Opened via edge swipe or hamburger → TOC item.
 
-**TOC Rendering** (`renderBookmarksSimple()`, line 5605):
+**TOC Rendering** (`renderBookmarksSimple()`, src/reader/js/14-toc.js):
 - Recursive tree rendering with up to 3 levels
 - Expandable items (▶/▼ indicators) for entries with subitems
 - Click navigates via `navigateToHref()` and updates breadcrumb path
@@ -360,18 +370,18 @@ The `loadLibraryBooks()` function currently only renders book headers (the extra
 - Continuous vertical scroll within each spine item
 - Floating nav buttons hidden
 - Dual page disabled (button grayed)
-- TOC navigation uses special handling: recreates rendition with `manager: 'default'` to prevent backward scroll issues (line 4591-4607)
+- TOC navigation uses special handling: recreates rendition with `manager: 'default'` to prevent backward scroll issues
 
 **Toggle**: Via Navigate dropdown in menubar, or via the old `navModePopover` on the legacy toolbar.
-`_syncNavModeBtn()` (line 6319) syncs all UI elements. Mode change triggers `recreateRendition()`.
+`_syncNavModeBtn()` (src/reader/js/18-dom-ready.js) syncs all UI elements. Mode change triggers `recreateRendition()`.
 
 ### Dual Page
-Toggle via `dualPageBtn` (line 6270) or the single/dual buttons in Typography. Sets `dualPageMode` flag, changes `spread` to `'auto'` or `'none'`, triggers rendition recreation. Disabled in scroll mode.
+Toggle via `dualPageBtn` (src/reader/js/18-dom-ready.js) or the single/dual buttons in Typography. Sets `dualPageMode` flag, changes `spread` to `'auto'` or `'none'`, triggers rendition recreation. Disabled in scroll mode.
 
 ### Font Size &amp; Line Height
 
-- **Font size**: Range 50-200%, 1% steps via `fontPlus1`/`fontMinus1`/`fontReset` (lines 6221-6234). Updates `fontSize` variable and calls `applyTheme()` to inject into CSS.
-- **Line height**: Predefined steps `[1, 1.2, 1.4, 1.6, 1.8, 2.0]` via `lineHeightPlus`/`lineHeightMinus`/`lineHeightReset` (lines 6237-6256).
+- **Font size**: Range 50-200%, 1% steps via `fontPlus1`/`fontMinus1`/`fontReset`. Updates `fontSize` variable and calls `applyTheme()` to inject into CSS.
+- **Line height**: Predefined steps `[1, 1.2, 1.4, 1.6, 1.8, 2.0]` via `lineHeightPlus`/`lineHeightMinus`/`lineHeightReset`.
 - `updateFontInfo()` / `updateLineHeightInfo()` update the display values in the popup and accordion panels.
 
 ### Floating Nav Buttons
@@ -392,7 +402,7 @@ Two fixed buttons (`#floatingPrevBtn`, `#floatingNextBtn`) at left/right edges:
 - **Right button** (`#statusNextBtn`): Next spine item (▶)
 - Disabled state when at first/last chapter
 - Mobile: enlarged to 44×44px for WCAG 2.1 compliance
-- Spine-based navigation via `_findSpineIndex()` (line 4439)
+- Spine-based navigation via `_findSpineIndex()` (src/reader/js/10-chapter-nav.js)
 
 ### Keyboard Shortcuts
 
@@ -406,7 +416,7 @@ Two fixed buttons (`#floatingPrevBtn`, `#floatingNextBtn`) at left/right edges:
 
 ## Reader Menubar
 
-Implemented at lines 3124-3234, replacing the original toolbar buttons. Uses a flexbox nav with inline items:
+Replaces the original toolbar buttons. Uses a flexbox nav with inline items:
 
 | Item | ID | Behavior |
 |------|-----|----------|
@@ -426,13 +436,13 @@ Implemented at lines 3124-3234, replacing the original toolbar buttons. Uses a f
 - Color dot on Annotate item reflects current highlight color
 - Navigate mode badge shows "Page" or "Scroll"
 
-**Event handlers** at lines 7173-7371 (`initReaderMenubar`). Each menubar item delegates to the original hidden toolbar button or directly calls the relevant function. A MutationObserver syncs the `rmb-active` class on the Display menu trigger.
+**Event handlers** (`initReaderMenubar`). Each menubar item delegates to the original hidden toolbar button or directly calls the relevant function. A MutationObserver syncs the `rmb-active` class on the Display menu trigger.
 
 ---
 
 ## Display Menu (Accordion)
 
-Replaces the three separate popups (Typography, Themes, Interface). The menu (lines 7048-7155) is an accordion with three collapsible sections rendered inline.
+Replaces the three separate popups (Typography, Themes, Interface). The menu is an accordion with three collapsible sections rendered inline.
 
 **Structure**:
 ```
@@ -450,18 +460,18 @@ Replaces the three separate popups (Typography, Themes, Interface). The menu (li
 **Behavior**:
 - Only one section open at a time
 - Opening a section auto-closes others
-- Content is "embedded" (moved from popup DOM to section body) on first open (line 7086)
+- Content is "embedded" (moved from popup DOM to section body) on first open
 - When menu closes and settings changed, shows the display save prompt
 - Chevron rotates 90° on active section
 
 ### Typography Section
-Inline rendering of `typographyPopupMain` (lines 3305-3352):
+Inline rendering of `typographyPopupMain`:
 - **Font Size**: +/- buttons, reset, current value display (50-200%)
 - **Line Height**: +/- buttons (steps), reset, current value (1-2.0)
 - **Page View**: Single Page / Dual Page toggle buttons
 
 ### Themes Section
-Inline rendering of `themePopupMain` (lines 3354-3358). Contains 15 reading themes in 5 groups:
+Inline rendering of `themePopupMain`. Contains 15 reading themes in 5 groups:
 
 | Group | Themes |
 |-------|--------|
@@ -471,14 +481,14 @@ Inline rendering of `themePopupMain` (lines 3354-3358). Contains 15 reading them
 | **Medium Gray** | Mid Gray (`#b0b8c1`), Slate (`#94a3b8`) |
 | **Dark / Black** | Dark Gray (`#4b5563`), Charcoal (`#374151`), Dark (`#1a1a1a`), Midnight (`#0f1117`), True Black (`#000000`) |
 
-Theme application (`applyTheme()`, line 5298):
+Theme application (`applyTheme()`, src/reader/js/12-theme.js):
 - Registers `custom` theme on epub.js rendition with background, foreground, font-size, line-height
 - Applies to `body` and all text elements (`p, div, span, li, h1-h6`)
 - Uses `!important` to override EPUB's own styles
 - Active swatch gets blue border + glow indicator
 
 ### Interface Section
-Inline rendering of `interfacePopupMain` (lines 3361-3413). Five settings:
+Inline rendering of `interfacePopupMain`. Five settings:
 
 | Setting | Input | Default |
 |---------|-------|---------|
@@ -488,7 +498,7 @@ Inline rendering of `interfacePopupMain` (lines 3361-3413). Five settings:
 | Nav Opacity | Range slider (0.1-1.0) | `0.7` |
 | Bookmark Drawer Color | Color picker | `#fffde7` |
 
-Each has a reset button. Values stored in `interfaceSettings` object and applied via `applyInterfaceSettings()` (line 4496), which:
+Each has a reset button. Values stored in `interfaceSettings` object and applied via `applyInterfaceSettings()` (src/reader/js/10-chapter-nav.js), which:
 - Updates header gradient via CSS
 - Sets sidebar background with alpha
 - Applies color+opacity to floating nav buttons
@@ -499,36 +509,36 @@ Each has a reset button. Values stored in `interfaceSettings` object and applied
 ## Auto-Save System
 
 ### Position Auto-Save
-Interval timer (`startAutoSave()`, line 4291): Every 3 seconds:
-1. Calls `_getCenterCfi()` (line 4178):
+Interval timer (`startAutoSave()`, src/reader/js/09-autosave.js): Every 3 seconds:
+1. Calls `_getCenterCfi()` (src/reader/js/09-autosave.js):
    - In scroll mode: uses `iframeDoc.elementFromPoint(centerX, centerY)` then `contents[0].cfiFromElement(el)` to get CFI at visual center
    - In paginated mode: uses `rendition.currentLocation().start.cfi`
 2. Skips if CFI unchanged from last save
-3. Skips if browser translation is active (`_isBrowserTranslated()`, line 4323) — detects `translated-ltr`/`translated-rtl` classes on `<html>`
-4. Writes position-only (CFI + href + timestamp) to savedState via `savePositionOnly()` (line 4219)
+3. Skips if browser translation is active (`_isBrowserTranslated()`, src/reader/js/09-autosave.js) — detects `translated-ltr`/`translated-rtl` classes on `<html>`
+4. Writes position-only (CFI + href + timestamp) to savedState via `savePositionOnly()` (src/reader/js/09-autosave.js)
 
 ### Visual Settings Save Prompt
 When visual settings change (detected by `_snapshotVisualState()` comparing to `_lastSavedVisualState`):
 - A prompt (`#displaySavePrompt`) slides up from the bottom
 - Auto-dismisses after 8 seconds
 - User can click "Save" to persist or "✕" to dismiss
-- Save writes full visual state to IndexedDB via `saveVisualSettings()` (line 4253)
+- Save writes full visual state to IndexedDB via `saveVisualSettings()` (src/reader/js/09-autosave.js)
 
 ### Loading State
-`loadAndApplyBookState()` (line 4365) reads `savedState` from the book record and restores:
+`loadAndApplyBookState()` (src/reader/js/09-autosave.js) reads `savedState` from the book record and restores:
 - font size, line height, theme, scroll mode, dual page mode, sidebar visibility
 - button zoom, interface settings, reader highlights
 - Returns saved position (CFI) for restoration
 
 ### Visual State Snapshot
-`_snapshotVisualState()` (line 4210) creates a JSON string of all display-relevant settings for dirty-checking. Compared against `_lastSavedVisualState` to determine if the "Save display settings?" prompt should appear.
+`_snapshotVisualState()` (src/reader/js/09-autosave.js) creates a JSON string of all display-relevant settings for dirty-checking. Compared against `_lastSavedVisualState` to determine if the "Save display settings?" prompt should appear.
 
 ---
 
 ## User Bookmarks System
 
 ### Storage
-Bookmarks are stored in the `userBookmarks` field of the book record in EpubLibraryDB (line 5687). In-memory array `userBookmarks` (line 5671) mirrors the DB.
+Bookmarks are stored in the `userBookmarks` field of the book record in EpubLibraryDB. In-memory array `userBookmarks` (src/reader/js/15-user-bookmarks.js) mirrors the DB.
 
 ### Bookmark Structure
 ```javascript
@@ -544,7 +554,7 @@ Bookmarks are stored in the `userBookmarks` field of the book record in EpubLibr
 ```
 
 ### Creating a Bookmark
-`createUserBookmark()` (line 5813):
+`createUserBookmark()` (src/reader/js/15-user-bookmarks.js):
 1. Gets current CFI and href from rendition
 2. Resolves chapter title from TOC breadcrumb via `findBreadcrumbInToc()`
 3. Extracts ~100 chars of preview text: computes anchor offset from epub.js page position (`loc.start.displayed.page/total`), then takes 100 chars starting 400 chars after the anchor
@@ -575,31 +585,31 @@ Three highlight colors + remove option:
 
 ### Contextual Annotate Popup (v816-ctx)
 
-When text is selected in the epub iframe, a contextual popup (`#ctxAnnotatePopup`, line 3238) appears near the selection:
+When text is selected in the epub iframe, a contextual popup (`#ctxAnnotatePopup`, src/reader/index.template.html) appears near the selection:
 - 4 color dots (yellow, green, pink, remove) in a small floating toolbar
 - Positioned below or above the selection rect
 - Background blurs when clicking outside
 - Animated entry: `opacity 0→1`, `transform scale 0.92→1`
 
-Implementation at lines 6695-6783:
+Implementation:
 - `_showCtxAnnotatePopup()`: Computes position relative to iframe offset, shows popup near selection
 - `_hideCtxAnnotatePopup()`: Hides with transition delay
 - Clicking a color: Sets `currentReaderHighlightColor`, applies/removes highlight, updates indicator dots in menubar and hamburger menu
 
 ### Apply / Remove Flow
-`applyReaderHighlight()` (line 6598):
+`applyReaderHighlight()` (src/reader/js/18-dom-ready.js):
 1. Deduplicates: removes existing highlight at same CFI
 2. Calls `rendition.annotations.highlight(cfi, {}, cb, cssClass, {fill, fill-opacity})`
 3. Stores `{cfi, color}` in `readerHighlights` array
 4. Clears iframe selection
 
-`removeReaderHighlight()` (line 6634):
+`removeReaderHighlight()` (src/reader/js/18-dom-ready.js):
 1. Calls `rendition.annotations.remove(cfi, 'highlight')`
 2. Filters highlight from array
 
 ### Storage &amp; Restoration
 - Highlights stored in `savedState.readerHighlights` (saved with visual settings)
-- Restored on rendition creation via content hook (line 5475): iterates `readerHighlights` array, applies each via `annotations.highlight()` with appropriate CSS class
+- Restored on rendition creation via content hook: iterates `readerHighlights` array, applies each via `annotations.highlight()` with appropriate CSS class
 
 ### CSS Classes
 - `.epub-hl-yellow`, `.epub-hl-green`, `.epub-hl-pink` styled in the injected iframe stylesheet
@@ -613,24 +623,24 @@ Two extraction modes available via the Extract dropdown in both menubar and lega
 
 ### Single Chapter
 
-`extractCurrentChapter()` (line 5022):
+`extractCurrentChapter()` (src/reader/js/11-chapter-extract.js):
 1. Gets current location from rendition
 2. Resolves spine item and finds title via TOC
 3. Loads the section content, clones the DOM
-4. **Image processing** (lines 5076-5138):
+4. **Image processing**:
    - Iterates all `<img>` elements
    - Skips already-base64 images
    - For blob/http images: fetches and converts
-   - For relative paths: resolves via `findAndLoadImage()` (line 4747) which searches JSZip archive using path resolution (handles `..`, `.`, absolute/relative paths)
+   - For relative paths: resolves via `findAndLoadImage()` (src/reader/js/11-chapter-extract.js) which searches JSZip archive using path resolution (handles `..`, `.`, absolute/relative paths)
    - Detects MIME type from magic bytes (PNG, GIF, JPEG, WebP, SVG)
    - Converts ArrayBuffer to base64 in 32KB chunks
    - Replaces `src` attribute with `data:...` URL
-5. **Style processing** (lines 5145-5206):
+5. **Style processing**:
    - Extracts all `<style>` elements
    - Resolves and fetches linked stylesheets from archive
    - Adds computed body font family
 6. **Output generation**:
-   - Generates clean HTML via `_generateCleanHTML()` (line 3889) with optional meta tags
+   - Generates clean HTML via `_generateCleanHTML()` (src/reader/js/05-extract-export.js) with optional meta tags
    - Creates chapter record in noesisDB with `origin-<timestamp>` snapshot
    - Auto-downloads two files (1.5s delay between them):
      - `noesis-extract-<Book>__<Chapter>__<timestamp>.html` (no meta, for offline reading)
@@ -638,8 +648,8 @@ Two extraction modes available via the Extract dropdown in both menubar and lega
 
 ### Current + Sublevels
 
-`extractMultipleSections()` (line 4810):
-1. Uses `collectAllSubchapters()` (line 4736) to recursively collect all TOC entries from the current node downward
+`extractMultipleSections()` (src/reader/js/11-chapter-extract.js):
+1. Uses `collectAllSubchapters()` (src/reader/js/11-chapter-extract.js) to recursively collect all TOC entries from the current node downward
 2. Iterates each entry, loads section, clones DOM
 3. Processes images the same way (with embedded base64)
 4. Extracts styles from first section only (shared across all)
@@ -648,10 +658,10 @@ Two extraction modes available via the Extract dropdown in both menubar and lega
 7. Auto-downloads the extract/origin HTML pair
 
 ### Auto-Download
-`_autoDownloadHTML()` (line 3922): Creates a Blob URL, programmatically clicks a hidden `<a>` element, cleans up after 8 seconds. No user dialog — files save directly to default download location.
+`_autoDownloadHTML()` (src/reader/js/05-extract-export.js): Creates a Blob URL, programmatically clicks a hidden `<a>` element, cleans up after 8 seconds. No user dialog — files save directly to default download location.
 
 ### Helper: findAndLoadImage
-`findAndLoadImage()` (line 4747): Resolves image paths by trying multiple strategies:
+`findAndLoadImage()` (src/reader/js/11-chapter-extract.js): Resolves image paths by trying multiple strategies:
 1. Path relative to section directory
 2. Normalized path (without leading `/`)
 3. Absolute path
@@ -680,10 +690,10 @@ Each extracted chapter has a `snapshots` array in the `noesisDB` database. The i
 ```
 
 **Operations**:
-- `saveExtractedChapterToDB()` (line 3650): Upserts a chapter record with snapshots
-- `deleteSnapshotFromDB()` (line 3672): Removes a single snapshot from a chapter's array
-- `deleteExtractedChapterFromDB()` (line 3661): Removes entire chapter record
-- `getExtractedChapterFromDB()` (line 3679): Retrieves a chapter record by ID
+- `saveExtractedChapterToDB()` (src/reader/js/02-db.js): Upserts a chapter record with snapshots
+- `deleteSnapshotFromDB()` (src/reader/js/02-db.js): Removes a single snapshot from a chapter's array
+- `deleteExtractedChapterFromDB()` (src/reader/js/02-db.js): Removes entire chapter record
+- `getExtractedChapterFromDB()` (src/reader/js/02-db.js): Retrieves a chapter record by ID
 
 The chapter records are displayed in the library view per book, with snapshot count badges and individual snapshot rows.
 
@@ -696,9 +706,9 @@ The chapter records are displayed in the library view per book, with snapshot co
 The reader supports tapping/clicking on images and tables in the epub content for a fullscreen preview.
 
 **How it works**:
-1. Content hook (line 5437) injects event handlers into the epub iframe
+1. Content hook injects event handlers into the epub iframe
 2. On image/table tap, sends a `postMessage` to the parent window with `{epubMediaTap: true, type, data}`
-3. Parent window listener (line 6007) receives the message and shows the `#readerMediaDialog`
+3. Parent window listener receives the message and shows the `#readerMediaDialog`
 4. Dialog has "Preview" and "Exit" buttons
 5. "Preview" opens the `#readerMediaFullscreen` overlay
 
@@ -714,7 +724,7 @@ The reader supports tapping/clicking on images and tables in the epub content fo
 
 ## Print Support
 
-Print handler (lines 7373-7401):
+Print handler:
 
 **`beforeprint` event**:
 1. Finds all iframes in the viewer
@@ -722,7 +732,7 @@ Print handler (lines 7373-7401):
 3. Strips epub.js column-pagination rules that would clip content: removes `column-*` and `transform-*` CSS
 4. Injects into `#reader-print-container` (hidden during normal view)
 
-**CSS** (lines 2649-2661):
+**CSS**:
 - In `@media print`: hides `#library-view` and `#reader-view`, shows `#reader-print-container`
 - Applies system font, max-width 900px, centered, with padding
 - Line height 1.6
@@ -737,7 +747,7 @@ Print handler (lines 7373-7401):
 - **≤768px**: Tablet/mobile layout
 - **≤480px**: Smartphone optimizations
 
-### Hamburger Menu (lines 7417-7443)
+### Hamburger Menu
 - **`#hamburgerBtn`** (reader) and **`#hamburgerBtnLib`** (library): Visible only ≤768px
 - Opens `#hamburgerDrawer` (280px, max 85vw) sliding from left
 - **Context-aware items**: `.hmb-lib` shown in library, `.hmb-rdr` shown in reader, no-class items shown in both
@@ -746,14 +756,14 @@ Print handler (lines 7373-7401):
 - Close via × button, backdrop click, Escape key, or item selection
 - Dropdown items (Display, Navigate, Annotate, Extract): temporarily show parent wrapper on mobile to render the dropdown
 
-### TOC Overlay (lines 7449-7513)
+### TOC Overlay
 - On mobile (≤768px): TOC remounts as direct child of `<body>` for reliable z-index/visibility
 - Full-height overlay from left edge, 300px wide with shadow
 - Opened via TOC menubar item, hamburger → TOC, or edge swipe
 - Open/close methods: `openTocOverlay()` / `closeTocOverlay()`
 - Restoration of original DOM position on close
 
-### Mobile Touch Zones (lines 6286-6313)
+### Mobile Touch Zones
 - Two invisible zones at left/right edges of screen, displayed only on mobile
 - 12vw wide, 70vh tall, centered vertically
 - Chevron indicators with subtle border styling
@@ -765,7 +775,7 @@ Print handler (lines 7373-7401):
   - Previous: left zone, Next: right zone
 - Listen on both `click` and `touchend` events
 
-### Swipe Navigation (lines 7634-7687)
+### Swipe Navigation
 - Initialized after rendition is ready (monkey-patches `openBookFromLibrary`)
 - Implemented on the `#viewer` element
 - **Touch tracking**: `touchstart` records position/time, `touchmove` cancels if vertical scroll detected, `touchend` evaluates
@@ -790,7 +800,7 @@ Print handler (lines 7373-7401):
 
 ## Help System
 
-Three-tier help system (lines 6842-6952):
+Three-tier help system:
 
 ### 1. Tooltips (`[data-tip]`)
 Available on toolbar/menubar buttons. CSS-only via `::after` pseudo-elements with delayed appearance (0.55s hover). Dark background, white text, max-width 220px. `[data-tip-down]` variant for buttons at the top of the screen.
@@ -811,7 +821,7 @@ Dark-themed fullscreen overlays with:
 
 ## Interface Customization
 
-Five customizable interface settings stored in `interfaceSettings` object (line 4134):
+Five customizable interface settings stored in `interfaceSettings` object:
 
 | Setting | Key | Default | Controls |
 |---------|-----|---------|----------|
@@ -821,15 +831,15 @@ Five customizable interface settings stored in `interfaceSettings` object (line 
 | Nav Opacity | `navOpacity` | `0.7` | Floating nav button opacity (combined with color via `hexToRgba`) |
 | Bookmark Drawer Color | `ubmDrawerColor` | `#fffde7` | CSS custom property `--ubm-bg` on drawer |
 
-**Application** (`applyInterfaceSettings()`, line 4496):
+**Application** (`applyInterfaceSettings()`, src/reader/js/10-chapter-nav.js):
 - Sets `header.style.background = linear-gradient(135deg, toolbarColor, adjustColor(toolbarColor, -20))`
 - Sets `#bookmarks.style.background = hexToRgba(sidebarColor, 0.98)`
 - Applies color + opacity to all `.floating-nav-btn` elements
 - Sets `#userBookmarksDrawer` background and `--ubm-bg` custom property
 
 **Utility functions**:
-- `hexToRgba(hex, alpha)` (line 4525): Parses hex to `rgba(r,g,b,a)`
-- `adjustColor(hex, percent)` (line 4533): Brightens/darkens a hex color by percentage
+- `hexToRgba(hex, alpha)` (src/reader/js/10-chapter-nav.js): Parses hex to `rgba(r,g,b,a)`
+- `adjustColor(hex, percent)` (src/reader/js/10-chapter-nav.js): Brightens/darkens a hex color by percentage
 
 Settings are persisted in `savedState.interface` and restored on book open.
 
