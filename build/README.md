@@ -17,14 +17,23 @@ back into the single-file form required for distribution.
 src/reader/   → builds index.html
 src/editor/   → builds noesis-editor.html
   index.template.html   the original file, with the app's own <style>/<script> content
-                         replaced by two placeholder tokens
+                         (and, for the editor, its vendored third-party blocks) replaced
+                         by placeholder tokens
   styles.css            the app's own CSS (was inline <style>)
   app.js                the app's own JS (was the main inline <script>)
+  vendor/                editor only — pre-existing vendored third-party code that
+                         predates this split (not CDN-loaded), pulled out of the
+                         template the same mechanical way:
+    summernote-fonts.css  Summernote's icon font-face block
+    turndown.js           vendored Turndown (HTML→Markdown)
+    jszip.js               vendored JSZip
+    html-docx.js           vendored html-docx-js
+
 ```
 
-Everything else (CDN `<script src>` tags, and — in the editor — a few blocks of
-already-vendored third-party JS/fonts that predate this split) stays untouched in the
-template, exactly where it was.
+CDN `<script src>` tags (jszip/epubjs/turndown for the reader, jquery/summernote for the
+editor) stay untouched in the template, per instruction to keep sharing the app the same
+way for now.
 
 ## Rules for editing
 
