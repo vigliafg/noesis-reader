@@ -5694,9 +5694,19 @@ ${htmlContent}
     }
 
     function _saveChunk(chunk) {
+      // Detect type (like editor's _enrichChunk)
+      var c = chunk.content || '';
+      var type = chunk.type || 'text';
+      if (!chunk.type) {
+        if (/<table[\s>]/i.test(c)) type = 'table';
+        else if (/<img[\s>]/i.test(c)) type = 'img';
+      }
+
       var toStore = Object.assign({}, chunk, {
         id: Date.now(),
+        type: type,
         book: currentBookTitle || 'Unknown Book',
+        chapter: _currentChapterName || '',
         date: new Date().toISOString()
       });
       _collection.push(toStore);
@@ -5751,8 +5761,10 @@ ${htmlContent}
       if (collName === null) return; // user cancelled
       collName = collName.trim() || (currentBookTitle || 'Collection');
       var json = JSON.stringify({
+        version: 1,
         name: collName,
-        book: currentBookTitle || 'Collection',
+        bookName: currentBookTitle || 'Collection',
+        chapterName: _currentChapterName || '',
         exportedAt: new Date().toISOString(),
         count: chunks.length,
         chunks: chunks
