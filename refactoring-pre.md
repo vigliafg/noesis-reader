@@ -392,7 +392,37 @@ Recommended order of operations from here:
 1. ~~Get `test_e2e_complete.js` runnable again~~ — done, see §4.
 2. ~~Run the existing suite against the current, unrefactored `index.html` to get a
    known-good baseline~~ — done, see §4 (31/31 and 140/140 passing).
-3. Begin the source-split step (extracting the inline `<style>`/`<script>` into smaller
-   files, reassembled by a build script into the same single-file `index.html` /
-   `noesis-editor.html`), re-running both suites after each meaningful step rather than at
-   the end — so a break is caught immediately next to the change that caused it.
+3. ~~Begin the source-split step~~ — done (2026-08-02), see §7.
+
+## 7. First split increment: mechanical extraction (2026-08-02)
+
+Did the smallest possible cut, deliberately not a feature-based split yet: each entry's
+single inline `<style>` block and single main inline `<script>` block moved out to
+`src/reader/{styles.css,app.js}` and `src/editor/{styles.css,app.js}`, with a template
+(`src/*/index.template.html`) holding two placeholder tokens where they used to be.
+`build/build.js` (`npm run build`) substitutes them back in.
+
+CDN `<script src>` tags stay untouched, per your instruction to keep sharing the app the
+same way for now. The editor also had some already-vendored third-party JS (turndown,
+jszip, html-docx-js) and a font-face `<style>` pasted inline from before this session —
+left alone in the template too, since they're not app code.
+
+**Verified, not just assumed:** rebuilding from `src/` right now reproduces `index.html`
+and `noesis-editor.html` **byte-for-byte identical** to what was there before (`cmp`/`md5sum`
+match exactly) — so this step is provably a no-op today. Both E2E suites still pass in full
+(31/31, 140/140) and the rebuilt `index.html` still works correctly when opened directly via
+`file://` (checked with Puppeteer, zero console errors).
+
+One real bug surfaced and fixed along the way, worth remembering for later steps: the
+first version of `build.js` used `template.replace(placeholder, css)` /
+`.replace(placeholder, js)` — `String.prototype.replace` treats `$&`, `$1` etc. in the
+**replacement** argument specially, and the vendored jQuery source in the editor literally
+contains `"-$&"` as a regex pattern, which got misinterpreted and silently corrupted the
+output. Fixed by using a function replacer (`.replace(placeholder, () => js)`), which
+inserts its return value literally. Any future string-templating step in this codebase
+should use function replacers, not plain string replacements, given how much minified
+third-party code with `$`-containing strings is embedded in these files.
+
+This increment intentionally does not attempt to modularize by feature, dedupe the two
+files, or touch the `noesis816.html`/`noesis-multi` situation — those are separate,
+larger steps for later.

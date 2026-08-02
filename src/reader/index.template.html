@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0" />
+  <title>EPUB Library & Reader</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+/*__NOESIS_BUILD_CSS__*/
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════ MOBILE OVERLAY BACKDROP ═══════════ -->
+  <div id="mobileOverlayBackdrop"></div>
+
+  <!-- ═══════════ HAMBURGER DRAWER (mobile menu) ═══════════ -->
+  <div id="hamburgerDrawer">
+    <div class="hamburger-header">
+      <button class="hamburger-close" id="hamburgerClose" aria-label="Close menu">✕</button>
+    </div>
+    <!-- Context-aware items: .hmb-lib = library only, .hmb-rdr = reader only, no class = both -->
+    <div class="hamburger-item" id="hmbLibrary"><i class="bi bi-book"></i> Library</div>
+    <div class="hamburger-item hmb-lib" id="hmbAddBooks" style="display:none"><i class="bi bi-plus-circle"></i> Add Books</div>
+    <div class="hamburger-item hmb-lib" id="hmbLibThemeLight" style="display:none"><i class="bi bi-sun-fill"></i> Theme: Light</div>
+    <div class="hamburger-item hmb-lib" id="hmbLibThemeDark" style="display:none"><i class="bi bi-moon-fill"></i> Theme: Dark</div>
+    <div class="hamburger-item hmb-lib" id="hmbLibTools" style="display:none"><i class="bi bi-tools"></i> Tools</div>
+    <div class="hamburger-item hmb-lib" id="hmbLibRefresh" style="display:none"><i class="bi bi-arrow-repeat"></i> Refresh Library</div>
+    <div class="hamburger-item hmb-rdr" id="hmbToc"><i class="bi bi-list-ul"></i> TOC</div>
+    <div class="hamburger-item hmb-rdr" id="hmbBookmarks"><i class="bi bi-bookmark"></i> Bookmarks</div>
+    <div class="hamburger-item hmb-rdr" id="hmbDisplay"><i class="bi bi-palette"></i> Display</div>
+    <div class="hamburger-item hmb-rdr" id="hmbNavigate"><i class="bi bi-arrow-left-right"></i> Navigate<span id="hmbNavigateMode" class="rmb-navigate-badge" style="margin-left:6px;">Page</span></div>
+    <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
+    <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
+    <div class="hamburger-item hmb-rdr" id="hmbCollection"><i class="bi bi-collection"></i> Collection<span id="hmbCollBadge" class="rmb-badge" style="display:none;margin-left:6px;">0</span></div>
+    <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="hidden">
+    <div class="spinner"></div>
+    <div id="loading-msg">Processing...</div>
+  </div>
+
+  <!-- LIBRARY VIEW -->
+  <div id="library-view">
+    <div class="library-header">
+      <div class="library-header-left">
+        <!-- Hamburger button (mobile only) — positioned at extreme left -->
+        <button id="hamburgerBtnLib" class="lib-header-btn" aria-label="Menu" title="Menu" style="display:none;">☰</button>
+        <!-- Brand: animazione casuale ad ogni apertura -->
+        <span id="libBrand"><span class="lib-brand-noesis">Noesis</span><span class="lib-brand-reader">reader</span></span>
+      </div>
+      <div class="library-header-right">
+        <!-- ADD BOOKS -->
+        <input type="file" id="libraryInput" accept=".epub" />
+        <button id="libAddBooksBtn" class="lib-header-btn" title="Import an EPUB book">
+          ADD BOOKS
+        </button>
+
+        <!-- IMPORT SNAPSHOTS -->
+        
+        
+
+        <!-- EDITOR -->
+        
+
+        <!-- THEMES Dropdown -->
+        <div class="lib-themes-dropdown" id="libThemesDropdown">
+          <button id="libThemesBtn" class="lib-header-btn" title="Choose theme">
+            THEMES
+            <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i>
+          </button>
+          <div class="lib-themes-menu hidden" id="libThemesMenu">
+            <div class="lib-themes-item" id="libThemeLight" data-theme="light">
+              <i class="bi bi-sun-fill lib-theme-light"></i>
+              <span>Light</span>
+            </div>
+            <div class="lib-themes-item" id="libThemeDark" data-theme="dark">
+              <i class="bi bi-moon-fill lib-theme-dark"></i>
+              <span>Dark</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TOOLS Dropdown -->
+        <div class="lib-tools-dropdown" id="libToolsDropdown">
+          <button id="libToolsBtn" class="lib-header-btn" title="External Tools">
+            TOOLS
+            <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i>
+          </button>
+          <div class="lib-tools-menu hidden" id="libToolsMenu">
+            <a href="https://noesis-epub-tools.vercel.app/" target="_blank" class="lib-tools-item">
+              <i class="bi bi-book-half"></i>
+              <span>noesis-epub-tools</span>
+            </a>
+            <a href="https://pandoc.org/app" target="_blank" class="lib-tools-item">
+              <i class="bi bi-arrow-left-right"></i>
+              <span>Pandoc Online</span>
+            </a>
+            <a href="https://mozilla.github.io/pdf.js/web/viewer.html" target="_blank" class="lib-tools-item">
+              <i class="bi bi-file-earmark-pdf"></i>
+              <span>Mozilla PDF Viewer</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- HELP -->
+        <button id="libHelpBtn" class="lib-header-btn" title="Quick help — Library">
+          HELP
+        </button>
+      </div>
+    </div>
+    <div id="bookGrid" class="library-grid">
+      <!-- Books will be injected here -->
+    </div>
+
+    <!-- Banner primo avvio Library -->
+    <div class="help-banner hidden" id="libHelpBanner">
+      <span class="help-banner-icon">💡</span>
+      <div class="help-banner-body">
+        <div class="help-banner-title">Library — key actions</div>
+        <div class="help-banner-steps">
+          <div class="help-banner-step"><strong>ADD BOOKS</strong> — import any EPUB file from your device</div>
+          <div class="help-banner-step"><strong>📚 Book cover</strong> — click to open it in the Reader</div>
+          <div class="help-banner-step"><strong>Chapters / Snapshots badges</strong> — quick stats shown on each book card</div>
+          <div class="help-banner-step"><strong>Chapter name</strong> — reopens the latest snapshot in the Editor</div>
+          <div class="help-banner-step"><strong>Snapshot row</strong> — click to open that exact version in the Editor</div>
+          <div class="help-banner-step"><strong>THEMES</strong> — choose between light and dark library view</div>
+          <div class="help-banner-step"><strong>IMPORT SNAPSHOTS</strong> — reimport .html snapshot files saved by Noesis Editor</div>
+          <div class="help-banner-step"><strong>EDITOR</strong> — open Noesis Editor in standalone mode (blank document)</div>
+          <div class="help-banner-step"><strong>HELP</strong> — open this guide at any time</div>
+        </div>
+      </div>
+      <button class="help-banner-close" id="libBannerClose" title="Close">✕</button>
+    </div>
+
+    <!-- Overlay shortcut Library -->
+    <div class="help-overlay" id="libHelpOverlay">
+      <div class="help-overlay-box">
+        <div class="help-overlay-header">
+          <span class="help-overlay-title">📚 Library — Button Reference</span>
+          <button class="help-overlay-close" id="libHelpOverlayClose">✕</button>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Adding &amp; Opening Books</div>
+          <div class="help-row">
+            <span class="help-key">ADD BOOKS</span>
+            <span class="help-desc">Import an EPUB file from your device. The book is stored locally in IndexedDB — nothing is uploaded anywhere</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Book cover / title</span>
+            <span class="help-desc">Click the cover thumbnail or book title to open it in the Reader, restoring the last saved position and settings</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Chapters · Snapshots badges</span>
+            <span class="help-desc">Two badges on each book card show at a glance how many chapters have been extracted and how many total snapshots are saved for that book</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key"><i class="bi bi-trash"></i> Delete book</span>
+            <span class="help-desc">Permanently removes the book and all its extracted chapters and snapshots from the library</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Extracted Chapters</div>
+          <div class="help-row">
+            <span class="help-key">Chapter name</span>
+            <span class="help-desc">Click to reopen the chapter in Noesis Editor with the most recent snapshot loaded</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Snapshot count badge</span>
+            <span class="help-desc">Shows the number of saved versions for that chapter (e.g. "3 snapshots"). Appears next to the chapter name</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key"><i class="bi bi-trash"></i> Delete chapter</span>
+            <span class="help-desc">Removes the chapter and all its snapshots. The original book in the library is not affected</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Snapshots</div>
+          <div class="help-row">
+            <span class="help-key">Snapshot row</span>
+            <span class="help-desc">Each row is a saved version of a chapter. Click to reopen that exact version in Noesis Editor — text, highlights and annotations included. The description label (e.g. "clean", "annot", or a custom name) and the save date are shown on each row</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key"><i class="bi bi-circle-fill" style="color:#10b981;"></i> Green dot</span>
+            <span class="help-desc">Marks the most recent snapshot for that chapter</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key"><i class="bi bi-trash"></i> Delete snapshot</span>
+            <span class="help-desc">Removes only that version — other snapshots for the same chapter are preserved</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Interface</div>
+          <div class="help-row">
+            <span class="help-key">THEMES</span>
+            <span class="help-desc">Switches between light (editorial) and dark library themes. Preference is saved in localStorage</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">IMPORT SNAPSHOTS</span>
+            <span class="help-desc">Reimport .html snapshot files previously saved by Noesis Editor to disk. On desktop: select files from your Downloads folder. On Android: pick the files manually. Duplicates are automatically skipped</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">EDITOR</span>
+            <span class="help-desc">Open Noesis Editor in standalone mode (blank document). Use this for free writing or chunk assembly without loading a specific chapter</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">TOOLS</span>
+            <span class="help-desc">Opens a dropdown menu with three external web tools: <strong>noesis-epub-tools</strong> — web app for editing and managing EPUB files; <strong>Pandoc Online</strong> — universal document format converter (Markdown, DOCX, HTML, LaTeX, EPUB, ODT and more), runs entirely in the browser via pandoc.wasm without uploading files; <strong>Mozilla PDF Viewer</strong> — PDF.js browser-based PDF reader with full accessibility support</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">HELP</span>
+            <span class="help-desc">Opens this button reference at any time</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="libStorageBar" class="lib-storage-bar hidden">
+      <span id="libStorageText">Calcolo spazio...</span>
+      <span id="libStorageBooks"></span>
+    </div>
+  </div>
+  <!-- READER VIEW (ORIGINAL LAYOUT) -->
+  <div id="reader-view" class="hidden">
+    <header>
+
+      <!-- ═══════════ NEW READER MENUBAR ═══════════ -->
+      <nav class="reader-menubar" id="readerMenubar">
+
+        <!-- Hamburger button (mobile only) -->
+        <button id="hamburgerBtn" aria-label="Menu" title="Menu">☰</button>
+
+        <!-- Library -->
+        <span class="rmb-item" id="rmbLibrary">Library</span>
+
+        <!-- TOC -->
+        <span class="rmb-item" id="rmbToc">
+          TOC
+        </span>
+
+        <!-- Bookmarks -->
+        <span class="rmb-item" id="rmbBookmarks">Bookmarks
+          <span id="ubmBadge" class="rmb-badge" style="display:none;">0</span>
+        </span>
+
+        <!-- Display: wrapper con il menu esistente dentro -->
+        <div class="rmb-item-wrap" id="displayDropdownWrap">
+          <span class="rmb-item" id="rmbDisplay">Display</span>
+          <div class="display-menu" id="displayMenu">
+            <!-- Section: Typography -->
+            <div class="display-section-header" id="displaySecTypo">
+              <i class="bi bi-type" style="font-size:13px;"></i>
+              Typography
+              <i class="bi bi-chevron-right display-section-chevron"></i>
+            </div>
+            <div class="display-section-body" id="displayBodyTypo"></div>
+            <div class="display-sep"></div>
+            <!-- Section: Themes -->
+            <div class="display-section-header" id="displaySecThemes">
+              <i class="bi bi-palette" style="font-size:13px;"></i>
+              Themes
+              <i class="bi bi-chevron-right display-section-chevron"></i>
+            </div>
+            <div class="display-section-body" id="displayBodyThemes"></div>
+            <div class="display-sep"></div>
+            <!-- Section: Interface -->
+            <div class="display-section-header" id="displaySecInterface">
+              <i class="bi bi-sliders" style="font-size:13px;"></i>
+              Interface
+              <i class="bi bi-chevron-right display-section-chevron"></i>
+            </div>
+            <div class="display-section-body" id="displayBodyInterface"></div>
+          </div>
+        </div>
+
+        <!-- Navigate: nuovo dropdown con scroll mode -->
+        <div class="rmb-item-wrap" id="rmbNavigateWrap">
+          <span class="rmb-item" id="rmbNavigate">Navigate <span class="rmb-navigate-badge" id="rmbNavigateMode">Page</span></span>
+          <div class="rmb-navigate-menu" id="rmbNavigateMenu">
+            <div class="rmb-nav-item rmb-nav-active" id="rmbPageModeItem">
+              <i class="bi bi-file-earmark-text"></i>
+              <span>Page Mode</span>
+            </div>
+            <div class="rmb-nav-item" id="rmbScrollModeItem">
+              <i class="bi bi-arrow-down-up"></i>
+              <span>Scroll Mode</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Annotate: indicatore colore (popup contestuale appare su selezione) -->
+        <span class="rmb-item" id="rmbAnnotate">
+          Annotate
+          <span id="rmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:4px;vertical-align:middle;"></span>
+        </span>
+        <!-- vecchio menu highlight mantenuto nascosto per compatibilità JS -->
+        <div class="reader-highlight-menu" id="readerHighlightMenu" style="display:none;">
+          <div class="reader-highlight-option" data-color="yellow">
+            <input type="radio" name="readerHlColor" value="yellow" id="rhlYellow" checked>
+            <div class="reader-hl-color-dot yellow"></div>
+            <label for="rhlYellow">Yellow</label>
+          </div>
+          <div class="reader-highlight-option" data-color="green">
+            <input type="radio" name="readerHlColor" value="green" id="rhlGreen">
+            <div class="reader-hl-color-dot green"></div>
+            <label for="rhlGreen">Green</label>
+          </div>
+          <div class="reader-highlight-option" data-color="pink">
+            <input type="radio" name="readerHlColor" value="pink" id="rhlPink">
+            <div class="reader-hl-color-dot pink"></div>
+            <label for="rhlPink">Pink</label>
+          </div>
+          <div class="reader-highlight-option" data-color="remove">
+            <input type="radio" name="readerHlColor" value="remove" id="rhlRemove">
+            <div class="reader-hl-color-dot remove"></div>
+            <label for="rhlRemove">Remove</label>
+          </div>
+        </div>
+
+        <!-- Extract: wrapper con il menu extract dentro -->
+        <div class="rmb-item-wrap" id="rmbExtractWrap">
+          <span class="rmb-item" id="rmbExtract">Extract</span>
+          <div class="extract-menu" id="extractMenu">
+            <div class="extract-format-row" id="extractFormatRow">
+              <button class="extract-fmt-btn active" data-fmt="html-clean">HTML clean</button>
+              <button class="extract-fmt-btn" data-fmt="html-annotated">HTML annot.</button>
+              <button class="extract-fmt-btn" data-fmt="txt">TXT</button>
+              <button class="extract-fmt-btn" data-fmt="md">MD</button>
+              <button class="extract-fmt-btn" data-fmt="epub">EPUB</button>
+              <button class="extract-fmt-btn" data-fmt="pdf">PDF 🖨️</button>
+              <button class="extract-fmt-btn" data-fmt="zip">ZIP</button>
+            </div>
+            <div class="extract-divider"></div>
+            <div class="extract-menu-item" data-mode="current">
+              <i class="bi bi-file-earmark"></i>
+              <span>Current chapter only</span>
+            </div>
+            <div class="extract-menu-item" data-mode="tree">
+              <i class="bi bi-diagram-3"></i>
+              <span>Current + all sublevels</span>
+            </div>
+            <div class="extract-divider"></div>
+            <div class="extract-actions" id="extractActions">
+              <button class="extract-action-btn extract-action-extract" id="extractActionExtract">
+                <i class="bi bi-download"></i> Extract
+              </button>
+              <button class="extract-action-btn extract-action-edit" id="extractActionEdit">
+                <i class="bi bi-pencil-square"></i> Extract + Edit
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collection -->
+        <span class="rmb-item" id="rmbCollection">Collection
+          <span id="collBadge" class="rmb-badge" style="display:none;">0</span>
+        </span>
+
+        <!-- Help -->
+        <span class="rmb-item" id="rmbHelp">Help</span>
+
+      </nav>
+      <!-- ═══════════ END MENUBAR ═══════════ -->
+
+      <!-- ═══════════ CONTEXTUAL ANNOTATE POPUP ═══════════ -->
+      <div id="ctxAnnotatePopup" class="ctx-annotate-popup" style="display:none;">
+        <div class="ctx-annotate-option" data-color="yellow" title="Yellow"><span class="ctx-color-dot yellow"></span></div>
+        <div class="ctx-annotate-option" data-color="green" title="Green"><span class="ctx-color-dot green"></span></div>
+        <div class="ctx-annotate-option" data-color="pink" title="Pink"><span class="ctx-color-dot pink"></span></div>
+        <div class="ctx-annotate-option" data-color="remove" title="Remove"><span class="ctx-color-dot remove"></span></div>
+        <div class="ctx-annotate-option ctx-preview-option" data-action="preview" title="Preview highlighted text"><i class="bi bi-search"></i></div>
+      </div>
+
+      <!-- ELEMENTI ORIGINALI NASCOSTI (compatibilità JS) -->
+      <button id="backToLibraryBtn" class="rmb-compat-hidden">
+        <i class="bi bi-arrow-left"></i> Library
+      </button>
+      <strong class="rmb-compat-hidden">EPUB Reader</strong>
+      <input type="file" id="fileInput" accept=".epub" />
+      <span id="fileName" class="rmb-compat-hidden">No file selected</span>
+
+      <div class="toolbar rmb-compat-hidden" aria-hidden="true">
+        <button class="btn btn-icon btn-primary" id="toggleSidebarBtn" title="Show/Hide TOC" style="min-width:64px;">
+          <i class="bi bi-layout-sidebar"></i>
+        </button>
+        <button class="btn btn-icon" id="userBookmarksBtn" title="User Bookmarks" style="background:rgba(251,191,36,0.25);min-width:46px;">
+          <i class="bi bi-bookmark-star"></i>
+        </button>
+        <div class="reader-highlight-dropdown">
+          <button class="btn btn-icon hl-yellow" id="readerHighlightBtn" title="Highlight text">
+            <i class="bi bi-highlighter"></i>
+          </button>
+          <!-- readerHighlightMenu è ora nel menubar -->
+        </div>
+        <button class="btn btn-icon" id="typographyBtn" title="Typography" style="display:none"><i class="bi bi-type"></i></button>
+        <button class="btn btn-icon" id="themeBtn" title="Themes" style="display:none"><i class="bi bi-palette"></i></button>
+        <div class="toolbar-group" style="position:relative">
+          <button class="btn btn-icon nav-mode-btn" id="scrollModeBtn" title="Modalità navigazione">
+            <i class="bi bi-arrow-down-up"></i>
+            <span class="nav-mode-label">Page Mode</span>
+          </button>
+          <div id="navModePopover" class="nav-mode-popover">
+            <button class="nav-mode-opt active" id="navOptPage">
+              <i class="bi bi-file-earmark-text"></i>
+              <span>Page Mode</span>
+            </button>
+            <button class="nav-mode-opt" id="navOptScroll">
+              <i class="bi bi-arrow-down-up"></i>
+              <span>Scroll Mode</span>
+            </button>
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <!-- zoomBtn RIMOSSO -->
+          <button class="btn btn-icon" id="interfaceBtn" title="Interface" style="display:none"><i class="bi bi-eye"></i></button>
+        </div>
+        <div class="extract-dropdown">
+          <button class="btn btn-icon btn-success" id="extractChapterBtn" title="Extract Chapter">
+            <i class="bi bi-file-earmark-arrow-down"></i>
+            <i class="bi bi-chevron-down" style="font-size:10px;margin-left:-2px;"></i>
+          </button>
+          <!-- extractMenu è ora nel menubar -->
+        </div>
+        <button class="btn btn-icon btn-help" id="readerHelpBtn" title="Help">?</button>
+      </div>
+
+      <!-- Typography Popup for Main Page (nascosto, contenuto embeddato nel displayMenu) -->
+      <div id="typographyPopupMain" class="typography-popup"
+        style="display: none !important; visibility: hidden; opacity: 0;">
+        <h3>Typography</h3>
+
+        <div class="typography-row">
+          <label>Font Size</label>
+          <div class="typography-controls">
+            <button id="fontMinus1" title="Decrease -1%">
+              <i class="bi bi-dash"></i>
+            </button>
+            <span class="typography-value" id="fontInfo">100%</span>
+            <button id="fontPlus1" title="Increase +1%">
+              <i class="bi bi-plus"></i>
+            </button>
+            <button id="fontReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Line Height</label>
+          <div class="typography-controls">
+            <button id="lineHeightMinus" title="Decrease">
+              <i class="bi bi-dash"></i>
+            </button>
+            <span class="typography-value" id="lineHeightInfo">1.2</span>
+            <button id="lineHeightPlus" title="Increase">
+              <i class="bi bi-plus"></i>
+            </button>
+            <button id="lineHeightReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Page View</label>
+          <div class="typography-controls">
+            <button id="singlePageBtn" title="Single Page">
+              <i class="bi bi-file-earmark"></i>
+            </button>
+            <button id="dualPageBtn" title="Dual Page">
+              <i class="bi bi-book"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Theme Picker Popup for Main Page -->
+      <div id="themePopupMain" class="theme-popup" style="display: none !important; visibility: hidden; opacity: 0;">
+        <h3>Reading Themes</h3>
+        <!-- Themes will be populated by JavaScript -->
+      </div>
+
+      <!-- Interface Settings Popup -->
+      <div id="interfacePopupMain" class="typography-popup" style="display: none !important; visibility: hidden; opacity: 0;">
+        <h3>Interface Settings</h3>
+
+        <div class="typography-row">
+          <label>Toolbar Color</label>
+          <div class="typography-controls">
+            <input type="color" id="toolbarColorPicker" value="#667eea" />
+            <button id="toolbarColorReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Sidebar Color</label>
+          <div class="typography-controls">
+            <input type="color" id="sidebarColorPicker" value="#ffffff" />
+            <button id="sidebarColorReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Nav Buttons Color</label>
+          <div class="typography-controls">
+            <input type="color" id="navButtonsColorPicker" value="#667eea" />
+            <button id="navButtonsColorReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Nav Opacity</label>
+          <div class="typography-controls">
+            <input type="range" id="navOpacitySlider" min="0.1" max="1" step="0.1" value="0.7" />
+            <span class="typography-value" id="navOpacityValue">0.7</span>
+            <button id="navOpacityReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Bookmark Drawer Color</label>
+          <div class="typography-controls">
+            <input type="color" id="ubmDrawerColorPicker" value="#fffde7" />
+            <button id="ubmDrawerColorReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner primo avvio Reader -->
+    <div class="help-banner hidden" id="readerHelpBanner">
+      <span class="help-banner-icon">💡</span>
+      <div class="help-banner-body">
+        <div class="help-banner-title">Welcome to the Reader — key actions</div>
+        <div class="help-banner-steps">
+          <div class="help-banner-step"><strong>TOC</strong> — open/close the table of contents</div>
+          <div class="help-banner-step"><strong>Bookmarks</strong> — add and manage personal bookmarks</div>
+          <div class="help-banner-step"><strong>Display</strong> — typography, themes &amp; interface</div>
+          <div class="help-banner-step"><strong>Navigate</strong> — switch between Page and Scroll reading mode</div>
+          <div class="help-banner-step"><strong>Extract</strong> — extract chapter for annotation in the Editor</div>
+          <div class="help-banner-step"><strong>Help</strong> — open this guide at any time</div>
+        </div>
+      </div>
+      <button class="help-banner-close" id="readerBannerClose" title="Chiudi">✕</button>
+    </div>
+
+    <!-- Overlay shortcut Reader -->
+    <div class="help-overlay" id="readerHelpOverlay">
+      <div class="help-overlay-box">
+        <div class="help-overlay-header">
+          <span class="help-overlay-title">📖 Reader — Button Reference</span>
+          <button class="help-overlay-close" id="readerHelpOverlayClose">✕</button>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Navigation &amp; View</div>
+          <div class="help-row">
+            <span class="help-key">TOC</span>
+            <span class="help-desc">Click to open/close the hierarchical table of contents in the sidebar</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Bookmarks</span>
+            <span class="help-desc">Manage personal bookmarks: add, navigate, delete</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Navigate</span>
+            <span class="help-desc">Dropdown to switch between Page Mode (← → arrows) and Scroll Mode (continuous vertical scroll). The current mode is shown as a badge next to «Navigate»</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Appearance &amp; Reading</div>
+          <div class="help-row">
+            <span class="help-key">Display</span>
+            <span class="help-desc">Unified panel with three collapsible sections — <strong>Typography</strong> (font size, line height, page layout), <strong>Themes</strong> (15 themes in 5 groups), <strong>Interface</strong> (toolbar, sidebar and nav button colors)</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Annotate</span>
+            <span class="help-desc">Select text then choose a color (yellow/green/pink) or remove an existing highlight</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Saving &amp; Extraction</div>
+          <div class="help-row">
+            <span class="help-key">Auto-save</span>
+            <span class="help-desc">Reading position is saved automatically every few seconds as you read. Display settings prompt a separate save confirmation when changed</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key">Extract</span>
+            <span class="help-desc"><strong>Current chapter only</strong> — focused document · <strong>+ sublevels</strong> — full nested branch merged</span>
+          </div>
+        </div>
+        <div class="help-group">
+          <div class="help-group-title">Keyboard</div>
+          <div class="help-row">
+            <span class="help-key">← → <kbd>arrows</kbd></span>
+            <span class="help-desc">Previous / next page (paginated mode)</span>
+          </div>
+          <div class="help-row">
+            <span class="help-key"><kbd>?</kbd></span>
+            <span class="help-desc">Open this guide at any time</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="container">
+<nav id="bookmarks" translate="yes" lang="">
+  <div class="toc-toolbar">
+    <button id="btnTocExpand" class="toc-btn" title="Espandi tutti"><i class="bi bi-arrows-angle-expand"></i></button>
+    <button id="btnTocCollapse" class="toc-btn" title="Collassa tutti"><i class="bi bi-arrows-angle-contract"></i></button>
+    <div style="flex:1"></div>
+    <button id="btnTocClose" class="toc-btn" title="Chiudi"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <ul id="toc"></ul>
+</nav>
+      <div id="viewer"></div>
+    </div>
+
+    <!-- Floating Navigation Buttons -->
+    <button id="floatingPrevBtn" class="floating-nav-btn hidden" title="Previous page">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <button id="floatingNextBtn" class="floating-nav-btn hidden" title="Next page">
+      <i class="bi bi-chevron-right"></i>
+    </button>
+
+    <!-- Mobile Touch Zones for Page Navigation (visible only on mobile ≤768px) -->
+    <div id="touchZonePrev" class="mobile-touch-zone left"></div>
+    <div id="touchZoneNext" class="mobile-touch-zone right"></div>
+
+    <!-- User Bookmarks Drawer -->
+    <div id="userBookmarksDrawer">
+      <div id="ubmHeader">
+        <h3><i class="bi bi-bookmark-star" style="margin-right:5px;color:#f59e0b;"></i>My Bookmarks</h3>
+        <button id="ubmNewBtn"><i class="bi bi-plus-lg"></i> New Bookmark</button>
+        <button id="ubmCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="ubmList">
+        <div class="ubm-empty"><i class="bi bi-bookmark"></i>No bookmarks yet.</div>
+      </div>
+    </div>
+
+    <!-- Collection Drawer -->
+    <div id="collectionDrawer">
+      <div id="collHeader">
+        <h3><i class="bi bi-collection" style="margin-right:5px;color:#10b981;"></i>Collection</h3>
+        <div class="coll-json-wrap">
+          <button id="collJsonBtn" title="Salva/Carica l'intera collezione"><i class="bi bi-folder-symlink"></i> Collection <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i></button>
+          <div class="coll-json-menu" id="collJsonMenu">
+            <button data-action="import"><i class="bi bi-box-arrow-in-down"></i> Import collection</button>
+            <button data-action="export"><i class="bi bi-box-arrow-up-right"></i> Export collection</button>
+          </div>
+        </div>
+        <div class="coll-export-wrap">
+          <button id="collExportBtn" title="Esporta i chunks selezionati"><i class="bi bi-download"></i> Chunks <i class="bi bi-chevron-down" style="font-size:10px;margin-left:2px;"></i></button>
+          <div class="coll-export-menu" id="collExportMenu">
+            <button data-fmt="html"><i class="bi bi-filetype-html"></i> HTML</button>
+            <button data-fmt="md"><i class="bi bi-filetype-md"></i> Markdown</button>
+            <button data-fmt="zip"><i class="bi bi-file-zip"></i> ZIP</button>
+          </div>
+        </div>
+        <button id="collClearBtn" title="Clear all"><i class="bi bi-trash"></i> Clear</button>
+        <button id="collCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div id="collFilterBar">
+        <div class="coll-filter-types">
+          <button class="coll-ft-btn active" data-type="all">All</button>
+          <button class="coll-ft-btn" data-type="text"><i class="bi bi-chat-quote"></i> Text</button>
+          <button class="coll-ft-btn" data-type="img"><i class="bi bi-image"></i> Images</button>
+          <button class="coll-ft-btn" data-type="table"><i class="bi bi-table"></i> Tables</button>
+        </div>
+        <select id="collChapterFilter" class="coll-chapter-select">
+          <option value="all">All chapters</option>
+        </select>
+      </div>
+      <div id="collSelectBar">
+        <button id="collSelectAllBtn" class="coll-select-link">Select all</button>
+        <button id="collDeselectAllBtn" class="coll-select-link">Deselect</button>
+        <span id="collSelBadge">0 selected</span>
+      </div>
+      <div id="collList">
+        <div class="coll-empty"><i class="bi bi-collection"></i>No items yet.<br><small>Preview an image, table, or highlight and tap [+] Collect.</small></div>
+      </div>
+    </div>
+
+    <!-- Collection Chunk Viewer -->
+    <div id="collViewer">
+      <div class="coll-viewer-toolbar">
+        <span class="coll-viewer-title" id="collViewerTitle"></span>
+        <button class="coll-viewer-close" id="collViewerClose">&times;</button>
+      </div>
+      <div class="coll-viewer-content" id="collViewerContent"></div>
+    </div>
+    <input type="file" id="collImportInput" accept=".json" style="display:none;">
+
+    <div id="status">
+      <button id="statusPrevBtn" class="chap-nav-btn" title="Previous chapter (spine)" disabled>◀</button>
+      <span id="statusChapterName">Select an EPUB file…</span>
+      <button id="statusNextBtn" class="chap-nav-btn" title="Next chapter (spine)" disabled>▶</button>
+    </div>
+  </div>
+
+  <!-- Save State Toast -->
+  <div id="saveToast">
+    <i class="bi bi-floppy"></i>
+    <span id="saveToastMsg">Saving…</span>
+  </div>
+
+  <!-- Display Settings Save Prompt -->
+  <div id="displaySavePrompt">
+    <span>Save display settings?</span>
+    <button class="dsp-save" id="dspSaveBtn">Save</button>
+    <button class="dsp-dismiss" id="dspDismissBtn" title="Dismiss">&#x2715;</button>
+  </div>
+
+  <!-- Main Reader Media Tap Dialog -->
+  <div id="readerMediaDialog">
+    <button id="readerMdPreviewBtn">Preview</button>
+    <button id="readerMdExitBtn">Exit</button>
+  </div>
+
+  <!-- Main Reader Fullscreen Overlay -->
+  <div id="readerMediaFullscreen">
+    <div class="rfs-toolbar">
+      <button class="rfs-copy" id="readerFsCopy"><i class="bi bi-clipboard"></i> Copy</button>
+      <button class="rfs-collect" id="readerFsCollect" title="Add to collection"><i class="bi bi-plus-circle"></i> Collect</button>
+      <div class="rfs-download-wrap">
+        <button class="rfs-download" id="readerFsDownload"><i class="bi bi-download"></i> Download</button>
+        <div class="rfs-download-menu" id="readerFsDownloadMenu"></div>
+      </div>
+      <button class="rfs-close" id="readerFsClose">&#x2715;</button>
+    </div>
+    <div id="readerFsContent"></div>
+    <div class="rfs-caption" id="readerFsCaption"></div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.2/dist/turndown.js"></script>
+
+  <script>
+//__NOESIS_BUILD_JS__
+  </script>
+</body>
+
+</html>

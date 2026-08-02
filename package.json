@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "node build/build.js"
+  },
   "dependencies": {
     "puppeteer": "^25.4.0"
   }
