@@ -1,0 +1,114 @@
+/* ── Import chapter overlay ── */
+#chImportOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9400;
+  align-items: center;
+  justify-content: center;
+}
+#chImportOverlay.open { display: flex; }
+#chImportDialog {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  width: min(92vw, 520px);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#chImportHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+#chImportTitle {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+#chImportClose {
+  background: none; border: none; cursor: pointer;
+  color: #6b7280; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  transition: background 0.15s;
+}
+#chImportClose:hover { background: #f3f4f6; }
+#chImportBody {
+  overflow-y: auto;
+  flex: 1;
+  padding: 14px 16px;
+  -webkit-overflow-scrolling: touch;
+}
+#chImportFooter {
+  padding: 11px 16px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.ch-import-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #6b7280;
+  margin-bottom: 5px;
+}
+.ch-import-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.12s;
+}
+.ch-import-row:hover { background: #f3f4f6; }
+.ch-import-row.latest { border-color: #d1d5db; background: #f9fafb; }
+.ch-import-row.latest:hover { background: #f3f4f6; }
+.ch-import-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #d1d5db;
+}
+.ch-import-row.latest .ch-import-dot { background: #10b981; }
+.ch-import-ts {
+  font-size: 11px;
+  color: #6b7280;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 118px;
+}
+.ch-import-desc {
+  font-size: 12px;
+  color: #374151;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-import-origin-star { color: #f59e0b; font-size: 11px; margin-left: 3px; }
+#chImportFileBtn {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px dashed #d1d5db;
+  border-radius: 7px;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+#chImportFileBtn:hover { background: #f3f4f6; border-color: #9ca3af; }
+

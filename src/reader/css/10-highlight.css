@@ -1,0 +1,144 @@
+    /* --- READER HIGHLIGHT BUTTON & DROPDOWN --- */
+    .reader-highlight-dropdown {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .reader-highlight-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 6px;
+      z-index: 1100;
+      min-width: 140px;
+      max-width: min(260px, calc(100vw - 16px));
+      display: none;
+    }
+
+    .reader-highlight-menu.show {
+      display: block;
+    }
+
+    .reader-highlight-option {
+      display: flex;
+      align-items: center;
+      padding: 6px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+
+    .reader-highlight-option:hover {
+      background: #f0f0f0;
+    }
+
+    .reader-highlight-option input[type="radio"] {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .reader-hl-color-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+      flex-shrink: 0;
+    }
+
+    .reader-hl-color-dot.yellow { background: #ffeb3b; }
+    .reader-hl-color-dot.green  { background: #a5d6a7; }
+    .reader-hl-color-dot.pink   { background: #f8bbd9; }
+    .reader-hl-color-dot.remove { background: linear-gradient(135deg,#fff 50%,#ef4444 50%); }
+
+    .reader-highlight-option label {
+      cursor: pointer;
+      font-size: 13px;
+      color: #374151;
+      margin: 0;
+    }
+
+    /* Button style variants */
+    #readerHighlightBtn.hl-yellow { background: #ffeb3b !important; color: #333 !important; }
+    #readerHighlightBtn.hl-green  { background: #a5d6a7 !important; color: #333 !important; }
+    #readerHighlightBtn.hl-pink   { background: #f8bbd9 !important; color: #333 !important; }
+    #readerHighlightBtn.hl-remove { background: #ffffff !important; color: #ef4444 !important; border: 2px solid #ef4444 !important; }
+
+    /* ═══════════════════════════════════════════════
+       CONTEXTUAL ANNOTATE POPUP — v816-ctx
+       ═══════════════════════════════════════════════ */
+    .ctx-annotate-popup {
+      position: fixed;
+      z-index: 10000;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.18), 0 2px 6px rgba(0,0,0,0.08);
+      padding: 6px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transform: translateY(6px) scale(0.92);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      pointer-events: none;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+    .ctx-annotate-popup.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .ctx-annotate-option {
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+      border: 2px solid transparent;
+    }
+    .ctx-annotate-option:hover {
+      background: rgba(0,0,0,0.06);
+    }
+    .ctx-annotate-option.active {
+      border-color: #3b82f6;
+      background: rgba(59,130,246,0.08);
+    }
+    .ctx-preview-option {
+      border-left: 1px solid rgba(0,0,0,0.2);
+      padding-left: 8px;
+      margin-left: 4px;
+    }
+    .ctx-preview-option i {
+      font-size: 16px;
+      color: #667eea;
+    }
+    .ctx-preview-option:hover i {
+      color: #4f46e5;
+    }
+    .ctx-color-dot {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .ctx-color-dot.yellow { background: #ffeb3b; }
+    .ctx-color-dot.green  { background: #a5d6a7; }
+    .ctx-color-dot.pink   { background: #f8bbd9; }
+    .ctx-color-dot.remove {
+      background: #fff;
+      border: 2px solid #ef4444;
+      position: relative;
+    }
+    .ctx-color-dot.remove::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent 43%, #ef4444 44%, #ef4444 56%, transparent 57%);
+    }
+    .ctx-annotate-label {
+      display: none;
+    }
+

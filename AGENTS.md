@@ -1,5 +1,33 @@
 # Project instructions for opencode
 
+## Source layout — read this first
+
+`index.html` and `noesis-editor.html` in the repo root are **generated build output. Never
+edit them directly** — edits there are overwritten by the next build. The real source is
+split into readable pieces under `src/`:
+
+- `src/reader/` → builds to `index.html`; `src/editor/` → builds to `noesis-editor.html`
+- each has `index.template.html` (page skeleton + placeholder tokens), `css/`, `js/`, and
+  the editor also has `vendor/` (jQuery, Summernote, Turndown, JSZip, html-docx-js)
+- files in `css/`/`js/` are concatenated in filename order — that's what the `NN-` prefixes
+  are for, and reordering them can break things
+
+Build with `npm run build`, or `npm run watch` to rebuild on every save. Both need only
+plain Node, no dependencies.
+
+**After every change, run `npm run check`** (~2s): it builds, verifies each part file
+parses/balances on its own, and verifies every referenced name actually exists — that last
+one catches typo'd identifiers and cross-file scope mistakes that otherwise surface as a
+silently dead button. Then `npm test` (~3 min) for the two Puppeteer suites; it starts its
+own server on a free port, so it always tests this checkout.
+
+**See `src/README.md`** for the full explanation, including why the output has to stay a
+single self-contained file and how to verify a pure code move (rebuild → `git diff` on the
+two `.html` files must be empty).
+
+Line numbers quoted anywhere below refer to the *generated* `index.html` and are only
+useful for reading, never for editing — find the code in `src/` instead.
+
 ## Mirror changes to noesis-multi
 
 This repository (`noesis-reader`) is the source of truth for the core application code (`index.html`).
@@ -8,7 +36,10 @@ of `index.html` that must be kept in sync.
 
 ### File mapping
 
-When you modify `index.html` in this repository, apply the same changes to **all** of these files in `noesis-multi`:
+When you modify the reader source (`src/reader/`, i.e. what builds into `index.html`),
+rebuild first, then apply the same changes to **all** of these files in `noesis-multi`
+(those copies are still monolithic hand-maintained files, so the edits go into them
+directly):
 
 | Source (noesis-reader) | Targets (noesis-multi) |
 |---|---|
@@ -30,29 +61,35 @@ When you modify `index.html` in this repository, apply the same changes to **all
 ### Overview
 
 The project uses **Puppeteer** (Chrome DevTools Protocol) for automated browser testing.
-Tests are Node.js scripts executed via `NODE_PATH` pointing to the global puppeteer install.
+Puppeteer is a local dependency (`npm install`), so no `NODE_PATH` is needed.
 
 ### Prerequisites
 
 - Chrome: `/usr/bin/google-chrome`
-- Node.js: `v24.18.0` (via nvm)
-- Puppeteer: installed globally at `/home/vigliafg/.nvm/versions/node/v24.18.0/lib/node_modules/puppeteer`
+- `npm install` (installs Puppeteer into `./node_modules`)
 - HTTP server: `python3 -m http.server 8765 --bind 127.0.0.1` serving from project root
-- `test.epub`: 64MB medical textbook with 508 spine items
+- `test.epub`: 64MB medical textbook with 508 spine items (gitignored, must be present locally)
 
 ### Quick Start
 
 ```bash
-# 1. Start HTTP server (if not already running)
-setsid python3 -m http.server 8765 --bind 127.0.0.1 -d /home/vigliafg/Documenti/GitHub/noesis-reader &>/tmp/http8765.log &
+# 1. Build first — the tests run against the generated index.html / noesis-editor.html
+npm run build
 
-# 2. Verify server
+# 2. Start HTTP server (if not already running), from the repo root
+setsid python3 -m http.server 8765 --bind 127.0.0.1 &>/tmp/http8765.log &
+
+# 3. Verify server
 curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/index.html  # should return 200
 
-# 3. Run test script
-NODE_PATH=/home/vigliafg/.nvm/versions/node/v24.18.0/lib/node_modules \
-  node /home/vigliafg/Documenti/GitHub/noesis-reader/test_collection_T1T3.js
+# 4. Run both suites (baseline: 31/31 and 140/140 passing, ~3 min total)
+npm test
 ```
+
+`npm test` starts its own server, so steps 2–3 above are only needed if you want to poke at
+the page by hand. Beware: if another copy of this project is already serving on port 8765,
+running a suite directly (`node test_e2e_complete.js`) will test *that* copy, not yours —
+which has produced convincing-looking passes for code that was never loaded. Use `npm test`.
 
 ### Debug Mode (`?debug=1`)
 

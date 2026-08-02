@@ -1,0 +1,86 @@
+    /* --- USER BOOKMARKS DRAWER --- */
+    #userBookmarksDrawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--ubm-bg, #fffde7);
+      z-index: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      /* Large negative translateY: drawer is fully above viewport when closed.
+         -200% of its own height guarantees it regardless of drawer or header size. */
+      transform: translateY(-200%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      max-height: 65vh;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 2px solid rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+
+    #userBookmarksDrawer.ubm-open {
+      /* Slide to just below the header; JS sets --ubm-header-height on the element */
+      transform: translateY(var(--ubm-header-height, 0px));
+      pointer-events: auto;
+    }
+
+    #ubmHeader {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 6px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      flex-shrink: 0;
+      background: inherit;
+    }
+
+    #ubmHeader h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #374151;
+      flex: 1;
+    }
+
+    #ubmNewBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s;
+      flex-shrink: 0;
+    }
+
+    #ubmNewBtn:hover { background: #2563eb; }
+
+    #ubmCloseBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: #6b7280;
+      font-size: 18px;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    #ubmCloseBtn:hover { background: rgba(0,0,0,0.07); }
+
+    #ubmList {
+      overflow-y: auto;
+      flex: 1;
+      padding: 6px 8px;
+    }
+

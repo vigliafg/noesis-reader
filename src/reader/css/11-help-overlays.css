@@ -1,0 +1,562 @@
+    /* ═══════════════════════════════════════════════
+       HELP SYSTEM — tooltip, banner, overlay, panel
+       ═══════════════════════════════════════════════ */
+
+    /* ── Custom tooltip ── */
+    [data-tip] { position: relative; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: #f1f5f9;
+      font-size: 11px;
+      font-weight: 500;
+      line-height: 1.45;
+      white-space: pre;
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s 0.55s;
+      z-index: 99999;
+      max-width: 220px;
+      white-space: normal;
+      text-align: center;
+    }
+    [data-tip]:hover::after { opacity: 1; }
+    /* tooltip verso il basso quando il pulsante è in cima */
+    [data-tip-down]::after {
+      bottom: auto;
+      top: calc(100% + 8px);
+    }
+
+    /* ── Banner primo avvio ── */
+    .help-banner {
+      position: fixed;
+      top: 54px;
+      left: 0; right: 0;
+      z-index: 9000;
+      background: linear-gradient(90deg, #1e3a5f 0%, #1e4d7a 100%);
+      color: #e2eaf4;
+      font-size: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    .help-banner.hidden { display: none !important; }
+    .help-banner-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .help-banner-body { flex: 1; }
+    .help-banner-title { font-weight: 700; font-size: 12px; margin-bottom: 5px; color: #93c5fd; letter-spacing: 0.3px; }
+    .help-banner-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+    .help-banner-step {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 5px;
+      padding: 4px 9px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .help-banner-step strong { color: #bfdbfe; }
+    .help-banner-close {
+      background: none; border: none; color: rgba(255,255,255,0.55);
+      font-size: 16px; cursor: pointer; flex-shrink: 0;
+      padding: 0 2px; line-height: 1; margin-top: -1px;
+      transition: color 0.15s;
+    }
+    .help-banner-close:hover { color: white; }
+
+    /* ── Overlay shortcut ── */
+    .help-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 99000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .help-overlay.visible { display: flex; }
+    .help-overlay-box {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 560px;
+      width: 100%;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      color: #e2e8f0;
+    }
+    .help-overlay-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .help-overlay-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #93c5fd;
+      letter-spacing: 0.3px;
+    }
+    .help-overlay-close {
+      background: none; border: none; color: rgba(255,255,255,0.5);
+      font-size: 20px; cursor: pointer; padding: 0; line-height: 1;
+      transition: color 0.15s;
+    }
+    .help-overlay-close:hover { color: white; }
+    .help-group { margin-bottom: 16px; }
+    .help-group-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .help-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 5px 0;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .help-key {
+      flex-shrink: 0;
+      min-width: 110px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+    .help-key kbd {
+      display: inline-block;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 10px;
+      font-family: monospace;
+      color: #94a3b8;
+      margin-left: 4px;
+    }
+    .help-desc { color: #94a3b8; }
+    .help-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      font-size: 11px; font-weight: 700;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .help-btn:hover { background: rgba(255,255,255,0.15); }
+
+    /* ── Library help banner: position below library-header ── */
+    #library-view .help-banner {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    /* ═══════════════════════════════════════════════════════
+       DISPLAY MENU — accordion, popup content inline
+       ═══════════════════════════════════════════════════════ */
+    .display-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 220px;
+      max-width: min(260px, calc(100vw - 16px));
+      width: max-content;
+      background: white;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 8000;
+      overflow: hidden;
+      padding: 6px;
+    }
+    .display-menu.open { display: block; }
+
+    .display-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      color: #374151;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      transition: background 0.15s, color 0.15s;
+      user-select: none;
+    }
+    .display-section-header:hover { background: #f9fafb; color: #374151; }
+    .display-section-header.active { color: #3b82f6; background: rgba(59,130,246,0.1); }
+
+    .display-section-chevron {
+      margin-left: auto;
+      font-size: 10px;
+      transition: transform 0.2s;
+    }
+    .display-section-header.active .display-section-chevron { transform: rotate(90deg); }
+
+    /* Accordion body */
+    .display-section-body {
+      display: none;
+      padding: 0 4px 6px 4px;
+      overflow: hidden;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .display-section-body.open { display: block; }
+
+    /* Popup content rendered inline — override all floating styles */
+    .display-section-body .typography-popup,
+    .display-section-body .theme-popup {
+      position: relative !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: transparent !important;
+      padding: 6px 2px 2px 2px !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      z-index: auto !important;
+      transform: none !important;
+      top: auto !important; left: auto !important; right: auto !important;
+    }
+    /* Labels and values: dark on white */
+    .display-section-body label,
+    .display-section-body .typography-value { color: #374151 !important; }
+    .display-section-body h3 { display: none !important; }
+    .display-section-body .typography-row {
+      padding: 5px 0;
+      margin-bottom: 0;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .display-section-body .typography-row:last-child { border-bottom: none; }
+
+    /* Compact row layout */
+    .display-section-body .typography-row label {
+      font-size: 13px !important;
+      min-width: 0 !important;
+      width: 80px !important;
+      flex-shrink: 0;
+    }
+    .display-section-body .typography-controls {
+      gap: 4px !important;
+      flex-wrap: nowrap;
+    }
+    /* Smaller buttons */
+    .display-section-body .typography-controls button,
+    .display-section-body button.reset-btn {
+      width: 32px !important;
+      height: 32px !important;
+      font-size: 15px !important;
+      padding: 0 !important;
+      background: white !important;
+      color: #374151 !important;
+      border-color: rgba(0,0,0,0.1) !important;
+      flex-shrink: 0;
+    }
+    .display-section-body .typography-controls button:hover,
+    .display-section-body button.reset-btn:hover {
+      background: #f9fafb !important;
+    }
+    /* Compact value badge */
+    .display-section-body .typography-value {
+      min-width: 42px !important;
+      font-size: 13px !important;
+      background: rgba(0,0,0,0.05) !important;
+      border-color: rgba(0,0,0,0.1) !important;
+      padding: 2px 4px !important;
+      border-radius: 4px;
+    }
+    /* Color picker compact */
+    .display-section-body input[type="color"] {
+      width: 42px !important;
+      height: 30px !important;
+    }
+    /* Range slider compact */
+    .display-section-body input[type="range"] {
+      max-width: 80px !important;
+      margin: 0 4px !important;
+    }
+    /* Theme grid: tighter columns inside narrow menu */
+    .display-section-body .theme-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .display-section-body .theme-swatch {
+      width: 50px !important;
+      height: 36px !important;
+    }
+
+    /* ── Mobile: larger touch targets ── */
+    @media (max-width: 768px) {
+      /* ── Navigate menu items ── */
+      .rmb-nav-item {
+        min-height: 44px;
+        font-size: 14px;
+      }
+      /* ── Extract format buttons ── */
+      .extract-fmt-btn {
+        padding: 10px 6px !important;
+        font-size: 12px !important;
+        min-width: 48px;
+        min-height: 44px;
+      }
+      /* ── Display menu ── */
+      #displayMenu {
+        min-width: 300px;
+        max-width: calc(100vw - 20px);
+      }
+      .display-section-body .typography-controls button {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 20px !important;
+        margin: 2px !important;
+      }
+      .display-section-body .typography-row label {
+        font-size: 14px !important;
+        width: 80px !important;
+      }
+      .display-section-body .typography-value {
+        min-width: 44px !important;
+        font-size: 14px !important;
+      }
+      .display-section-body input[type="range"] {
+        max-width: 120px !important;
+      }
+      .display-section-body input[type="color"] {
+        width: 44px !important;
+        height: 36px !important;
+      }
+      .display-section-body .theme-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+      }
+      .display-section-body .theme-swatch {
+        width: 80px !important;
+        height: 52px !important;
+      }
+      .display-section-body .typography-row {
+        padding: 8px 0;
+      }
+    }
+
+    /* Separator between sections */
+    .display-sep {
+      height: 1px;
+      background: rgba(0,0,0,0.08);
+      margin: 2px 4px;
+    }
+
+    /* Hidden original buttons — still in DOM, all JS intact */
+    #typographyBtn, #themeBtn, #interfaceBtn { display: none !important; }
+
+    /* Library help and tools buttons now use unified .lib-header-btn class */
+    .lib-tools-menu.hidden { display: none; }
+    .lib-tools-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; color: #e2e8f0;
+      text-decoration: none; border-radius: 6px;
+      font-size: 13px; font-family: system-ui, sans-serif;
+      transition: background 0.12s;
+    }
+    .lib-tools-item:hover { background: rgba(255,255,255,0.09); color: #fff; }
+    .lib-tools-item i { font-size: 15px; color: #94a3b8; flex-shrink: 0; }
+
+    /* ═══════════ READER MENUBAR ═══════════ */
+    .rmb-compat-hidden {
+      display: none !important;
+    }
+
+    header.rmb-active {
+      padding: 0;
+      gap: 0;
+    }
+
+    .reader-menubar {
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+      min-height: 42px;
+      background: transparent;
+      overflow: visible;
+    }
+
+    .rmb-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 0 18px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: rgba(255,255,255,0.88);
+      cursor: pointer;
+      white-space: nowrap;
+      user-select: none;
+      transition: background 0.15s, color 0.15s;
+      border-radius: 0;
+      position: relative;
+    }
+
+    .rmb-item:hover {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+    }
+
+    .rmb-item.rmb-active {
+      background: rgba(255,255,255,0.22);
+      color: #fff;
+    }
+
+    /* Annotate colour indicator dot in menubar */
+    #rmbAnnotateColor {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-left: 4px;
+      vertical-align: middle;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    .rmb-item-wrap {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .rmb-item-wrap > .rmb-item {
+      /* eredita dallo span interno */
+    }
+
+    .rmb-badge {
+      background: rgba(255,255,255,0.25);
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    #collBadge {
+      background: rgba(16,185,129,0.35);
+      color: white;
+    }
+
+    /* Navigate dropdown */
+    .rmb-navigate-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 200px;
+      max-width: min(260px, calc(100vw - 16px));
+      z-index: 9000;
+      padding: 6px 0;
+      overflow: hidden;
+      border: none;
+    }
+
+    .rmb-navigate-menu.show {
+      display: block;
+    }
+
+    .rmb-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .rmb-nav-item:hover {
+      background: #f9fafb;
+    }
+
+    .rmb-nav-badge {
+      margin-left: auto;
+      background: rgba(0,0,0,0.07);
+      border-radius: 8px;
+      font-size: 11px;
+      padding: 1px 8px;
+      color: #6b7280;
+    }
+
+    .rmb-nav-badge.on {
+      background: rgba(59,130,246,0.15);
+      color: #3b82f6;
+    }
+
+    .rmb-nav-item.rmb-nav-active {
+      font-weight: 700;
+      color: #1d4ed8;
+    }
+
+    .rmb-nav-item.rmb-nav-active i {
+      color: #3b82f6;
+    }
+
+    .rmb-navigate-badge {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.18);
+      border-radius: 4px;
+      padding: 1px 5px;
+      vertical-align: middle;
+      opacity: 0.85;
+    }
+
+    /* Posizionamento displayMenu sotto il nuovo trigger */
+    .rmb-item-wrap .display-menu {
+      top: 100%;
+      left: 0;
+      right: auto;
+    }
+
+    /* Posizionamento readerHighlightMenu sotto il nuovo trigger */
+    .rmb-item-wrap .reader-highlight-menu {
+      top: 100%;
+      left: 0;
+      right: auto;
+    }
+
+    /* Posizionamento extractMenu sotto il nuovo trigger */
+    .rmb-item-wrap .extract-menu {
+      top: 100%;
+      left: 0;
+      right: auto;
+    }
+

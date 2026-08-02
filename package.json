@@ -1,8 +1,14 @@
 {
   "scripts": {
-    "build": "node build/build.js"
+    "build": "node build/build.js",
+    "watch": "node build/build.js --watch",
+    "check": "node build/check.js",
+    "test": "node build/build.js && node build/test.js"
   },
   "dependencies": {
     "puppeteer": "^25.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }

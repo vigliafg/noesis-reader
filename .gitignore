@@ -8,14 +8,22 @@ test*.pdf
 test*.js
 !test_e2e_complete.js
 !test_editor_toolbar.js
+# (build/test.js is the test runner, not a test fixture — must be tracked)
+!build/test.js
 _create_test_files.py
 
 # Docs / meta
 *.md
+# (src/README.md explains how to work on the source — must ship with the repo)
+!src/README.md
 AGENTS.md
 PLAN.md
 _headers
 noesis_brand_animations.html
+
+# Test run artifacts (rewritten on every `npm test`)
+test_e2e_report.json
+test_editor_toolbar_report.json
 
 # Logs
 server.log

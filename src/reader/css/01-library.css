@@ -1,0 +1,657 @@
+    /* --- LIBRARY VIEW STYLES --- */
+    /* ═══════════════════════════════════════════════════════════
+       LIBRARY — Theming via CSS custom properties
+       Default: light  |  Toggle class .lib-dark for gray-dark
+       ═══════════════════════════════════════════════════════════ */
+
+    /* ── Light theme (default) ── */
+    #library-view {
+      --lib-bg:            #f7f6f3;
+      --lib-header-bg:     rgba(247,246,243,0.92);
+      --lib-header-border: rgba(0,0,0,0.07);
+      --lib-title-color:   #000000;
+      --lib-subtitle:      #000000;
+      --lib-import-border: rgba(0,0,0,0.35);
+      --lib-import-color:  #000000;
+      --lib-import-hover-bg: rgba(0,0,0,0.06);
+      --lib-import-hover-border: #000000;
+      --lib-row-border:    rgba(0,0,0,0.07);
+      --lib-cover-bg:      #e8e6e0;
+      --lib-cover-border:  rgba(0,0,0,0.1);
+      --lib-cover-icon:    #000000;
+      --lib-cover-shadow:  3px 3px 10px rgba(0,0,0,0.12);
+      --lib-cover-shadow-hover: 4px 6px 18px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.25);
+      --lib-title-text:    #000000;
+      --lib-author:        #000000;
+      --lib-stats:         #000000;
+      --lib-badge-bg:      rgba(0,0,0,0.07);
+      --lib-badge-color:   #000000;
+      --lib-badge-empty-bg: rgba(0,0,0,0.04);
+      --lib-badge-empty-color: #000000;
+      --lib-del-btn:       #000000;
+      --lib-chapter-border: rgba(0,0,0,0.15);
+      --lib-chapter-border-hover: rgba(0,0,0,0.4);
+      --lib-chapter-btn:   #000000;
+      --lib-chapter-btn-hover: #000000;
+      --lib-snap-count:    #000000;
+      --lib-snap-dot:      #000000;
+      --lib-snap-dot-latest: #10b981;
+      --lib-snap-desc:     #000000;
+      --lib-snap-desc-hover: #000000;
+      --lib-snap-desc-latest: #000000;
+      --lib-snap-date:     #000000;
+      --lib-snap-hover-bg: rgba(0,0,0,0.05);
+      --lib-snap-has-bg:   rgba(0,0,0,0.07);
+      --lib-snap-has-color: #000000;
+      --lib-del-icon:      #000000;
+      --lib-no-chapter:    #000000;
+      --lib-empty-color:   #000000;
+      --lib-empty-icon:    #000000;
+      --lib-toggle-color:  #000000;
+      --lib-toggle-hover:  rgba(0,0,0,0.06);
+    }
+
+    /* ── Gray Dark Light theme ── */
+    #library-view.lib-dark {
+      --lib-bg:            #1a1a20;
+      --lib-header-bg:     rgba(26,26,32,0.92);
+      --lib-header-border: rgba(255,255,255,0.07);
+      --lib-title-color:   #e8e4dc;
+      --lib-subtitle:      #a0a0b8;
+      --lib-import-border: rgba(102,126,234,0.4);
+      --lib-import-color:  #8a9ef0;
+      --lib-import-hover-bg: rgba(102,126,234,0.12);
+      --lib-import-hover-border: #667eea;
+      --lib-row-border:    rgba(255,255,255,0.08);
+      --lib-cover-bg:      #242430;
+      --lib-cover-border:  rgba(255,255,255,0.08);
+      --lib-cover-icon:    #8080a0;
+      --lib-cover-shadow:  3px 3px 10px rgba(0,0,0,0.5);
+      --lib-cover-shadow-hover: 4px 6px 18px rgba(0,0,0,0.7), 0 0 0 1px rgba(102,126,234,0.35);
+      --lib-title-text:    #e0dcd4;
+      --lib-author:        #a0a0b8;
+      --lib-stats:         #9090a8;
+      --lib-badge-bg:      rgba(102,126,234,0.12);
+      --lib-badge-color:   #818cf8;
+      --lib-badge-empty-bg: rgba(255,255,255,0.06);
+      --lib-badge-empty-color: #9090a8;
+      --lib-del-btn:       #9090a8;
+      --lib-chapter-border: rgba(102,126,234,0.2);
+      --lib-chapter-border-hover: rgba(102,126,234,0.4);
+      --lib-chapter-btn:   #b0acc8;
+      --lib-chapter-btn-hover: #e0dcf0;
+      --lib-snap-count:    #9090a8;
+      --lib-snap-dot:      #7c3aed;
+      --lib-snap-dot-latest: #10b981;
+      --lib-snap-desc:     #a8a8c0;
+      --lib-snap-desc-hover: #c4bfe8;
+      --lib-snap-desc-latest: #b8c4f0;
+      --lib-snap-date:     #8080a0;
+      --lib-snap-hover-bg: rgba(124,58,237,0.12);
+      --lib-snap-has-bg:   rgba(124,58,237,0.12);
+      --lib-snap-has-color: #9a7aed;
+      --lib-del-icon:      #8070a0;
+      --lib-no-chapter:    #8080a0;
+      --lib-empty-color:   #9090a8;
+      --lib-empty-icon:    #505068;
+      --lib-toggle-color:  #a0a0b8;
+      --lib-toggle-hover:  rgba(255,255,255,0.06);
+    }
+
+    #library-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--lib-bg);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      transition: background 0.25s;
+    }
+
+    /* ── Header ── */
+    .library-header {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .library-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+
+    .library-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Brand animation container ── */
+    #libBrand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.35em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .lib-brand-noesis {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 19px;
+      font-weight: 600;
+      font-style: italic;
+      color: white;
+      letter-spacing: 0.03em;
+      opacity: 0;
+    }
+    .lib-brand-reader {
+      font-family: 'system-ui', sans-serif;
+      font-size: 17px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 0.05em;
+      opacity: 0;
+    }
+
+    /* ── Brand keyframes (3 animations, random) ── */
+    /* 17: Up + Down */
+    @keyframes libBr17N { 0%{opacity:0;transform:translateY(-10px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes libBr17R { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+    .lib-br-17 .lib-brand-noesis { animation: libBr17N 3s ease-out both; }
+    .lib-br-17 .lib-brand-reader { animation: libBr17R 3s ease-out both; }
+    /* 19: Ink + Spotlight */
+    @keyframes libBr19N { 0%{opacity:0;filter:blur(6px)} 100%{opacity:1;filter:blur(0)} }
+    @keyframes libBr19R { 0%{opacity:0;clip-path:inset(0 100% 0 0)} 100%{opacity:1;clip-path:inset(0 0 0 0)} }
+    .lib-br-19 .lib-brand-noesis { animation: libBr19N 3s ease-out both; }
+    .lib-br-19 .lib-brand-reader { clip-path:inset(0 100% 0 0); animation: libBr19R 3s ease-out both; }
+    /* 30: Shake + Settle */
+    @keyframes libBr30N { 0%{opacity:0;transform:translateX(0)} 15%{opacity:.5;transform:translateX(-6px)} 30%{opacity:.8;transform:translateX(5px)} 45%{opacity:1;transform:translateX(-3px)} 60%{opacity:1;transform:translateX(1px)} 100%{opacity:1;transform:translateX(0)} }
+    @keyframes libBr30R { 0%{opacity:0} 65%{opacity:0} 85%{opacity:.7} 100%{opacity:1} }
+    .lib-br-30 .lib-brand-noesis { animation: libBr30N 3s ease-out both; }
+    .lib-br-30 .lib-brand-reader { animation: libBr30R 3s ease-out both; }
+
+    /* ── Mobile: brand centered in header ── */
+    @media (max-width: 600px) {
+      #libBrand {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .lib-brand-noesis { font-size: 15px; }
+      .lib-brand-reader { font-size: 14px; }
+    }
+
+    /* ── Unified Library Header Buttons (flat, borderless, text only) ── */
+    .lib-header-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: 'system-ui', sans-serif;
+      letter-spacing: 0.04em;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .lib-header-btn:hover {
+      background: transparent;
+      text-decoration: underline;
+    }
+
+    .lib-header-btn:active {
+      background: transparent;
+    }
+    #libAddBooksBtn { font-size: 15px; }
+
+    .lib-header-btn i {
+      font-size: 10px;
+      margin-left: 4px;
+    }
+
+    /* ── Themes Dropdown ── */
+    .lib-themes-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .lib-themes-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 160px;
+      z-index: 1000;
+      display: none;
+      overflow: hidden;
+    }
+
+    .lib-themes-menu.show {
+      display: block;
+    }
+
+    .lib-themes-item {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      color: #374151;
+      font-size: 13px;
+      font-family: 'system-ui', sans-serif;
+    }
+
+    .lib-themes-item:hover {
+      background: #f9fafb;
+    }
+
+    .lib-themes-item i {
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .lib-themes-item .lib-theme-light i { color: #fbbf24; }
+    .lib-themes-item .lib-theme-dark i { color: #6366f1; }
+
+    /* ── Tools Dropdown (already exists, update styling) ── */
+    .lib-tools-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    #libToolsBtn.lib-header-btn {
+      padding: 6px 12px;
+    }
+
+    .lib-tools-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 180px;
+      z-index: 1000;
+    }
+
+    .lib-tools-menu a.lib-tools-item {
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: background 0.15s;
+      color: #374151;
+      font-size: 13px;
+      font-family: 'system-ui', sans-serif;
+      text-decoration: none;
+    }
+
+    .lib-tools-menu a.lib-tools-item:hover {
+      background: #f9fafb;
+    }
+
+    .lib-tools-menu a.lib-tools-item i {
+      font-size: 16px;
+      color: #10b981;
+    }
+
+    /* ── Books container ── */
+    .library-grid {
+      padding: 28px 28px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    /* ── Book row ── */
+    .book-row {
+      border-bottom: 1px solid var(--lib-row-border);
+      padding: 0;
+    }
+    .book-row:last-child { border-bottom: none; }
+
+    /* ── Book header ── */
+    .book-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      padding: 20px 0 16px;
+    }
+
+    /* ── Cover ── */
+    .book-cover-thumb {
+      width: 64px;
+      height: 88px;
+      border-radius: 3px;
+      background: var(--lib-cover-bg);
+      border: 1px solid var(--lib-cover-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--lib-cover-icon);
+      overflow: hidden;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: box-shadow 0.2s, transform 0.18s;
+      box-shadow: var(--lib-cover-shadow);
+    }
+    .book-cover-thumb:hover {
+      transform: scale(1.04) translateY(-2px);
+      box-shadow: var(--lib-cover-shadow-hover);
+    }
+    .book-cover-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 3px;
+    }
+    .book-cover-thumb i { font-size: 26px; }
+
+    /* ── Book meta ── */
+    .book-meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding-top: 4px;
+    }
+    .book-meta-title {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--lib-title-text);
+      line-height: 1.3;
+      font-style: italic;
+      letter-spacing: 0.01em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .book-meta-author {
+      font-size: 11px;
+      color: var(--lib-author);
+      font-style: normal;
+      font-family: 'system-ui', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .book-meta-stats {
+      font-size: 11px;
+      color: var(--lib-stats);
+      font-family: 'system-ui', sans-serif;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .book-meta-badge {
+      background: var(--lib-badge-bg);
+      color: var(--lib-badge-color);
+      border-radius: 3px;
+      padding: 2px 7px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-family: 'system-ui', sans-serif;
+    }
+    .book-meta-badge.empty {
+      background: var(--lib-badge-empty-bg);
+      color: var(--lib-badge-empty-color);
+    }
+
+    /* ── Book actions ── */
+    .book-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 4px;
+      flex-shrink: 0;
+    }
+    .book-delete-btn {
+      background: none;
+      border: none;
+      color: var(--lib-del-btn);
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+    .book-delete-btn:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+
+    /* ── Extracted chapters section ── */
+    .chapters-section {
+      padding-left: 82px;
+      padding-bottom: 16px;
+    }
+
+    /* ── Chapter entry ── */
+    .chapter-entry {
+      margin-bottom: 10px;
+      border-left: 2px solid var(--lib-chapter-border);
+      padding-left: 14px;
+      transition: border-color 0.2s;
+    }
+    .chapter-entry:hover { border-left-color: var(--lib-chapter-border-hover); }
+
+    .chapter-entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0 3px;
+    }
+    .chapter-name-btn {
+      background: none;
+      border: none;
+      color: var(--lib-chapter-btn);
+      font-size: 13px;
+      font-family: 'system-ui', sans-serif;
+      cursor: pointer;
+      text-align: left;
+      padding: 0;
+      line-height: 1.4;
+      transition: color 0.15s;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .chapter-name-btn:hover { color: var(--lib-chapter-btn-hover); }
+    .chapter-snap-count {
+      font-size: 10px;
+      color: var(--lib-snap-count);
+      font-family: 'system-ui', sans-serif;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .chapter-snap-count.has-snaps {
+      color: var(--lib-snap-has-color);
+      background: var(--lib-snap-has-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* ── Snapshots list ── */
+
+
+
+
+
+
+
+
+
+
+
+    /* ── Delete controls ── */
+    .chapter-delete-btn {
+      background: none;
+      border: none;
+      color: var(--lib-del-icon);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s, background 0.15s;
+      line-height: 1;
+    }
+    .chapter-entry:hover .chapter-delete-btn { opacity: 1; }
+    .chapter-delete-btn:hover { color: #ef4444; background: rgba(239,68,68,0.12); }
+
+
+
+
+
+    /* ── No chapters placeholder ── */
+    .no-chapters-note {
+      font-size: 11px;
+      color: var(--lib-no-chapter);
+      font-family: 'system-ui', sans-serif;
+      font-style: italic;
+      padding: 2px 0 8px;
+      padding-left: 14px;
+    }
+
+    /* ── Empty library state ── */
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--lib-empty-color);
+      font-family: 'system-ui', sans-serif;
+    }
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      display: block;
+      color: var(--lib-empty-icon);
+    }
+
+    /* ── Storage status bar ── */
+    .lib-storage-bar {
+      background: var(--lib-bg);
+      border-top: 1px solid var(--lib-row-border);
+      padding: 6px 20px;
+      font-size: 11px;
+      font-family: 'system-ui', sans-serif;
+      color: var(--lib-stats);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 5;
+      flex-shrink: 0;
+      min-height: 28px;
+    }
+    #libStorageText {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #libStorageBooks {
+      flex-shrink: 0;
+      color: var(--lib-badge-color);
+      background: var(--lib-badge-bg);
+      padding: 1px 7px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    @media (max-width: 600px) {
+      .lib-storage-bar {
+        padding: 6px 16px;
+        font-size: 10px;
+      }
+    }
+
+    /* ── Compatibility ── */
+    .book-card { display: none; }
+    .delete-btn { display: none; }
+    .book-info { display: none; }
+    .book-cover { display: none; }
+    .book-title { display: none; }
+    .book-author { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .library-header { padding: 14px 16px 12px; }
+      .library-grid { padding: 16px 16px 40px; }
+      .book-header { gap: 12px; }
+      .book-cover-thumb { width: 72px; height: 96px; }
+      .book-cover-thumb i { font-size: 30px; }
+      .chapters-section { padding-left: 86px; }
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      flex-direction: column;
+      gap: 15px;
+      font-weight: 500;
+      color: #4b5563;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+

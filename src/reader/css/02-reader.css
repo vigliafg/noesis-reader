@@ -1,0 +1,213 @@
+    /* --- ORIGINAL READER STYLES --- */
+    #reader-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: white;
+    }
+
+    header {
+      padding: 6px 8px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      flex-wrap: nowrap;
+      overflow: visible;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      position: relative;
+      z-index: 700;
+    }
+
+    header strong {
+      font-size: 14px;
+      margin-right: 4px;
+      white-space: nowrap;
+      flex-shrink: 1;
+    }
+
+    /* Modified file input logic for standalone reader view */
+    #fileInput {
+      display: none;
+    }
+
+    #libraryInput {
+      display: none;
+    }
+
+    #backToLibraryBtn {
+      font-size: 15px;
+      padding: 6px 13px;
+      border-radius: 4px;
+      border: none;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 35px;
+      box-sizing: border-box;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    @media screen and (max-width: 768px) {
+      #backToLibraryBtn {
+        font-size: 13px;
+        padding: 5px 10px;
+        height: 30px;
+        gap: 4px;
+      }
+    }
+
+    #backToLibraryBtn:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    #backToLibraryBtn:active {
+      transform: translateY(0);
+    }
+
+    #fileName {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 5px;
+      flex-wrap: nowrap;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      overflow: visible;
+    }
+
+    .toolbar-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    /* Scalable spacer between toolbar groups */
+    .toolbar-spacer {
+      width: 1px;
+      height: 30px;
+      background: rgba(255,255,255,0.3);
+      margin: 0 5px;
+      flex-shrink: 0;
+      transition: margin 0.15s;
+    }
+
+    .btn {
+      padding: 6px 13px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 35px;
+      box-sizing: border-box;
+      background: white;
+      color: #374151;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #f9fafb;
+      transform: translateY(-1px);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-warning:hover:not(:disabled) {
+      background: #d97706;
+    }
+
+    .btn-info {
+      background: #06b6d4;
+      color: white;
+    }
+
+    .btn-info:hover:not(:disabled) {
+      background: #0891b2;
+    }
+
+    .btn i {
+      font-size: 18px;
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      min-width: 40px;
+      justify-content: center;
+    }
+
+    .btn-icon.btn-nav {
+      min-width: 80px;
+      padding: 6px 20px;
+    }
+
+    .btn.active {
+      background: #10b981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+    }
+
+    #fontInfo {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      min-width: 56px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 5px 8px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+

@@ -2267,6 +2267,93 @@ function _confirmClear() {
 }
 
 /* ════════════════════════════════════════════════
+   CONTENT DRAFT PERSISTENCE + DISCARD
+   Top-level (not inside initEditor): _newDocument in 01-document.js and the
+   Discard button both call these across file boundaries.
+════════════════════════════════════════════════ */
+// ── Content draft persistence (debounced auto-save) ──────────────
+var _draftTimer = null;
+var _DRAFT_KEY = '_draft_'; // fixed key — single draft, survives reload
+
+function _saveContentDraft() {
+  var content = getContent();
+  if (!content || content === '<p><br></p>' || content === '<p>&nbsp;</p>') return;
+  var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+  request.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains('drafts')) {
+      db.createObjectStore('drafts', { keyPath: 'id' });
+    }
+  };
+  request.onsuccess = function(e) {
+    var db = e.target.result;
+    var tx = db.transaction('drafts', 'readwrite');
+    var store = tx.objectStore('drafts');
+    store.put({ id: _DRAFT_KEY, content: content, savedAt: new Date().toISOString() });
+    tx.oncomplete = function() { db.close(); };
+  };
+}
+
+function _loadContentDraft(callback) {
+  var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+  request.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains('drafts')) {
+      db.createObjectStore('drafts', { keyPath: 'id' });
+    }
+  };
+  request.onsuccess = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains('drafts')) { db.close(); callback(null); return; }
+    var tx = db.transaction('drafts', 'readonly');
+    var store = tx.objectStore('drafts');
+    var req = store.get(_DRAFT_KEY);
+    req.onsuccess = function() {
+      var entry = req.result;
+      db.close();
+      callback(entry && entry.content ? entry : null);
+    };
+    req.onerror = function() { db.close(); callback(null); };
+  };
+  request.onerror = function() { callback(null); };
+}
+
+function _deleteContentDraft() {
+  var request = indexedDB.open('NoesisEditorDraftsDB', 1);
+  request.onupgradeneeded = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains('drafts')) {
+      db.createObjectStore('drafts', { keyPath: 'id' });
+    }
+  };
+  request.onsuccess = function(e) {
+    var db = e.target.result;
+    if (!db.objectStoreNames.contains('drafts')) { db.close(); return; }
+    var tx = db.transaction('drafts', 'readwrite');
+    var store = tx.objectStore('drafts');
+    store.delete(_DRAFT_KEY);
+    tx.oncomplete = function() { db.close(); };
+  };
+}
+
+function _discardDocument() {
+  _deleteContentDraft();
+  _inspFilterType = 'all';
+  _inspFilterChapter = 'all';
+  $('#editor').summernote('code', '');
+  _bookName    = '';
+  _chapterName = '';
+  _chapterId   = '';
+  _bookId      = '';
+  _mode        = 'standalone';
+  _collection  = [];
+  _saveCollectionToDB();
+  _updateCounter();
+  document.getElementById('appHeaderTitle').textContent = 'Noesis Editor';
+  snToast('Draft discarded');
+}
+
+/* ════════════════════════════════════════════════
    INIT SUMMERNOTE (caricamento dinamico)
 ════════════════════════════════════════════════ */
 /* jQuery 3.7.1 inline */
@@ -2442,88 +2529,6 @@ function initEditor() {
         };
         request.onerror = function() { resolve(null); };
       });
-    }
-
-    // ── Content draft persistence (debounced auto-save) ──────────────
-    var _draftTimer = null;
-    var _DRAFT_KEY = '_draft_'; // fixed key — single draft, survives reload
-
-    function _saveContentDraft() {
-      var content = getContent();
-      if (!content || content === '<p><br></p>' || content === '<p>&nbsp;</p>') return;
-      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
-      request.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('drafts')) {
-          db.createObjectStore('drafts', { keyPath: 'id' });
-        }
-      };
-      request.onsuccess = function(e) {
-        var db = e.target.result;
-        var tx = db.transaction('drafts', 'readwrite');
-        var store = tx.objectStore('drafts');
-        store.put({ id: _DRAFT_KEY, content: content, savedAt: new Date().toISOString() });
-        tx.oncomplete = function() { db.close(); };
-      };
-    }
-
-    function _loadContentDraft(callback) {
-      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
-      request.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('drafts')) {
-          db.createObjectStore('drafts', { keyPath: 'id' });
-        }
-      };
-      request.onsuccess = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('drafts')) { db.close(); callback(null); return; }
-        var tx = db.transaction('drafts', 'readonly');
-        var store = tx.objectStore('drafts');
-        var req = store.get(_DRAFT_KEY);
-        req.onsuccess = function() {
-          var entry = req.result;
-          db.close();
-          callback(entry && entry.content ? entry : null);
-        };
-        req.onerror = function() { db.close(); callback(null); };
-      };
-      request.onerror = function() { callback(null); };
-    }
-
-    function _deleteContentDraft() {
-      var request = indexedDB.open('NoesisEditorDraftsDB', 1);
-      request.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('drafts')) {
-          db.createObjectStore('drafts', { keyPath: 'id' });
-        }
-      };
-      request.onsuccess = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('drafts')) { db.close(); return; }
-        var tx = db.transaction('drafts', 'readwrite');
-        var store = tx.objectStore('drafts');
-        store.delete(_DRAFT_KEY);
-        tx.oncomplete = function() { db.close(); };
-      };
-    }
-
-    function _discardDocument() {
-      _deleteContentDraft();
-      _inspFilterType = 'all';
-      _inspFilterChapter = 'all';
-      $('#editor').summernote('code', '');
-      _bookName    = '';
-      _chapterName = '';
-      _chapterId   = '';
-      _bookId      = '';
-      _mode        = 'standalone';
-      _collection  = [];
-      _saveCollectionToDB();
-      _updateCounter();
-      document.getElementById('appHeaderTitle').textContent = 'Noesis Editor';
-      snToast('Draft discarded');
     }
 
     // Ricalcola altezza editor al resize / cambio orientamento

@@ -29,7 +29,7 @@ const path = require('path');
 const fs = require('fs');
 
 // ── Configuration ──────────────────────────────────────────────────
-const BASE_URL = 'http://127.0.0.1:8765';
+const BASE_URL = process.env.NOESIS_BASE_URL || 'http://127.0.0.1:8765';
 const CH26_INDEX = 44;  // Chapter 26 "Pain" spine index (0-based)
 const TIMEOUT = 60000;
 const SHORT_WAIT = 800;

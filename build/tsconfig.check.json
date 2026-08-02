@@ -1,0 +1,18 @@
+{
+  "// note": "Used only by `npm run check`. Nothing is ever emitted; this is a linter, not a compiler. See build/check.js for which of these errors are actually enforced.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "strict": false,
+    "noImplicitAny": false,
+    "types": []
+  },
+  "include": [
+    "globals.d.ts",
+    "../src/reader/js/*.js",
+    "../src/editor/js/*.js"
+  ]
+}

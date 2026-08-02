@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════
+   MEDIA QUERIES
+   ═══════════════════════════════════════════════════════════ */
+
+@media screen and (max-width: 768px) {
+  /* ── Header ── */
+  #hamburgerBtnEditor { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  #appHeader { padding: 6px 10px; gap: 6px; }
+  #appHeaderSpacer { display: none; }
+  #editorHelpBtn { font-size: 11px; padding: 3px 8px; }
+
+  /* ── Nascondi completamente la bottom toolbar su mobile ── */
+  #bottom-toolbar, #bottom-toolbar * { display: none !important; }
+  .tb-section {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 3px 4px;
+    gap: 2px;
+  }
+  .tb-section-label { display: none; }
+  .btn-editor {
+    padding: 8px 12px;
+    font-size: 15px;
+    min-width: 40px;
+    min-height: 44px;
+    border-radius: 4px !important;
+  }
+  /* Nascondi pulsanti extra su mobile (vanno nel drawer) */    .tb-dropdown-wrap { display: none; }
+  .tb-col-sep { display: none; }
+  /* Nascondi pulsanti extra su mobile (vanno nel drawer hamburger) */
+  #colClearBtn, #colInspectBtn, #excalidrawBtn { display: none !important; }
+
+  /* ── Editor container: padding ridotto ── */
+  #editor-container { padding: 10px; }
+
+  /* ── Summernote toolbar: scrollabile ── */
+  .note-toolbar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 4px;
+  }
+  .note-btn-group { margin-right: 2px; }
+  .note-btn { padding: 5px 7px; font-size: 12px; }
+
+  /* ── Inspect panel: full-width slide-up ── */
+  #inspectPanel {
+    width: 95vw !important;
+    left: 2.5vw !important;
+    right: 2.5vw !important;
+    top: auto !important;
+    bottom: 0;
+    height: 55vh;
+    min-height: 200px;
+    border-radius: 14px 14px 0 0;
+  }
+  #inspectResizeHandle { display: none; }
+  #inspectList { padding: 8px; }
+  .chunk-item { margin-bottom: 6px; }
+
+  /* ── Overlay: full-width, meno padding ── */
+  #editorHelpOverlay .help-overlay-box {
+    max-width: 100%;
+    width: 100%;
+    margin: 8px;
+    padding: 14px 16px;
+    max-height: 90vh;
+  }
+  #chImportDialog {
+    width: 100vw;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+  #chunkFsBody { padding: 12px; }
+
+  /* ── Chunk fullscreen overlay mobile ── */
+  #chunkFsOverlay { padding: 8px; }
+  #chunkFsOverlay .chunk-fs-content { width: 100%; max-width: 100%; padding: 12px; border-radius: 0; }
+
+  /* ── Toast: posizione mobile ── */
+  #sn-toast { bottom: 90px; }
+}
+
+@media screen and (max-width: 480px) {
+  #hamburgerDrawerEditor { width: 260px; max-width: 88vw; }
+  #appHeader { padding: 4px 8px; }
+  #appHeaderTitle { font-size: 13px; }
+  #bottom-toolbar { padding: 3px 4px; gap: 2px; }
+  .btn-editor { padding: 6px 10px; font-size: 14px; min-width: 36px; }
+  #editor-container { padding: 6px; }
+  .note-editable { padding: 6px !important; font-size: 14px; }
+  #inspectPanel { height: 60vh; }
+}
+
+/* ── Tablet: 481-768px ── */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+  #appHeader { padding: 6px 12px; }
+  #appHeaderTitle { font-size: 14px; }
+  #bottom-toolbar { padding: 4px 6px; gap: 3px; flex-wrap: wrap; }
+  .btn-editor { padding: 7px 10px; font-size: 14px; min-width: 38px; }
+  #editor-container { padding: 8px; }
+  .note-editable { padding: 8px !important; font-size: 15px; }
+  .note-toolbar { flex-wrap: wrap; }
+  .note-btn-group { margin-bottom: 4px; }
+}
+
+/* ── Desktop: wrap toolbar on narrow windows ── */
+@media screen and (max-width: 1100px) {
+  .note-toolbar { flex-wrap: wrap; }
+  .note-btn-group { margin-bottom: 3px; }
+}

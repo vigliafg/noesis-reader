@@ -1,0 +1,172 @@
+/* ── Bottom toolbar ── */
+#bottom-toolbar {
+  position: fixed;
+  bottom: 0; left: 0;
+  width: 100%;
+  background: #111 !important;
+  padding: 6px 8px;
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  border-top: 2px solid #000;
+  z-index: 1000;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#bottom-toolbar input[type="file"] { display: none; }
+
+/* ── Two sections ── */
+.tb-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+.tb-section-chapter {
+  background: rgba(255,200,0,0.10);
+  border: 1.5px solid rgba(255,200,0,0.30);
+}
+.tb-section-collection {
+  background: rgba(100,200,255,0.10);
+  border: 1.5px solid rgba(100,200,255,0.30);
+}
+.tb-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  padding: 2px 0;
+  flex-shrink: 0;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  min-width: 14px;
+}
+.tb-section-chapter .tb-section-label {
+  color: #ffe033;
+  background: rgba(255,200,0,0.18);
+}
+.tb-section-collection .tb-section-label {
+  color: #38d9f5;
+  background: rgba(100,200,255,0.18);
+}
+
+/* ── Toolbar buttons — reader .btn style (text-only, no icons) ── */
+.btn-editor {
+  border: 1px solid #d1d5db !important;
+  cursor: pointer;
+  padding: 6px 13px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  flex-shrink: 0;
+  line-height: 1.4;
+  border-radius: 4px !important;
+  background: #fff;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  white-space: nowrap;
+}
+.btn-editor:hover:not(:disabled) {
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+.btn-editor:active:not(:disabled) { transform: translateY(0); }
+
+/* Variant: primary (blue) */
+.btn-editor-primary { background: #3b82f6 !important; color: #fff !important; border-color: #3b82f6 !important; }
+.btn-editor-primary:hover { background: #2563eb !important; }
+
+/* Variant: success (green) */
+.btn-editor-success { background: #10b981 !important; color: #fff !important; border-color: #10b981 !important; }
+.btn-editor-success:hover { background: #059669 !important; }
+
+/* Variant: warning (orange) */
+.btn-editor-warning { background: #f59e0b !important; color: #fff !important; border-color: #f59e0b !important; }
+.btn-editor-warning:hover { background: #d97706 !important; }
+.btn-editor-danger { background: #ef4444 !important; color: #fff !important; border-color: #ef4444 !important; }
+.btn-editor-danger:hover { background: #dc2626 !important; }
+
+/* Variant: info (cyan) */
+.btn-editor-info { background: #06b6d4 !important; color: #fff !important; border-color: #06b6d4 !important; }
+.btn-editor-info:hover { background: #0891b2 !important; }
+
+/* Vertical separators inside collection section */
+.tb-col-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(100,200,255,0.25);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+/* ── Tools section ── */
+.tb-section-tools {
+  background: rgba(162,89,255,0.12);
+  border: 1.5px solid rgba(162,89,255,0.35);
+}
+.tb-section-tools .tb-section-label {
+  color: #c084fc;
+  background: rgba(162,89,255,0.2);
+}
+/* Excalidraw now uses btn-editor-primary */
+
+#chunkCounter {
+  position: absolute;
+  top: -5px; right: -5px;
+  background: #ff453a;
+  color: white;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 2px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* ── Dropdown menus ── */
+.tb-dropdown-wrap {
+  flex-shrink: 0;
+}
+.tb-dropdown-menu {
+  display: none;
+  position: fixed;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 99999;
+  min-width: 170px;
+  overflow: hidden;
+}
+.tb-dropdown-menu.open { display: block; }
+.tb-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #e2e8f0;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+.tb-dropdown-item:hover, .tb-dropdown-item:active { background: rgba(255,255,255,0.1); }
+.tb-dropdown-item i { font-size: 16px; flex-shrink: 0; }
+
+.cmenu-success { color: #4ade80 !important; }
+.cmenu-info    { color: #60a5fa !important; }
+.cmenu-warn    { color: #fb923c !important; }
+

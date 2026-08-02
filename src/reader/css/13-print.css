@@ -1,0 +1,26 @@
+    /* --- READER PRINT --- */
+    #reader-print-container {
+      display: none;
+    }
+
+    @media print {
+      html, body { height: auto !important; overflow: visible !important; }
+      #library-view,
+      #reader-view { display: none !important; }
+      #reader-print-container {
+        display: block !important;
+        font-family: system-ui, serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+    }
+
+    /* Mobile touch zones — hidden by default (shown only on mobile) */
+    .mobile-touch-zone { display: none; }
+
+    /* ═══════════════════════════════════════════════════════════
+       MOBILE RESPONSIVE — v813-responsive (touch zones)
+       ═══════════════════════════════════════════════════════════ */
+
