@@ -82,17 +82,62 @@ biggest functions live here, e.g. `_doDownload` at 357 lines, `extractCurrentCha
   running the full E2E suite (`test_e2e_complete.js`, `test_editor_toolbar.js`) plus the
   manual replay checklist in `refactoring-pre.md` §5 to confirm nothing broke.
 
+## Final target shape (agreed, not yet started)
+
+Where all of this is headed, once the mechanical splitting above is finished. Source
+becomes real ES modules with `import`/`export` (TypeScript later); a build step bundles
+each entry down to a single non-module IIFE and inlines it into one `<script>`/`<style>`
+per output file — so source-time modularity and the single-file, `file://`-safe output
+requirement stop being in tension (the tension itself is the reason ES modules can't be
+used *at runtime*, per the hard constraints above).
+
+```
+src/
+  core/
+    db.ts          one IndexedDB layer — replaces the two duplicated
+                    openDB()/openNoesisDB() wrappers (§1.5), used by both entries
+    collection.ts   one Chunk type + save/load logic — replaces the reader/editor's
+                    two hand-synced copies of _saveChunk/_saveCollectionToDB/etc. (§1.3)
+    epub.ts         EPUB parsing/validation/DRM-check
+    types.ts        shared types: Chunk, Book, ExtractedChapter, ...
+  reader/           library-view, reader-view, toc, gestures, export, ...
+  editor/           toolbar, draft-autosave, ...
+  shared-ui/        dialogs, toast, theming
+  entry-reader.ts   imports core/ + reader/, mounts the reader app
+  entry-editor.ts   imports core/ + editor/, mounts the editor app
+  styles/*.css
+```
+
+- **Build tool: esbuild** — bundles each entry to a single IIFE (not ES modules) and
+  resolves the shared `core/` modules into both entries, which is what actually kills the
+  reader/editor duplication (not just the mechanical file-move done so far).
+- **TypeScript: incremental**, not a big-bang rewrite. Start with `allowJs`/`checkJs` on
+  the current split `.js` files, then convert directory by directory starting with
+  `core/types.ts` — that's where the reader/editor field-name mismatches used to live
+  (§1.3), so it's the highest-value place to add types first.
+- **Testing**: once modules are isolated, add real unit tests (vitest or `node:test`) for
+  individual functions — impossible today since nothing is importable in isolation. Keep
+  the Puppeteer E2E suite for integration/UI-level regression against the built
+  single-file output, same as now.
+- **Two decisions deliberately left open, revisit later, not blocking anything above:**
+  1. Whether to vendor the CDN libraries (jszip, epubjs, turndown, bootstrap-icons for the
+     reader; jquery, summernote for the editor) into the bundle instead of loading from
+     CDN — removes the CDN-availability dependency (§1.4) but grows the single file's size.
+  2. Whether the `noesis-multi` mirror repo's 4 hand-kept-in-sync copies (§1.2) could
+     become just different build targets/flags from this same `src/`, eliminating the
+     manual mirroring process entirely — needs that repo's contents inspected first,
+     which hasn't happened from here.
+- Deployment: once this exists, `wrangler.jsonc` should point at the *built* output
+  (update its `assets.directory` if the build writes elsewhere), and a CI step
+  (`npm run build` + both test suites) should gate deploys — there's none today (§1.2a).
+
 ## Backlog (later, not started)
 
 - Collapse the reader/editor duplicate `_saveChunk` family into one shared module
-  (data model is already unified, code isn't — §1.3).
-- Merge the two IndexedDB wrappers (`openDB`/`openNoesisDB` — §1.5).
+  (data model is already unified, code isn't — §1.3) — this is `core/collection.ts` above.
+- Merge the two IndexedDB wrappers (`openDB`/`openNoesisDB` — §1.5) — `core/db.ts` above.
 - Decide what to do with the stale `noesis816.html` backup in this repo, and separately,
   the real hand-mirrored copies in the `noesis-multi` repo (§1.2) — out of scope for this
   repo alone.
-- TypeScript migration (incremental, starting with a shared `types.ts` for the collection
-  data model) — see the "final shape" discussion earlier in this project's history
-  (not written down anywhere yet as of this handoff — ask if picking this up and it's not
-  here, or reconstruct from conversation if available).
 - Break up the largest functions (`_doDownload`, `extractCurrentChapter`, etc.) once
   they're isolated in their own module and have some test coverage.
