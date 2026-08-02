@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "noesis-reader",
+  "compatibility_date": "2026-08-02",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "."
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "upload": {
+    "exclude": [
+      "node_modules/**",
+      ".wrangler/**",
+      "*.epub",
+      "*.pdf",
+      "test/*.js",
+      "test_*.js",
+      "!test_e2e_complete.js",
+      "!test_editor_toolbar.js",
+      "*.md",
+      ".gitattributes",
+      "noesis-reader.png",
+      "noesis_brand_animations.html",
+      "_create_test_files.py",
+      "server.log"
+    ]
+  }
+}
