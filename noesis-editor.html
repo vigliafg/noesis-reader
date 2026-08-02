@@ -1048,6 +1048,7 @@ header {
   <div class="hamburger-section">
     <div class="hamburger-section-title">🛠️ Tools</div>
     <button class="hamburger-item hm-tools" data-action="excalidraw">Excalidraw</button>
+    <button class="hamburger-item hm-tools" data-action="library">📚 Library</button>
   </div>
 </div>
 
@@ -1309,7 +1310,7 @@ header {
   <div class="tb-section tb-section-library">
     <button class="btn-editor btn-editor-success" id="libraryBtn"
       title="Torna alla Library / Reader"
-      onclick="if(window.opener){window.opener.focus();}else{window.location.href='index.html';}">📚 Library</button>
+      onclick="var o=window.opener;if(o&&!o.closed){o.focus();}else{window.open('index.html','_blank');}">📚 Library</button>
   </div>
 
 </div>
@@ -3074,7 +3075,8 @@ function exportHTMLBook() {
     'col-add': '#addChunkBtn', 'col-import': '#colImportBtn',
     'col-export': '#colExportBtn', 'col-inspect': '#colInspectBtn',
     'col-clear': '#colClearBtn', 'col-more': '#colMoreBtn',
-    'excalidraw': '#excalidrawBtn'
+    'excalidraw': '#excalidrawBtn',
+    'library': '#libraryBtn'
   };
   drawer.querySelectorAll('.hamburger-item[data-action]').forEach(function(item) {
     item.addEventListener('click', function(e) {
