@@ -40,11 +40,6 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.tb-dropdown-wrap')) _closeAllDropdowns();
 });
 
-// Chapter import button
-document.getElementById('chImportBtn').addEventListener('click', function(e) {
-  e.stopPropagation();
-  _toggleDropdown('chImportMenu', this);
-});
 // Chapter more button
 document.getElementById('chMoreBtn').addEventListener('click', function(e) {
   e.stopPropagation();

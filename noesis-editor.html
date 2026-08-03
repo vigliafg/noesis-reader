@@ -1495,6 +1495,7 @@ function _newDocument() {
   _bookId      = '';
   _mode        = 'standalone';
   _collection  = [];
+  _saveCollectionToDB();
   _updateCounter();
   document.getElementById('appHeaderTitle').textContent = 'Noesis Editor';
   snToast('Nuovo documento');
@@ -1765,6 +1766,7 @@ document.getElementById('collectionImportInput').addEventListener('change', func
         c.id = Date.now() + '_' + Math.floor(Math.random() * 1e9);
         _collection.push(c);
       });
+      _saveCollectionToDB();
       _updateCounter();
       snToast('Imported ' + incoming.length + ' chunks (' + _collection.length + ' total)');
     } catch(err) {
@@ -2689,11 +2691,6 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.tb-dropdown-wrap')) _closeAllDropdowns();
 });
 
-// Chapter import button
-document.getElementById('chImportBtn').addEventListener('click', function(e) {
-  e.stopPropagation();
-  _toggleDropdown('chImportMenu', this);
-});
 // Chapter more button
 document.getElementById('chMoreBtn').addEventListener('click', function(e) {
   e.stopPropagation();

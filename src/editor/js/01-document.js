@@ -27,6 +27,7 @@ function _newDocument() {
   _bookId      = '';
   _mode        = 'standalone';
   _collection  = [];
+  _saveCollectionToDB();
   _updateCounter();
   document.getElementById('appHeaderTitle').textContent = 'Noesis Editor';
   snToast('Nuovo documento');

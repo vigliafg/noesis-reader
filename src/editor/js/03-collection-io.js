@@ -78,6 +78,7 @@ document.getElementById('collectionImportInput').addEventListener('change', func
         c.id = Date.now() + '_' + Math.floor(Math.random() * 1e9);
         _collection.push(c);
       });
+      _saveCollectionToDB();
       _updateCounter();
       snToast('Imported ' + incoming.length + ' chunks (' + _collection.length + ' total)');
     } catch(err) {

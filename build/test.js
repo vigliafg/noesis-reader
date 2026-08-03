@@ -12,7 +12,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const SUITES = ['test_e2e_complete.js', 'test_editor_toolbar.js'];
+const SUITES = ['test/test_e2e_complete.js', 'test/test_editor_toolbar.js', 'test/test_bookmarks.js'];
 
 const TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',

@@ -11,8 +11,9 @@ test*.pdf
 # Scratch test scripts. The real suites and the test runner are tracked; anything
 # else matching test*.js is assumed to be a throwaway.
 test*.js
-!test_e2e_complete.js
-!test_editor_toolbar.js
+!test/test_e2e_complete.js
+!test/test_editor_toolbar.js
+!test/test_bookmarks.js
 !build/test.js
 
 # Test run artifacts (rewritten on every `npm test`)

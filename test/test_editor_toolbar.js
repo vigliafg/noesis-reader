@@ -636,6 +636,115 @@ async function getConsoleErrors(pageInstance) {
     });
     result('T5.9 — Discard button clickable', discardState.exists && discardState.clickable);
 
+    // T5.9b: Discard button fully functional — verify draft delete + editor reset
+    log('INFO', '--- T5.9b: Discard full functionality ---');
+
+    // Step 1: Set content in editor, wait for auto-save (debounced 2s)
+    await editorPage.evaluate(() => {
+      $('#editor').summernote('code',
+        '<p><strong>Discard Test</strong> — content to be discarded.</p>');
+      window._bookName = 'DiscardBook';
+      window._chapterName = 'DiscardChapter';
+      window._chapterId = 'ch-discard';
+      // Add a collection chunk
+      if (!window._collection) window._collection = [];
+      window._collection.push({
+        id: 'discard_test_chunk', type: 'text',
+        content: '<p>Test chunk</p>', timestamp: Date.now()
+      });
+      const counter = document.getElementById('chunkCounter');
+      if (counter) counter.textContent = window._collection.length;
+    });
+    await wait(3500); // Wait for debounced auto-save (2s) + buffer
+
+    // Step 2: Verify draft was saved to IndexedDB
+    const draftBefore = await editorPage.evaluate(() => {
+      return new Promise((resolve) => {
+        const req = indexedDB.open('NoesisEditorDraftsDB', 1);
+        req.onsuccess = function(e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('drafts')) { db.close(); resolve(null); return; }
+          const getReq = db.transaction('drafts','readonly').objectStore('drafts').get('_draft_');
+          getReq.onsuccess = function() {
+            const entry = getReq.result;
+            db.close();
+            resolve(entry);
+          };
+          getReq.onerror = function() { db.close(); resolve(null); };
+        };
+        req.onerror = () => resolve(null);
+      });
+    });
+    result('T5.9b — Draft exists in IndexedDB before Discard',
+      !!(draftBefore && draftBefore.content && draftBefore.content.includes('Discard Test')),
+      draftBefore ? 'savedAt=' + (draftBefore.savedAt || '?') : 'no draft');
+
+    // Step 3: Verify collection has content
+    const collBefore = await editorPage.evaluate(() =>
+      window._collection ? window._collection.length : -1);
+    result('T5.9b — Collection has items before Discard', collBefore > 0,
+      'count=' + collBefore);
+
+    // Step 4: Click Discard button
+    await editorPage.evaluate(() => {
+      const btn = document.getElementById('chDiscardBtn');
+      if (btn) btn.click();
+    });
+    await wait(MEDIUM_WAIT);
+
+    // Step 5: Verify draft was deleted from IndexedDB
+    const draftAfter = await editorPage.evaluate(() => {
+      return new Promise((resolve) => {
+        const req = indexedDB.open('NoesisEditorDraftsDB', 1);
+        req.onsuccess = function(e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('drafts')) { db.close(); resolve(null); return; }
+          const getReq = db.transaction('drafts','readonly').objectStore('drafts').get('_draft_');
+          getReq.onsuccess = function() { db.close(); resolve(getReq.result); };
+          getReq.onerror = function() { db.close(); resolve('error'); };
+        };
+        req.onerror = () => resolve('error');
+      });
+    });
+    result('T5.9b — Draft deleted from IndexedDB after Discard',
+      !draftAfter || draftAfter === 'error',
+      'draft: ' + (draftAfter ? 'still present!' : 'cleared'));
+
+    // Step 6: Verify editor content is empty
+    const contentAfter = await editorPage.evaluate(() => {
+      try {
+        const code = $('#editor').summernote('code') || '';
+        const stripped = code.replace(/<[^>]*>/g, '').trim();
+        return { htmlLen: code.length, textLen: stripped.length, isEmpty: stripped.length === 0 };
+      } catch(e) { return { isEmpty: false, error: e.message }; }
+    });
+    result('T5.9b — Editor content cleared after Discard',
+      contentAfter.isEmpty || contentAfter.textLen === 0,
+      'htmlLen=' + contentAfter.htmlLen + ' textLen=' + contentAfter.textLen);
+
+    // Step 7: Verify metadata was reset
+    const metaAfter = await editorPage.evaluate(() => ({
+      bookName: window._bookName || '',
+      chapterName: window._chapterName || '',
+      chapterId: window._chapterId || '',
+      mode: window._mode || ''
+    }));
+    result('T5.9b — Metadata reset after Discard',
+      metaAfter.bookName === '' && metaAfter.chapterName === '' && metaAfter.chapterId === '',
+      'book=' + metaAfter.bookName + ' ch=' + metaAfter.chapterName);
+
+    // Step 8: Verify collection was cleared
+    const collAfter = await editorPage.evaluate(() =>
+      window._collection ? window._collection.length : -1);
+    result('T5.9b — Collection cleared after Discard', collAfter === 0,
+      'count=' + collAfter);
+
+    // Step 9: Verify title reset
+    const titleAfter = await editorPage.evaluate(() =>
+      document.getElementById('appHeaderTitle').textContent.trim());
+    result('T5.9b — Header title reset to "Noesis Editor"',
+      titleAfter === 'Noesis Editor', 'title="' + titleAfter + '"');
+
     // T5.10: Import HTML via native file chooser — round-trip test
     // Export HTML was captured in T5.2 (window.__lastExportedHTML)
     const htmlToImport = await editorPage.evaluate(() =>
