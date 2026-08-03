@@ -24,16 +24,15 @@
       ".wrangler/**",
       "*.epub",
       "*.pdf",
-      "test/*.js",
-      "test_*.js",
-      "!test_e2e_complete.js",
-      "!test_editor_toolbar.js",
+      "test/**",
       "*.md",
       ".gitattributes",
+      ".gitignore",
       "noesis-reader.png",
-      "noesis_brand_animations.html",
       "_create_test_files.py",
-      "server.log"
+      "server.log",
+      "package.json",
+      "package-lock.json"
     ]
   }
 }

@@ -1,8 +1,10 @@
-# Dependencies / tooling
+# ── Dependencies ──
 node_modules/
+
+# ── Cloudflare Wrangler ──
 .wrangler/
 
-# Large test fixtures (too big for the Cloudflare Workers 25MB limit)
+# ── Test fixture EPUB/PDF (file binari grandi generati da _create_test_files.py) ──
 test*.epub
 test*.pdf
 
@@ -17,7 +19,16 @@ test*.js
 test_e2e_report.json
 test_editor_toolbar_report.json
 
-# Logs
+# ── Editor temp files ──
+*~
+
+# ── OS metadata ──
+.DS_Store
+
+# ── Screenshot / asset binari non-sorgente ──
+noesis-reader.png
+
+# ── Log ──
 server.log
 
 # NOTE: there is deliberately no `*.md` rule here. There used to be, and it meant new
