@@ -79,7 +79,7 @@
         if (iframe._noesisSelHandler) {
           idoc.removeEventListener('selectionchange', iframe._noesisSelHandler);
         }
-        iframe._noesisCloseHandler = function() { _closeAllReaderMenus(); /* Hide contextual popup only if no text is selected (otherwise user just finished selecting and popup should stay) */ if (typeof _hideCtxAnnotatePopup === 'function' && !_readerHlHasSelection && !_readerPendingCfi) { _hideCtxAnnotatePopup(); } if (window.innerWidth > 768 && typeof sidebarVisible !== 'undefined' && sidebarVisible) { var tsb = document.getElementById('toggleSidebarBtn'); if (tsb) tsb.click(); } };
+        iframe._noesisCloseHandler = function() { _closeAllReaderMenus(); /* Hide contextual popup only if no text is selected (otherwise user just finished selecting and popup should stay) */ if (typeof _hideCtxAnnotatePopup === 'function' && !_readerHlHasSelection && !_readerPendingCfi) { _hideCtxAnnotatePopup(); } /* Close collection drawer when tapping book content */ if (typeof _closeCollectionDrawer === 'function') { _closeCollectionDrawer(); } if (window.innerWidth > 768 && typeof sidebarVisible !== 'undefined' && sidebarVisible) { var tsb = document.getElementById('toggleSidebarBtn'); if (tsb) tsb.click(); } };
         idoc.addEventListener('click', iframe._noesisCloseHandler);
         /* Also listen for selection clearing inside iframe to hide contextual popup */
         iframe._noesisSelHandler = function() {

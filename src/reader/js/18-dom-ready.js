@@ -933,13 +933,20 @@
             var iframeOff = _getIframeOffset();
             var top = rect.bottom + iframeOff.top + 8;
             /* Center popup under the selected text line */
-            var left = rect.left + iframeOff.left + (rect.width / 2) - 76; /* half of ~152px popup width */
+            var popupW = popup.offsetWidth || 210; /* fallback ~width */
+            var left = rect.left + iframeOff.left + (rect.width / 2) - (popupW / 2);
             if (left < 8) left = 8;
-            if (left + 160 > window.innerWidth - 8) left = window.innerWidth - 168;
+            /* If popup would overflow right edge, flip to right-aligned */
+            if (left + popupW > window.innerWidth - 8) {
+              popup.style.left = 'auto';
+              popup.style.right = '8px';
+            } else {
+              popup.style.left = left + 'px';
+              popup.style.right = 'auto';
+            }
             /* If too close to bottom, show above the selection */
             if (top + 52 > window.innerHeight) top = rect.top + iframeOff.top - 52;
             popup.style.top = top + 'px';
-            popup.style.left = left + 'px';
             popup.style.display = 'flex';
             popup.classList.add('visible');
             _updateActiveState(currentReaderHighlightColor);
