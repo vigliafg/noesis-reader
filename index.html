@@ -9289,7 +9289,20 @@ ${htmlContent}
 
         function removeReaderHighlight() {
           if (!rendition) return;
-          const cfi = _readerPendingCfi;
+          var cfi = _readerPendingCfi;
+
+          // If re-selecting already-highlighted text, epub.js's 'selected' CFI
+          // differs from the original (DOM changed by the highlight span).
+          // Look up the original CFI from the highlight element's data-epubcfi.
+          var sel = getIframeSelection();
+          if (sel && sel.anchorNode) {
+            var node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
+            var hlNode = node && node.closest ? node.closest('[class*="epub-hl-"]') : null;
+            if (hlNode && hlNode.dataset.epubcfi) {
+              cfi = hlNode.dataset.epubcfi;
+            }
+          }
+
           if (!cfi) {
             setStatus('Select highlighted text to remove it');
             return;
