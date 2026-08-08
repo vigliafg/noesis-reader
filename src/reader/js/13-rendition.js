@@ -21,7 +21,7 @@
           hlBtn.style.outline = '2px solid #3b82f6';
           hlBtn.title = currentReaderHighlightColor === 'remove'
             ? 'Click to remove highlight'
-            : 'Click to apply highlight';
+            : (currentReaderHighlightColor ? 'Click to apply highlight' : 'Select text, then pick a color');
         }
         setTimeout(function() { if (typeof _showCtxAnnotatePopup === 'function') _showCtxAnnotatePopup(); }, 60);
       });

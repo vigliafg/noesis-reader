@@ -200,6 +200,11 @@
       /* Hide buttons that are in the hamburger menu on mobile — target buttons only, not dropdown containers */
       #libThemesBtn, #libToolsBtn, #libHelpBtn { display: none !important; }
 
+      /* Cover thumbnail: 2.5× larger for tablet readability */
+      .book-cover-thumb { width: 160px; height: 220px; }
+      .book-cover-thumb i { font-size: 65px; }
+      .chapters-section { padding-left: 178px; }
+
       /* Reader header compat */
       #reader-view > header {
         padding: 6px 8px;

@@ -688,6 +688,7 @@
         document.getElementById('navOpacitySlider').value = interfaceSettings.navOpacity;
         document.getElementById('navOpacityValue').textContent = interfaceSettings.navOpacity;
         document.getElementById('ubmDrawerColorPicker').value = interfaceSettings.ubmDrawerColor || '#fffde7';
+        document.getElementById('statusBarColorPicker').value = interfaceSettings.statusBarColor || '#f5f5f5';
       }
 
       // Toolbar Color
@@ -751,6 +752,18 @@
         applyInterfaceSettings();
       };
 
+      // Status Bar Color
+      document.getElementById('statusBarColorPicker').addEventListener('input', (e) => {
+        interfaceSettings.statusBarColor = e.target.value;
+        applyInterfaceSettings();
+      });
+
+      document.getElementById('statusBarColorReset').onclick = () => {
+        interfaceSettings.statusBarColor = defaultInterfaceSettings.statusBarColor;
+        updateInterfaceControls();
+        applyInterfaceSettings();
+      };
+
       // Display Settings Save Prompt buttons
       const dspSaveBtn    = document.getElementById('dspSaveBtn');
       const dspDismissBtn = document.getElementById('dspDismissBtn');
@@ -782,7 +795,6 @@
           else if (color === 'green') hlBtn.classList.add('hl-green');
           else if (color === 'pink') hlBtn.classList.add('hl-pink');
           else if (color === 'remove') hlBtn.classList.add('hl-remove');
-          else hlBtn.classList.add('hl-yellow');
         }
 
         function getIframeSelection() {
@@ -804,6 +816,14 @@
           const cfi = _readerPendingCfi;
           if (!cfi) {
             setStatus('Select some text first');
+            return;
+          }
+          if (!currentReaderHighlightColor || currentReaderHighlightColor === 'remove') {
+            if (currentReaderHighlightColor === 'remove') {
+              removeReaderHighlight();
+              return;
+            }
+            setStatus('Pick a highlight color first');
             return;
           }
           try {
@@ -873,6 +893,8 @@
           if (hasSelection) {
             if (currentReaderHighlightColor === 'remove') {
               removeReaderHighlight();
+            } else if (!currentReaderHighlightColor) {
+              setStatus('Pick a highlight color first');
             } else {
               applyReaderHighlight();
             }
@@ -885,8 +907,10 @@
           _readerHlHasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
           if (!_readerHlHasSelection) {
             _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
             hlBtn.style.outline = '';
-            hlBtn.title = 'Highlight text';
+            hlBtn.title = 'Select text, then pick a color';
+            ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
             if (typeof _hideCtxAnnotatePopup === 'function') _hideCtxAnnotatePopup();
           }
         });
@@ -910,9 +934,9 @@
             o.classList.toggle('active', o.dataset.color === color);
           });
           var dot = document.getElementById('rmbAnnotateColor');
-          if (dot) dot.style.background = _colorDot(color);
+          if (dot) dot.style.background = color ? _colorDot(color) : '#fff';
           var hmbDot = document.getElementById('hmbAnnotateColor');
-          if (hmbDot) hmbDot.style.background = _colorDot(color);
+          if (hmbDot) hmbDot.style.background = color ? _colorDot(color) : '#fff';
         }
 
         function _getIframeOffset() {
@@ -949,7 +973,7 @@
             popup.style.top = top + 'px';
             popup.style.display = 'flex';
             popup.classList.add('visible');
-            _updateActiveState(currentReaderHighlightColor);
+            _updateActiveState(null);
           } catch(e) {}
         };
 
@@ -958,15 +982,16 @@
           setTimeout(function() { if (!popup.classList.contains('visible')) popup.style.display = 'none'; }, 180);
         };
 
-        popup.querySelectorAll('.ctx-annotate-option').forEach(function(opt) {
+        popup.querySelectorAll('.ctx-annotate-option[data-color]').forEach(function(opt) {
           opt.addEventListener('click', function(e) {
             e.stopPropagation();
             var color = opt.dataset.color;
+            if (!color) return;
             currentReaderHighlightColor = color;
             var hlBtn = document.getElementById('readerHighlightBtn');
             if (hlBtn) {
               ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
-              hlBtn.style.outline = ''; hlBtn.title = 'Highlight text';
+              hlBtn.style.outline = ''; hlBtn.title = 'Select text, then pick a color';
               if (color === 'yellow') hlBtn.classList.add('hl-yellow');
               else if (color === 'green') hlBtn.classList.add('hl-green');
               else if (color === 'pink') hlBtn.classList.add('hl-pink');
@@ -979,6 +1004,14 @@
             } else {
               applyReaderHighlight();
             }
+            // Reset color memory after annotation — no colour persists between selections
+            currentReaderHighlightColor = null;
+            if (hlBtn) {
+              ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
+              hlBtn.style.outline = '';
+              hlBtn.title = 'Select text, then pick a color';
+            }
+            _updateActiveState(null);
           });
         });
 
@@ -989,8 +1022,26 @@
             e.stopPropagation();
             window._hideCtxAnnotatePopup();
             if (typeof window._showMediaDialog === 'function' && _pendingPreviewText) {
-              window._showMediaDialog('text', { text: _pendingPreviewText, color: currentReaderHighlightColor });
+              window._showMediaDialog('text', { text: _pendingPreviewText, color: currentReaderHighlightColor || 'yellow' });
             }
+          });
+        }
+
+        // Close button handler — dismiss popup without annotating
+        var closeBtn = popup.querySelector('.ctx-close-option');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            _readerHlHasSelection = false;
+            _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
+            var hlBtn = document.getElementById('readerHighlightBtn');
+            if (hlBtn) {
+              ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
+              hlBtn.style.outline = '';
+              hlBtn.title = 'Select text, then pick a color';
+            }
+            window._hideCtxAnnotatePopup();
           });
         }
 
@@ -1000,7 +1051,7 @@
           }
         });
 
-        _updateActiveState(currentReaderHighlightColor);
+        _updateActiveState(null);
 
       })();
       /* ── END CONTEXTUAL ANNOTATE POPUP ── */

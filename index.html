@@ -2932,6 +2932,18 @@
     .ctx-preview-option:hover i {
       color: #4f46e5;
     }
+    .ctx-close-option {
+      border-left: 1px solid rgba(0,0,0,0.15);
+      padding-left: 8px;
+      margin-left: 2px;
+    }
+    .ctx-close-option i {
+      font-size: 16px;
+      color: #ef4444;
+    }
+    .ctx-close-option:hover i {
+      color: #dc2626;
+    }
     .ctx-color-dot {
       width: 18px; height: 18px;
       border-radius: 50%;
@@ -2942,14 +2954,7 @@
     .ctx-color-dot.pink   { background: #f8bbd9; }
     .ctx-color-dot.remove {
       background: #fff;
-      border: 2px solid #ef4444;
-      position: relative;
-    }
-    .ctx-color-dot.remove::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(45deg, transparent 43%, #ef4444 44%, #ef4444 56%, transparent 57%);
+      border: 2px solid #999;
     }
     .ctx-annotate-label {
       display: none;
@@ -3801,6 +3806,11 @@
       /* Hide buttons that are in the hamburger menu on mobile — target buttons only, not dropdown containers */
       #libThemesBtn, #libToolsBtn, #libHelpBtn { display: none !important; }
 
+      /* Cover thumbnail: 2.5× larger for tablet readability */
+      .book-cover-thumb { width: 160px; height: 220px; }
+      .book-cover-thumb i { font-size: 65px; }
+      .chapters-section { padding-left: 178px; }
+
       /* Reader header compat */
       #reader-view > header {
         padding: 6px 8px;
@@ -3861,7 +3871,7 @@
     <div class="hamburger-item hmb-rdr" id="hmbBookmarks"><i class="bi bi-bookmark"></i> Bookmarks</div>
     <div class="hamburger-item hmb-rdr" id="hmbDisplay"><i class="bi bi-palette"></i> Display</div>
     <div class="hamburger-item hmb-rdr" id="hmbNavigate"><i class="bi bi-arrow-left-right"></i> Navigate<span id="hmbNavigateMode" class="rmb-navigate-badge" style="margin-left:6px;">Page</span></div>
-    <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
+    <div class="hamburger-item hmb-rdr" id="hmbAnnotate"><i class="bi bi-highlighter"></i> Annotate<span id="hmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-left:6px;vertical-align:middle;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></span></div>
     <div class="hamburger-item hmb-rdr" id="hmbExtract"><i class="bi bi-box-arrow-up-right"></i> Extract</div>
     <div class="hamburger-item hmb-rdr" id="hmbCollection"><i class="bi bi-collection"></i> Collection<span id="hmbCollBadge" class="rmb-badge" style="display:none;margin-left:6px;">0</span></div>
     <div class="hamburger-item" id="hmbHelp"><i class="bi bi-question-circle"></i> Help</div>
@@ -4123,7 +4133,7 @@
         <!-- Annotate: indicatore colore (popup contestuale appare su selezione) -->
         <span class="rmb-item" id="rmbAnnotate">
           Annotate
-          <span id="rmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffeb3b;margin-left:4px;vertical-align:middle;"></span>
+          <span id="rmbAnnotateColor" class="rmb-annotate-color" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fff;margin-left:4px;vertical-align:middle;"></span>
         </span>
         <!-- vecchio menu highlight mantenuto nascosto per compatibilità JS -->
         <div class="reader-highlight-menu" id="readerHighlightMenu" style="display:none;">
@@ -4201,6 +4211,7 @@
         <div class="ctx-annotate-option" data-color="pink" title="Pink"><span class="ctx-color-dot pink"></span></div>
         <div class="ctx-annotate-option" data-color="remove" title="Remove"><span class="ctx-color-dot remove"></span></div>
         <div class="ctx-annotate-option ctx-preview-option" data-action="preview" title="Preview highlighted text"><i class="bi bi-search"></i></div>
+        <div class="ctx-annotate-option ctx-close-option" data-action="close" title="Close"><i class="bi bi-x-lg"></i></div>
       </div>
 
       <!-- ELEMENTI ORIGINALI NASCOSTI (compatibilità JS) -->
@@ -4362,6 +4373,16 @@
           <div class="typography-controls">
             <input type="color" id="ubmDrawerColorPicker" value="#fffde7" />
             <button id="ubmDrawerColorReset" class="reset-btn" title="Reset">
+              <i class="bi bi-arrow-counterclockwise"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="typography-row">
+          <label>Status Bar Color</label>
+          <div class="typography-controls">
+            <input type="color" id="statusBarColorPicker" value="#f5f5f5" />
+            <button id="statusBarColorReset" class="reset-btn" title="Reset">
               <i class="bi bi-arrow-counterclockwise"></i>
             </button>
           </div>
@@ -5060,13 +5081,13 @@
 
       // Reset highlights
       readerHighlights = [];
-      currentReaderHighlightColor = 'yellow';
+      currentReaderHighlightColor = null;
       _readerPendingCfi = null;
       const hlBtn = document.getElementById('readerHighlightBtn');
       if (hlBtn) {
-        hlBtn.className = 'btn btn-icon hl-yellow';
+        hlBtn.className = 'btn btn-icon';
         hlBtn.style.outline = '';
-        hlBtn.title = 'Highlight text';
+        hlBtn.title = 'Select text, then pick a color';
       }
       const hlMenu = document.getElementById('readerHighlightMenu');
       if (hlMenu) hlMenu.classList.remove('show');
@@ -5604,7 +5625,8 @@ ${htmlContent}
       sidebarColor: '#ffffff',
       navButtonsColor: '#667eea',
       navOpacity: 0.7,
-      ubmDrawerColor: '#fffde7'
+      ubmDrawerColor: '#fffde7',
+      statusBarColor: '#f5f5f5'
     };
 
     const defaultInterfaceSettings = {
@@ -5612,7 +5634,8 @@ ${htmlContent}
       sidebarColor: '#ffffff',
       navButtonsColor: '#667eea',
       navOpacity: 0.7,
-      ubmDrawerColor: '#fffde7'
+      ubmDrawerColor: '#fffde7',
+      statusBarColor: '#f5f5f5'
     };
 
     // --- CURRENT BOOK TRACKING ---
@@ -5994,7 +6017,7 @@ ${htmlContent}
 
     // --- READER HIGHLIGHTS ---
     let readerHighlights = []; // [{cfi, color}]
-    let currentReaderHighlightColor = 'yellow';
+    let currentReaderHighlightColor = null;
     let _pendingPreviewText = '';
     const HL_COLORS = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
     let _readerHlHasSelection = false;
@@ -6367,6 +6390,12 @@ ${htmlContent}
         const color = interfaceSettings.ubmDrawerColor || '#fffde7';
         ubmDrawer.style.setProperty('--ubm-bg', color);
         ubmDrawer.style.background = color;
+      }
+
+      // Apply status bar color
+      const statusBar = document.getElementById('status');
+      if (statusBar) {
+        statusBar.style.background = interfaceSettings.statusBarColor || '#f5f5f5';
       }
     }
 
@@ -7155,7 +7184,7 @@ ${htmlContent}
           hlBtn.style.outline = '2px solid #3b82f6';
           hlBtn.title = currentReaderHighlightColor === 'remove'
             ? 'Click to remove highlight'
-            : 'Click to apply highlight';
+            : (currentReaderHighlightColor ? 'Click to apply highlight' : 'Select text, then pick a color');
         }
         setTimeout(function() { if (typeof _showCtxAnnotatePopup === 'function') _showCtxAnnotatePopup(); }, 60);
       });
@@ -9090,6 +9119,7 @@ ${htmlContent}
         document.getElementById('navOpacitySlider').value = interfaceSettings.navOpacity;
         document.getElementById('navOpacityValue').textContent = interfaceSettings.navOpacity;
         document.getElementById('ubmDrawerColorPicker').value = interfaceSettings.ubmDrawerColor || '#fffde7';
+        document.getElementById('statusBarColorPicker').value = interfaceSettings.statusBarColor || '#f5f5f5';
       }
 
       // Toolbar Color
@@ -9153,6 +9183,18 @@ ${htmlContent}
         applyInterfaceSettings();
       };
 
+      // Status Bar Color
+      document.getElementById('statusBarColorPicker').addEventListener('input', (e) => {
+        interfaceSettings.statusBarColor = e.target.value;
+        applyInterfaceSettings();
+      });
+
+      document.getElementById('statusBarColorReset').onclick = () => {
+        interfaceSettings.statusBarColor = defaultInterfaceSettings.statusBarColor;
+        updateInterfaceControls();
+        applyInterfaceSettings();
+      };
+
       // Display Settings Save Prompt buttons
       const dspSaveBtn    = document.getElementById('dspSaveBtn');
       const dspDismissBtn = document.getElementById('dspDismissBtn');
@@ -9184,7 +9226,6 @@ ${htmlContent}
           else if (color === 'green') hlBtn.classList.add('hl-green');
           else if (color === 'pink') hlBtn.classList.add('hl-pink');
           else if (color === 'remove') hlBtn.classList.add('hl-remove');
-          else hlBtn.classList.add('hl-yellow');
         }
 
         function getIframeSelection() {
@@ -9206,6 +9247,14 @@ ${htmlContent}
           const cfi = _readerPendingCfi;
           if (!cfi) {
             setStatus('Select some text first');
+            return;
+          }
+          if (!currentReaderHighlightColor || currentReaderHighlightColor === 'remove') {
+            if (currentReaderHighlightColor === 'remove') {
+              removeReaderHighlight();
+              return;
+            }
+            setStatus('Pick a highlight color first');
             return;
           }
           try {
@@ -9275,6 +9324,8 @@ ${htmlContent}
           if (hasSelection) {
             if (currentReaderHighlightColor === 'remove') {
               removeReaderHighlight();
+            } else if (!currentReaderHighlightColor) {
+              setStatus('Pick a highlight color first');
             } else {
               applyReaderHighlight();
             }
@@ -9287,8 +9338,10 @@ ${htmlContent}
           _readerHlHasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
           if (!_readerHlHasSelection) {
             _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
             hlBtn.style.outline = '';
-            hlBtn.title = 'Highlight text';
+            hlBtn.title = 'Select text, then pick a color';
+            ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
             if (typeof _hideCtxAnnotatePopup === 'function') _hideCtxAnnotatePopup();
           }
         });
@@ -9312,9 +9365,9 @@ ${htmlContent}
             o.classList.toggle('active', o.dataset.color === color);
           });
           var dot = document.getElementById('rmbAnnotateColor');
-          if (dot) dot.style.background = _colorDot(color);
+          if (dot) dot.style.background = color ? _colorDot(color) : '#fff';
           var hmbDot = document.getElementById('hmbAnnotateColor');
-          if (hmbDot) hmbDot.style.background = _colorDot(color);
+          if (hmbDot) hmbDot.style.background = color ? _colorDot(color) : '#fff';
         }
 
         function _getIframeOffset() {
@@ -9351,7 +9404,7 @@ ${htmlContent}
             popup.style.top = top + 'px';
             popup.style.display = 'flex';
             popup.classList.add('visible');
-            _updateActiveState(currentReaderHighlightColor);
+            _updateActiveState(null);
           } catch(e) {}
         };
 
@@ -9360,15 +9413,16 @@ ${htmlContent}
           setTimeout(function() { if (!popup.classList.contains('visible')) popup.style.display = 'none'; }, 180);
         };
 
-        popup.querySelectorAll('.ctx-annotate-option').forEach(function(opt) {
+        popup.querySelectorAll('.ctx-annotate-option[data-color]').forEach(function(opt) {
           opt.addEventListener('click', function(e) {
             e.stopPropagation();
             var color = opt.dataset.color;
+            if (!color) return;
             currentReaderHighlightColor = color;
             var hlBtn = document.getElementById('readerHighlightBtn');
             if (hlBtn) {
               ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
-              hlBtn.style.outline = ''; hlBtn.title = 'Highlight text';
+              hlBtn.style.outline = ''; hlBtn.title = 'Select text, then pick a color';
               if (color === 'yellow') hlBtn.classList.add('hl-yellow');
               else if (color === 'green') hlBtn.classList.add('hl-green');
               else if (color === 'pink') hlBtn.classList.add('hl-pink');
@@ -9381,6 +9435,14 @@ ${htmlContent}
             } else {
               applyReaderHighlight();
             }
+            // Reset color memory after annotation — no colour persists between selections
+            currentReaderHighlightColor = null;
+            if (hlBtn) {
+              ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
+              hlBtn.style.outline = '';
+              hlBtn.title = 'Select text, then pick a color';
+            }
+            _updateActiveState(null);
           });
         });
 
@@ -9391,8 +9453,26 @@ ${htmlContent}
             e.stopPropagation();
             window._hideCtxAnnotatePopup();
             if (typeof window._showMediaDialog === 'function' && _pendingPreviewText) {
-              window._showMediaDialog('text', { text: _pendingPreviewText, color: currentReaderHighlightColor });
+              window._showMediaDialog('text', { text: _pendingPreviewText, color: currentReaderHighlightColor || 'yellow' });
             }
+          });
+        }
+
+        // Close button handler — dismiss popup without annotating
+        var closeBtn = popup.querySelector('.ctx-close-option');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            _readerHlHasSelection = false;
+            _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
+            var hlBtn = document.getElementById('readerHighlightBtn');
+            if (hlBtn) {
+              ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hlBtn.classList.remove(c); });
+              hlBtn.style.outline = '';
+              hlBtn.title = 'Select text, then pick a color';
+            }
+            window._hideCtxAnnotatePopup();
           });
         }
 
@@ -9402,7 +9482,7 @@ ${htmlContent}
           }
         });
 
-        _updateActiveState(currentReaderHighlightColor);
+        _updateActiveState(null);
 
       })();
       /* ── END CONTEXTUAL ANNOTATE POPUP ── */
@@ -9734,8 +9814,9 @@ ${htmlContent}
           _readerHlHasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
           if (!_readerHlHasSelection) {
             _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
             var hb = document.getElementById('readerHighlightBtn');
-            if (hb) { hb.style.outline = ''; hb.title = 'Highlight text'; }
+            if (hb) { hb.style.outline = ''; hb.title = 'Select text, then pick a color'; ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hb.classList.remove(c); }); }
             if (typeof _hideCtxAnnotatePopup === 'function') _hideCtxAnnotatePopup();
           }
         };
@@ -10017,7 +10098,7 @@ ${htmlContent}
           /* Update menubar + hamburger indicator dots after highlight action */
           setTimeout(function() {
             var cm = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
-            var bg = currentReaderHighlightColor === 'remove' ? '#fff' : (cm[currentReaderHighlightColor] || '#ffeb3b');
+            var bg = !currentReaderHighlightColor ? '#fff' : (currentReaderHighlightColor === 'remove' ? '#fff' : (cm[currentReaderHighlightColor] || '#ffeb3b'));
             var dot = document.getElementById('rmbAnnotateColor');
             if (dot) dot.style.background = bg;
             var hmbDot = document.getElementById('hmbAnnotateColor');

@@ -25,7 +25,8 @@
       sidebarColor: '#ffffff',
       navButtonsColor: '#667eea',
       navOpacity: 0.7,
-      ubmDrawerColor: '#fffde7'
+      ubmDrawerColor: '#fffde7',
+      statusBarColor: '#f5f5f5'
     };
 
     const defaultInterfaceSettings = {
@@ -33,7 +34,8 @@
       sidebarColor: '#ffffff',
       navButtonsColor: '#667eea',
       navOpacity: 0.7,
-      ubmDrawerColor: '#fffde7'
+      ubmDrawerColor: '#fffde7',
+      statusBarColor: '#f5f5f5'
     };
 
     // --- CURRENT BOOK TRACKING ---

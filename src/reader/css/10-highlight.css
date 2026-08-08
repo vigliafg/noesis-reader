@@ -119,6 +119,18 @@
     .ctx-preview-option:hover i {
       color: #4f46e5;
     }
+    .ctx-close-option {
+      border-left: 1px solid rgba(0,0,0,0.15);
+      padding-left: 8px;
+      margin-left: 2px;
+    }
+    .ctx-close-option i {
+      font-size: 16px;
+      color: #ef4444;
+    }
+    .ctx-close-option:hover i {
+      color: #dc2626;
+    }
     .ctx-color-dot {
       width: 18px; height: 18px;
       border-radius: 50%;
@@ -129,14 +141,7 @@
     .ctx-color-dot.pink   { background: #f8bbd9; }
     .ctx-color-dot.remove {
       background: #fff;
-      border: 2px solid #ef4444;
-      position: relative;
-    }
-    .ctx-color-dot.remove::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(45deg, transparent 43%, #ef4444 44%, #ef4444 56%, transparent 57%);
+      border: 2px solid #999;
     }
     .ctx-annotate-label {
       display: none;

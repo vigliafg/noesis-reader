@@ -48,13 +48,13 @@
 
       // Reset highlights
       readerHighlights = [];
-      currentReaderHighlightColor = 'yellow';
+      currentReaderHighlightColor = null;
       _readerPendingCfi = null;
       const hlBtn = document.getElementById('readerHighlightBtn');
       if (hlBtn) {
-        hlBtn.className = 'btn btn-icon hl-yellow';
+        hlBtn.className = 'btn btn-icon';
         hlBtn.style.outline = '';
-        hlBtn.title = 'Highlight text';
+        hlBtn.title = 'Select text, then pick a color';
       }
       const hlMenu = document.getElementById('readerHighlightMenu');
       if (hlMenu) hlMenu.classList.remove('show');

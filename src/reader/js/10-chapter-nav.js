@@ -82,6 +82,12 @@
         ubmDrawer.style.setProperty('--ubm-bg', color);
         ubmDrawer.style.background = color;
       }
+
+      // Apply status bar color
+      const statusBar = document.getElementById('status');
+      if (statusBar) {
+        statusBar.style.background = interfaceSettings.statusBarColor || '#f5f5f5';
+      }
     }
 
     // Helper: Convert hex to rgba

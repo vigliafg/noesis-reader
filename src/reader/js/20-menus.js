@@ -87,8 +87,9 @@
           _readerHlHasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
           if (!_readerHlHasSelection) {
             _readerPendingCfi = null;
+            currentReaderHighlightColor = null;
             var hb = document.getElementById('readerHighlightBtn');
-            if (hb) { hb.style.outline = ''; hb.title = 'Highlight text'; }
+            if (hb) { hb.style.outline = ''; hb.title = 'Select text, then pick a color'; ['hl-yellow','hl-green','hl-pink','hl-remove'].forEach(function(c) { hb.classList.remove(c); }); }
             if (typeof _hideCtxAnnotatePopup === 'function') _hideCtxAnnotatePopup();
           }
         };
@@ -370,7 +371,7 @@
           /* Update menubar + hamburger indicator dots after highlight action */
           setTimeout(function() {
             var cm = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
-            var bg = currentReaderHighlightColor === 'remove' ? '#fff' : (cm[currentReaderHighlightColor] || '#ffeb3b');
+            var bg = !currentReaderHighlightColor ? '#fff' : (currentReaderHighlightColor === 'remove' ? '#fff' : (cm[currentReaderHighlightColor] || '#ffeb3b'));
             var dot = document.getElementById('rmbAnnotateColor');
             if (dot) dot.style.background = bg;
             var hmbDot = document.getElementById('hmbAnnotateColor');

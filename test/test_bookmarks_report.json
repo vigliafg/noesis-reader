@@ -1,0 +1,139 @@
+{
+  "date": "2026-08-08T06:32:53.403Z",
+  "passed": 26,
+  "failed": 0,
+  "total": 26,
+  "results": [
+    {
+      "name": "B1 — Reader loaded",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B1 — Menubar Bookmarks button exists",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B1 — Drawer opens on menubar click",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B1 — Empty state message shown",
+      "ok": true,
+      "detail": "Text: \"No bookmarks yet.Press \"New Bookmark\" to add one.\""
+    },
+    {
+      "name": "B1 — Drawer closes via close button",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B2 — Rendition ready",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B2 — Badge shows 1 after create",
+      "ok": true,
+      "detail": "Badge: {\"text\":\"1\",\"display\":\"flex\"}"
+    },
+    {
+      "name": "B2 — In-memory array has 1 bookmark",
+      "ok": true,
+      "detail": "Count: 1"
+    },
+    {
+      "name": "B3 — Drawer shows 1 bookmark item",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B3 — Item has chapter title",
+      "ok": true,
+      "detail": "Chapter: Table of Contents"
+    },
+    {
+      "name": "B3 — Item has preview text",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B3 — Item has delete button",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B3 — No label shown (prompt accepted empty)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B4 — Delete button clicked",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B4 — In-memory array empty after delete",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B4 — Badge hidden after delete",
+      "ok": true,
+      "detail": "Display: none"
+    },
+    {
+      "name": "B4 — Empty state restored after delete",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B5 — Bookmark in memory",
+      "ok": true,
+      "detail": "Count: 1"
+    },
+    {
+      "name": "B5 — Saved to DB",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B5 — Bookmark has CFI",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B5 — Label is \"Test Label\"",
+      "ok": true,
+      "detail": "Label: \"Test Label\""
+    },
+    {
+      "name": "B5 — Persisted in IndexedDB",
+      "ok": true,
+      "detail": "Found: true, count: 1"
+    },
+    {
+      "name": "B5 — Label persisted in IndexedDB",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B5 — Cleared from memory",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "B5 — Restored via loadUserBookmarksFromDB",
+      "ok": true,
+      "detail": "Count: 1"
+    },
+    {
+      "name": "B5 — Label restored correctly",
+      "ok": true,
+      "detail": "Label: \"Test Label\""
+    }
+  ],
+  "errors": []
+}

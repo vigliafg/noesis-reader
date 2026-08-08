@@ -1,6 +1,6 @@
     // --- READER HIGHLIGHTS ---
     let readerHighlights = []; // [{cfi, color}]
-    let currentReaderHighlightColor = 'yellow';
+    let currentReaderHighlightColor = null;
     let _pendingPreviewText = '';
     const HL_COLORS = { yellow: '#ffeb3b', green: '#a5d6a7', pink: '#f8bbd9' };
     let _readerHlHasSelection = false;
