@@ -858,30 +858,46 @@
           if (!rendition) return;
           var cfi = _readerPendingCfi;
 
-          // If re-selecting already-highlighted text, epub.js's 'selected' CFI
-          // differs from the original (DOM changed by the highlight span).
-          // Look up the original CFI from the highlight element's data-epubcfi.
+          // Find the highlight span in the iframe DOM via the current selection
           var sel = getIframeSelection();
+          var hlNode = null;
           if (sel && sel.anchorNode) {
             var node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode;
-            var hlNode = node && node.closest ? node.closest('[class*="epub-hl-"]') : null;
-            if (hlNode && hlNode.dataset.epubcfi) {
-              cfi = hlNode.dataset.epubcfi;
-            }
+            hlNode = node && node.closest ? node.closest('[class*="epub-hl-"]') : null;
           }
 
-          if (!cfi) {
+          if (!cfi && !hlNode) {
             setStatus('Select highlighted text to remove it');
             return;
           }
+
           try {
-            rendition.annotations.remove(cfi, 'highlight');
-            readerHighlights = readerHighlights.filter(h => h.cfi !== cfi);
+            // ── B1: Unwrap the highlight span from the DOM ──────────
+            // epub.js annotations.remove() cleans internal state but doesn't
+            // reliably remove the <span> from the iframe content.  Unwrap it
+            // ourselves so the colour disappears immediately.
+            if (hlNode && hlNode.parentNode) {
+              var parent = hlNode.parentNode;
+              while (hlNode.firstChild) {
+                parent.insertBefore(hlNode.firstChild, hlNode);
+              }
+              parent.removeChild(hlNode);
+            }
+
+            // ── B2: Best-effort epub.js state cleanup ───────────────
+            // Use the CFI from the highlight element if available, else
+            // fall back to _readerPendingCfi.
+            var removeCfi = (hlNode && hlNode.dataset.epubcfi) ? hlNode.dataset.epubcfi : cfi;
+            if (removeCfi) {
+              try { rendition.annotations.remove(removeCfi, 'highlight'); } catch(e) {}
+              readerHighlights = readerHighlights.filter(function(h) { return h.cfi !== removeCfi; });
+            }
+
             // Clear selection in iframe
             try {
-              const iframes = document.querySelectorAll('#viewer iframe');
-              for (const iframe of iframes) {
-                const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+              var iframes = document.querySelectorAll('#viewer iframe');
+              for (var i = 0; i < iframes.length; i++) {
+                var doc = iframes[i].contentDocument || (iframes[i].contentWindow && iframes[i].contentWindow.document);
                 if (doc && doc.getSelection) doc.getSelection().removeAllRanges();
               }
             } catch(e) {}
