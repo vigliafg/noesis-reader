@@ -846,7 +846,7 @@
             _readerHlHasSelection = false;
             _readerPendingCfi = null;
             hlBtn.style.outline = '';
-            hlBtn.title = 'Highlight text';
+            hlBtn.title = 'Select text, then pick a color';
             setStatus('Text highlighted ✓');
           } catch(err) {
             console.warn('Highlight error:', err);
@@ -875,7 +875,7 @@
             _readerHlHasSelection = false;
             _readerPendingCfi = null;
             hlBtn.style.outline = '';
-            hlBtn.title = 'Highlight text';
+            hlBtn.title = 'Select text, then pick a color';
             setStatus('Highlight removed ✓');
           } catch(e) {
             setStatus('Select highlighted text to remove it');
@@ -1032,6 +1032,14 @@
         if (closeBtn) {
           closeBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            // Clear browser native selection so user doesn't mistake blue highlight for annotation
+            try {
+              var iframes = document.querySelectorAll('#viewer iframe');
+              for (var i = 0; i < iframes.length; i++) {
+                var doc = iframes[i].contentDocument || (iframes[i].contentWindow && iframes[i].contentWindow.document);
+                if (doc && doc.getSelection) doc.getSelection().removeAllRanges();
+              }
+            } catch(e) {}
             _readerHlHasSelection = false;
             _readerPendingCfi = null;
             currentReaderHighlightColor = null;
