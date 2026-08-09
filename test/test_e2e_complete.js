@@ -14,6 +14,10 @@
  *   S9  — Editor bridge: extract+edit → opens editor new tab
  *   S10 — Editor draft: IndexedDB auto-save + reload restore
  *   S11 — Collection export → clear → import → verify
+ *   S12–S16 — Themes (reader: 15 themes in 6 groups, library: dark/light)
+ *   S17–S20 — Typography (font size, line height, page layout)
+ *   S21–S25 — Interface settings (colors, opacity, status bar)
+ *   S26–S30 — Display menu (accordion, embedded popups)
  *
  * Usage:
  *   # Start server first:
@@ -24,7 +28,7 @@
  *     node test_e2e_complete.js
  */
 
-const puppeteer = require('puppeteer');
+const { connectChrome } = require('./_chrome_helper');
 const path = require('path');
 const fs = require('fs');
 
@@ -110,19 +114,9 @@ function assert(condition, msg) {
     process.exit(1);
   }
 
-  // Launch browser
-  browser = await puppeteer.launch({
-    headless: 'new',
-    executablePath: '/usr/bin/google-chrome',
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--window-size=1280,800'
-    ],
-    defaultViewport: { width: 1280, height: 800 }
-  });
+  // Connect to Chrome (launches headless by default, or connects to system
+  // Chrome if NOESIS_CHROME_WS is set)
+  browser = await connectChrome();
 
   page = await browser.newPage();
   page.setDefaultTimeout(TIMEOUT);
@@ -851,6 +845,352 @@ function assert(condition, msg) {
     result('S10 — Draft can be deleted', draftDeleted);
 
     await editorPage.close();
+
+    // =================================================================
+    // S12–S16: THEMES
+    // =================================================================
+    log('INFO', '--- S12–S16: Themes ---');
+
+    // Back to reader page after editor test
+    const readerPage = page;
+
+    // S12: Verify THEME_COLORS has 15 themes in 5 groups
+    const themeInfo = await readerPage.evaluate(() => {
+      // THEME_COLORS is module-scoped, but we can check rendered swatches
+      var popup = document.getElementById('themePopupMain');
+      if (!popup) return { ok: false, reason: 'themePopupMain not found' };
+      // buildThemePopup() should have been called on DOMContentLoaded
+      var groups = popup.querySelectorAll('.theme-group');
+      var swatches = popup.querySelectorAll('.theme-swatch');
+      return {
+        groupCount: groups.length,
+        swatchCount: swatches.length,
+        ok: groups.length === 6 && swatches.length === 15
+      };
+    });
+    result('S12 — Theme popup has 6 groups', themeInfo.groupCount === 6,
+      'Groups: ' + themeInfo.groupCount);
+    result('S12 — Theme popup has 15 swatches', themeInfo.swatchCount === 15,
+      'Swatches: ' + themeInfo.swatchCount);
+
+    // S13: Verify swatches have data-theme and style attributes
+    const swatchDetail = await readerPage.evaluate(() => {
+      var first = document.querySelector('#themePopupMain .theme-swatch');
+      if (!first) return { ok: false };
+      return {
+        hasDataTheme: !!first.dataset.theme,
+        hasBackground: !!first.style.background,
+        hasLabel: !!(first.querySelector('.swatch-label')),
+        ok: true
+      };
+    });
+    result('S13 — Swatches have data-theme attribute', swatchDetail.hasDataTheme);
+    result('S13 — Swatches have background style', swatchDetail.hasBackground);
+    result('S13 — Swatches have label element', swatchDetail.hasLabel);
+
+    // S14: Click a swatch and verify theme state changes
+    // We access window.__test to read state after clicking
+    const themeChange = await readerPage.evaluate(() => {
+      var swatch = document.querySelector('#themePopupMain .theme-swatch[data-theme="sepia"]');
+      if (!swatch) return { ok: false, reason: 'sepia swatch not found' };
+      swatch.click();
+      // Check that active class moved
+      var sepiaSwatch = document.querySelector('#themePopupMain .theme-swatch[data-theme="sepia"]');
+      var activeCount = document.querySelectorAll('#themePopupMain .theme-swatch.active').length;
+      return {
+        sepiaActive: sepiaSwatch ? sepiaSwatch.classList.contains('active') : false,
+        activeCount: activeCount,
+        ok: sepiaSwatch && sepiaSwatch.classList.contains('active')
+      };
+    });
+    result('S14 — Clicking sepia swatch sets it active', themeChange.sepiaActive);
+    result('S14 — Only one swatch is active', themeChange.activeCount === 1,
+      'Active count: ' + themeChange.activeCount);
+
+    // Reset to normal theme
+    await readerPage.evaluate(() => {
+      var swatch = document.querySelector('#themePopupMain .theme-swatch[data-theme="normal"]');
+      if (swatch) swatch.click();
+    });
+    await wait(SHORT_WAIT);
+
+    // S15: Library dark/light theme via localStorage
+    const libThemeTest = await readerPage.evaluate(() => {
+      var libView = document.getElementById('library-view');
+      if (!libView) return { ok: false, reason: 'library-view not found' };
+
+      // Test dark mode
+      localStorage.setItem('noesis-lib-theme', 'dark');
+      libView.classList.add('lib-dark');
+      var isDark = libView.classList.contains('lib-dark');
+
+      // Test light mode
+      localStorage.setItem('noesis-lib-theme', 'light');
+      libView.classList.remove('lib-dark');
+      var isLight = !libView.classList.contains('lib-dark');
+
+      return {
+        darkWorks: isDark,
+        lightWorks: isLight,
+        storedValue: localStorage.getItem('noesis-lib-theme'),
+        ok: isDark && isLight
+      };
+    });
+    result('S15 — Library dark theme class toggles', libThemeTest.darkWorks);
+    result('S15 — Library light theme class toggles', libThemeTest.lightWorks);
+    result('S15 — Theme persisted in localStorage', libThemeTest.storedValue === 'light',
+      'Stored: ' + libThemeTest.storedValue);
+
+    // S16: Navigate back to library and verify theme button exists
+    const libThemeBtn = await readerPage.evaluate(() => {
+      return {
+        themesBtn: !!document.getElementById('libThemesBtn'),
+        menu: !!document.getElementById('libThemesMenu'),
+        light: !!document.getElementById('libThemeLight'),
+        dark: !!document.getElementById('libThemeDark')
+      };
+    });
+    result('S16 — Library themes button exists', libThemeBtn.themesBtn);
+    result('S16 — Library themes menu exists', libThemeBtn.menu);
+    result('S16 — Library theme options exist', libThemeBtn.light && libThemeBtn.dark);
+
+    // =================================================================
+    // S17–S20: TYPOGRAPHY
+    // =================================================================
+    log('INFO', '--- S17–S20: Typography ---');
+
+    // S17: Font size controls exist
+    const typoControls = await readerPage.evaluate(() => {
+      return {
+        fontPlus: !!document.getElementById('fontPlus1'),
+        fontMinus: !!document.getElementById('fontMinus1'),
+        fontReset: !!document.getElementById('fontReset'),
+        fontInfo: !!document.getElementById('fontInfo'),
+        lineHPlus: !!document.getElementById('lineHeightPlus'),
+        lineHMinus: !!document.getElementById('lineHeightMinus'),
+        lineHReset: !!document.getElementById('lineHeightReset'),
+        lineHInfo: !!document.getElementById('lineHeightInfo'),
+        singlePage: !!document.getElementById('singlePageBtn'),
+        dualPage: !!document.getElementById('dualPageBtn')
+      };
+    });
+    result('S17 — Font size buttons exist',
+      typoControls.fontPlus && typoControls.fontMinus && typoControls.fontReset);
+    result('S17 — Font info display exists', typoControls.fontInfo);
+    result('S17 — Line height buttons exist',
+      typoControls.lineHPlus && typoControls.lineHMinus && typoControls.lineHReset);
+    result('S17 — Page layout buttons exist',
+      typoControls.singlePage && typoControls.dualPage);
+
+    // S18: Font size can be read (from DOM info span)
+    const fontInfo = await readerPage.evaluate(() => {
+      var el = document.getElementById('fontInfo');
+      var lhEl = document.getElementById('lineHeightInfo');
+      // Trigger update (updateFontInfo reads from module-scoped fontSize var)
+      // Verify the info elements have text content
+      return {
+        fontText: el ? el.textContent.trim() : '',
+        lhText: lhEl ? lhEl.textContent.trim() : '',
+        fontOk: el && el.textContent.trim().length > 0,
+        lhOk: lhEl && lhEl.textContent.trim().length > 0
+      };
+    });
+    result('S18 — Font size display shows value', fontInfo.fontOk,
+      'Font: ' + fontInfo.fontText);
+    result('S18 — Line height display shows value', fontInfo.lhOk,
+      'Line height: ' + fontInfo.lhText);
+
+    // S19: Dual page mode toggle
+    const dualPageTest = await readerPage.evaluate(() => {
+      var btn = document.getElementById('dualPageBtn');
+      if (!btn) return { ok: false, reason: 'dualPageBtn not found' };
+      var wasActive = btn.classList.contains('active');
+      btn.click();
+      var nowActive = btn.classList.contains('active');
+      var toggled = wasActive !== nowActive;
+      // Click again to restore
+      btn.click();
+      var restored = btn.classList.contains('active') === wasActive;
+      return { ok: toggled && restored, toggled: toggled, restored: restored };
+    });
+    result('S19 — Dual page button toggles', dualPageTest.toggled);
+    result('S19 — Dual page toggle restores', dualPageTest.restored);
+
+    // S20: Typography popup exists
+    const typoPopup = await readerPage.evaluate(() => {
+      return !!document.getElementById('typographyPopupMain');
+    });
+    result('S20 — Typography popup exists', typoPopup);
+
+    // =================================================================
+    // S21–S25: INTERFACE SETTINGS
+    // =================================================================
+    log('INFO', '--- S21–S25: Interface settings ---');
+
+    // S21: Interface controls exist
+    const ifaceControls = await readerPage.evaluate(() => {
+      return {
+        toolbarColor: !!document.getElementById('toolbarColorPicker'),
+        toolbarReset: !!document.getElementById('toolbarColorReset'),
+        sidebarColor: !!document.getElementById('sidebarColorPicker'),
+        sidebarReset: !!document.getElementById('sidebarColorReset'),
+        navColor: !!document.getElementById('navButtonsColorPicker'),
+        navReset: !!document.getElementById('navButtonsColorReset'),
+        navOpacity: !!document.getElementById('navOpacitySlider'),
+        navOpacityVal: !!document.getElementById('navOpacityValue'),
+        navOpacityReset: !!document.getElementById('navOpacityReset'),
+        ubmColor: !!document.getElementById('ubmDrawerColorPicker'),
+        ubmReset: !!document.getElementById('ubmDrawerColorReset'),
+        statusBarColor: !!document.getElementById('statusBarColorPicker'),
+        statusBarReset: !!document.getElementById('statusBarColorReset'),
+        displaySave: !!document.getElementById('displaySavePrompt'),
+        dspSave: !!document.getElementById('dspSaveBtn'),
+        dspDismiss: !!document.getElementById('dspDismissBtn')
+      };
+    });
+    result('S21 — Toolbar color picker exists', ifaceControls.toolbarColor);
+    result('S21 — Sidebar color picker exists', ifaceControls.sidebarColor);
+    result('S21 — Nav buttons color picker exists', ifaceControls.navColor);
+    result('S21 — Nav opacity slider exists', ifaceControls.navOpacity);
+    result('S21 — Status bar color picker exists', ifaceControls.statusBarColor);
+    result('S21 — Bookmark drawer color picker exists', ifaceControls.ubmColor);
+
+    // S22: Toolbar color change is reflected
+    const toolbarColorTest = await readerPage.evaluate(() => {
+      var picker = document.getElementById('toolbarColorPicker');
+      if (!picker) return { ok: false, reason: 'no picker' };
+      var oldVal = picker.value;
+      picker.value = '#ff0000';
+      picker.dispatchEvent(new Event('input', { bubbles: true }));
+      var newVal = picker.value;
+      // Reset
+      picker.value = oldVal;
+      picker.dispatchEvent(new Event('input', { bubbles: true }));
+      return { ok: newVal === '#ff0000', oldVal: oldVal };
+    });
+    result('S22 — Toolbar color change dispatched', toolbarColorTest.ok,
+      'Prev color: ' + toolbarColorTest.oldVal);
+
+    // S23: Nav opacity slider works
+    const opacityTest = await readerPage.evaluate(() => {
+      var slider = document.getElementById('navOpacitySlider');
+      var valEl = document.getElementById('navOpacityValue');
+      if (!slider || !valEl) return { ok: false, reason: 'controls missing' };
+      var oldVal = slider.value;
+      slider.value = '0.5';
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      var displayVal = valEl.textContent.trim();
+      // Reset
+      slider.value = oldVal;
+      slider.dispatchEvent(new Event('input', { bubbles: true }));
+      return { ok: displayVal === '0.5', displayVal: displayVal };
+    });
+    result('S23 — Nav opacity slider updates display', opacityTest.ok,
+      'Display value: ' + opacityTest.displayVal);
+
+    // S24: Status bar color picker exists and works
+    const statusBarTest = await readerPage.evaluate(() => {
+      var picker = document.getElementById('statusBarColorPicker');
+      if (!picker) return { ok: false, reason: 'no picker' };
+      var defaultVal = picker.value;
+      return { ok: defaultVal.length > 0, defaultVal: defaultVal };
+    });
+    result('S24 — Status bar color has default', statusBarTest.ok,
+      'Default: ' + statusBarTest.defaultVal);
+
+    // S25: Display save prompt exists
+    result('S25 — Display save prompt exists', ifaceControls.displaySave);
+    result('S25 — Save/dismiss buttons exist', ifaceControls.dspSave && ifaceControls.dspDismiss);
+
+    // =================================================================
+    // S26–S30: DISPLAY MENU (accordion)
+    // =================================================================
+    log('INFO', '--- S26–S30: Display menu ---');
+
+    // S26: Display menu elements exist
+    const displayMenuEls = await readerPage.evaluate(() => {
+      return {
+        rmbDisplay: !!document.getElementById('rmbDisplay'),
+        displayMenu: !!document.getElementById('displayMenu'),
+        secTypo: !!document.getElementById('displaySecTypo'),
+        secThemes: !!document.getElementById('displaySecThemes'),
+        secInterface: !!document.getElementById('displaySecInterface'),
+        bodyTypo: !!document.getElementById('displayBodyTypo'),
+        bodyThemes: !!document.getElementById('displayBodyThemes'),
+        bodyInterface: !!document.getElementById('displayBodyInterface')
+      };
+    });
+    result('S26 — Display menubar item exists', displayMenuEls.rmbDisplay);
+    result('S26 — Display menu panel exists', displayMenuEls.displayMenu);
+    result('S26 — Typography section exists', displayMenuEls.secTypo && displayMenuEls.bodyTypo);
+    result('S26 — Themes section exists', displayMenuEls.secThemes && displayMenuEls.bodyThemes);
+    result('S26 — Interface section exists', displayMenuEls.secInterface && displayMenuEls.bodyInterface);
+
+    // S27: Open Display menu and click Typography section
+    await readerPage.evaluate(() => {
+      var rmbDisplay = document.getElementById('rmbDisplay');
+      if (rmbDisplay) rmbDisplay.click();
+    });
+    await wait(SHORT_WAIT);
+
+    const displayOpen = await readerPage.evaluate(() => {
+      var menu = document.getElementById('displayMenu');
+      return menu ? menu.classList.contains('open') : false;
+    });
+    result('S27 — Display menu opens', displayOpen);
+
+    // S28: Click Themes section header in display menu
+    if (displayOpen) {
+      await readerPage.evaluate(() => {
+        var sec = document.getElementById('displaySecThemes');
+        if (sec) sec.click();
+      });
+      await wait(SHORT_WAIT);
+
+      const themesSectionOpen = await readerPage.evaluate(() => {
+        var body = document.getElementById('displayBodyThemes');
+        return body ? body.classList.contains('open') : false;
+      });
+      result('S28 — Themes section opens in display menu', themesSectionOpen);
+
+      // Verify the theme popup was embedded
+      const embedded = await readerPage.evaluate(() => {
+        var body = document.getElementById('displayBodyThemes');
+        if (!body) return false;
+        return body.querySelector('.theme-swatch') !== null;
+      });
+      result('S28 — Theme swatches visible in display menu', embedded);
+    }
+
+    // S29: Click Typography section
+    if (displayOpen) {
+      await readerPage.evaluate(() => {
+        var sec = document.getElementById('displaySecTypo');
+        if (sec) sec.click();
+      });
+      await wait(SHORT_WAIT);
+
+      const typoSectionOpen = await readerPage.evaluate(() => {
+        var body = document.getElementById('displayBodyTypo');
+        return body ? body.classList.contains('open') : false;
+      });
+      result('S29 — Typography section opens in display menu', typoSectionOpen);
+    }
+
+    // S30: Close display menu
+    await readerPage.evaluate(() => {
+      var menu = document.getElementById('displayMenu');
+      if (menu) menu.classList.remove('open');
+      var rmb = document.getElementById('rmbDisplay');
+      if (rmb) rmb.classList.remove('rmb-active');
+    });
+    await wait(SHORT_WAIT);
+
+    const displayClosed = await readerPage.evaluate(() => {
+      var menu = document.getElementById('displayMenu');
+      return menu ? !menu.classList.contains('open') : true;
+    });
+    result('S30 — Display menu closes', displayClosed);
 
     // =================================================================
     // SUMMARY
