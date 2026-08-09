@@ -124,8 +124,20 @@
     };
     const hamburgerLibHandlers = {
       hmbAddBooks: function() { var b = document.getElementById('libAddBooksBtn'); if (b) b.click(); },
-      hmbLibThemeLight: function() { var b = document.getElementById('libThemeLight'); if (b) b.click(); },
-      hmbLibThemeDark: function() { var b = document.getElementById('libThemeDark'); if (b) b.click(); },
+      hmbLibThemeLight: function() {
+        localStorage.setItem('noesis-lib-theme', 'light');
+        var libView = document.getElementById('library-view');
+        if (libView) libView.classList.remove('lib-dark');
+        var menu = document.getElementById('libThemesMenu');
+        if (menu) { menu.classList.add('hidden'); menu.classList.remove('show'); menu.classList.remove('mobile-pos'); menu.style.top = ''; }
+      },
+      hmbLibThemeDark: function() {
+        localStorage.setItem('noesis-lib-theme', 'dark');
+        var libView = document.getElementById('library-view');
+        if (libView) libView.classList.add('lib-dark');
+        var menu = document.getElementById('libThemesMenu');
+        if (menu) { menu.classList.add('hidden'); menu.classList.remove('show'); menu.classList.remove('mobile-pos'); menu.style.top = ''; }
+      },
       hmbLibTools: function() {
         var menu = document.getElementById('libToolsMenu');
         if (!menu) return;
@@ -133,7 +145,7 @@
         if (opening) {
           // Close themes menu if open
           var themesMenu = document.getElementById('libThemesMenu');
-          if (themesMenu) { themesMenu.classList.add('hidden'); themesMenu.classList.remove('show'); }
+          if (themesMenu) { themesMenu.classList.add('hidden'); themesMenu.classList.remove('show'); themesMenu.classList.remove('mobile-pos'); themesMenu.style.top = ''; }
           menu.classList.remove('hidden');
           menu.classList.add('mobile-pos');
           // Set top to just below the library header

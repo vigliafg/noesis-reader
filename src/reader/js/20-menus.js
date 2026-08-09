@@ -14,6 +14,10 @@
           toolsMenu.classList.remove('mobile-pos');
           toolsMenu.style.top = '';
         }
+        if (themesMenu.classList.contains('hidden')) {
+          themesMenu.classList.remove('mobile-pos');
+          themesMenu.style.top = '';
+        }
       });
       document.addEventListener('click', function(e) {
         var themesMenu = document.getElementById('libThemesMenu');
@@ -26,6 +30,8 @@
         if (themesMenu && !themesMenu.contains(e.target) && themesBtn && !themesBtn.contains(e.target)) {
           themesMenu.classList.add('hidden');
           themesMenu.classList.remove('show');
+          themesMenu.classList.remove('mobile-pos');
+          themesMenu.style.top = '';
         }
       });
     })();

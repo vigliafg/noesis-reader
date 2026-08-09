@@ -297,6 +297,8 @@
             applyLibraryTheme();
             themesMenu.classList.add('hidden');
             themesMenu.classList.remove('show');
+            themesMenu.classList.remove('mobile-pos');
+            themesMenu.style.top = '';
           });
         }
         // Dark theme option
@@ -307,6 +309,8 @@
             applyLibraryTheme();
             themesMenu.classList.add('hidden');
             themesMenu.classList.remove('show');
+            themesMenu.classList.remove('mobile-pos');
+            themesMenu.style.top = '';
           });
         }
       })();

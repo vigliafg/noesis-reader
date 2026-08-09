@@ -197,8 +197,9 @@
         font-size: 11px;
         gap: 3px;
       }
-      /* Tools dropdown: mobile positioning via .mobile-pos class — anchored below header, right-aligned */
-      .lib-tools-menu.mobile-pos {
+      /* Library dropdowns: mobile positioning via .mobile-pos class — anchored below header, right-aligned */
+      .lib-tools-menu.mobile-pos,
+      .lib-themes-menu.mobile-pos {
         position: fixed !important;
         right: 8px !important;
         left: auto !important;
