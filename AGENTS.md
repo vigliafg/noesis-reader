@@ -341,3 +341,87 @@ curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/index.html
 | `prompt()`/`confirm()` destabilize Puppeteer page | Subsequent DOM clicks fail silently | Use `page.evaluate()` to call JS functions directly |
 | Server port 8765 can hang | Tests time out | `fuser -k 8765/tcp` then restart with `setsid` |
 | `page.reload()` with debug mode = new book instance | Collection lost in persist tests | Use Back to Library + re-open same book instead |
+
+## Future Features / Roadmap
+
+Features planned for future implementation. When the user asks to implement one of these,
+refer to this section for the technical approach and the relevant source files.
+
+### FR1 — Custom viewport themes (foreground + background color pickers)
+
+**Goal**: Let the user create fully custom reading themes by picking a background color
+and a foreground (text) color, beyond the 15 presets already in `THEME_COLORS`.
+
+**Source files**: `src/reader/js/12-theme.js` (theme definitions, `THEME_COLORS`,
+`THEME_GROUPS`, `applyTheme`), `src/reader/css/06-theme-picker.css` (popup styling),
+`src/reader/index.template.html` (popup markup).
+
+**Implementation plan**:
+1. Add a "Custom" group at the bottom of `THEME_GROUPS` in `12-theme.js`, with a single
+   entry `custom: { bg: '#...', fg: '#...', label: 'Custom', group: 'Custom' }`.
+2. Add two `<input type="color">` pickers inside the theme popup (`#themePopupMain`), in
+   the custom group section: one for background (`--custom-bg`), one for text
+   (`--custom-fg`). Store values in `localStorage` (`noesis-custom-theme-bg`,
+   `noesis-custom-theme-fg`).
+3. On color change, update `THEME_COLORS.custom.bg` / `.fg` and call `applyTheme()`.
+4. Persist: on page load, read from localStorage and restore the custom colors. If no
+   saved custom theme exists, default to a reasonable pair (e.g. `#fffde7` / `#1a1a1a`).
+5. Add tests in `test/test_e2e_complete.js` (new group after S52): verify color pickers
+   exist, change colors, verify `applyTheme` is triggered, verify localStorage persistence.
+
+### FR2 — Custom foreground color for UI elements (Display/Interface section)
+
+**Goal**: In the Interface settings panel (`#interfacePopupMain`), currently only
+background colors can be changed (toolbar, sidebar, nav buttons, status bar, bookmark
+drawer). Add foreground (text) color controls for each of these elements.
+
+**Source files**: `src/reader/js/10-chapter-nav.js` (`applyInterfaceSettings`,
+`interfaceSettings`, `defaultInterfaceSettings`), `src/reader/css/07-typography.css`
+(interface popup styling), `src/reader/index.template.html` (color pickers markup).
+
+**Implementation plan**:
+1. Extend `interfaceSettings` (in `07-state.js`) with `fg` counterparts:
+   `toolbarFgColor`, `sidebarFgColor`, `navButtonsFgColor`, `statusBarFgColor`.
+   Same for `defaultInterfaceSettings`.
+2. Add a second `<input type="color">` next to each existing background picker in
+   `index.template.html`, labeled "Text" or with a text-color icon.
+3. In `applyInterfaceSettings()`, apply the foreground color via `style.color` on the
+   relevant elements (header, bookmarks, nav buttons, status bar).
+4. Persist in `saveVisualSettings()` / `loadAndApplyBookState()` (already serializes
+   `interfaceSettings` via spread, so new keys are automatically included).
+5. Add tests: verify foreground pickers exist, change value, check applied style.
+
+### FR3 — Font family selector (serif / sans-serif / monospace override)
+
+**Goal**: Add a font selector in the Typography panel that lets the user override the
+EPUB's original CSS font-family with serif, sans-serif, or monospace, applied to the
+iframe content.
+
+**Source files**: `src/reader/js/10-chapter-nav.js` (near `fontSize`/`lineHeight`
+state), `src/reader/js/12-theme.js` (`applyTheme` — injects CSS into epub.js rendition),
+`src/reader/index.template.html` (Typography popup).
+
+**Implementation plan**:
+1. Add a module-level variable `fontFamily` (default `''` = no override, use EPUB's
+   original font). State in `07-state.js` or near `fontSize`/`lineHeight` in
+   `10-chapter-nav.js`.
+2. Add a `<select>` or button group in the Typography popup (`#typographyPopupMain`)
+   with options: "EPUB default" (value=''), "Serif" (`Georgia, 'Times New Roman', serif`),
+   "Sans-serif" (`system-ui, -apple-system, sans-serif`), "Monospace" (`'Courier New', monospace`).
+3. In `applyTheme()` (`12-theme.js`), when `fontFamily` is set, add
+   `'font-family': fontFamily + ' !important'` to the CSS rules injected via
+   `rendition.themes.register('custom', {...})`.
+4. For scroll mode (where epub.js themes may not apply the same way), also inject a
+   `<style>` tag into the iframe document directly as a fallback.
+5. Persist in `saveVisualSettings()` / `loadAndApplyBookState()` (add `fontFamily` to
+   the saved state).
+6. Add tests: verify selector exists, change font, verify it's reflected in the
+   saved/restored state.
+
+### General notes for all FRs
+
+- After implementing any FR, run `npm run build && npm run check` then `npm test`.
+- Add new test groups in `test/test_e2e_complete.js` following the existing Sxx pattern.
+- Mirror changes to `noesis-multi` (4 target files) as documented above.
+- All new state must be persisted via the existing `saveVisualSettings()` /
+  `loadAndApplyBookState()` mechanism — don't create a separate persistence path.
