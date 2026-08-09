@@ -197,6 +197,14 @@
         font-size: 11px;
         gap: 3px;
       }
+      /* Tools dropdown: mobile positioning via .mobile-pos class — anchored below header, right-aligned */
+      .lib-tools-menu.mobile-pos {
+        position: fixed !important;
+        right: 8px !important;
+        left: auto !important;
+        z-index: 1001 !important;
+      }
+
       /* Hide buttons that are in the hamburger menu on mobile — target buttons only, not dropdown containers */
       #libThemesBtn, #libToolsBtn, #libHelpBtn { display: none !important; }
 

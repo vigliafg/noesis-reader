@@ -284,7 +284,7 @@
           themesBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             var toolsMenu = document.getElementById('libToolsMenu');
-            if (toolsMenu) toolsMenu.classList.add('hidden');
+            if (toolsMenu) { toolsMenu.classList.add('hidden'); toolsMenu.classList.remove('mobile-pos'); toolsMenu.style.top = ''; }
             themesMenu.classList.toggle('hidden');
             themesMenu.classList.toggle('show');
           });

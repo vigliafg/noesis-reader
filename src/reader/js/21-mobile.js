@@ -126,7 +126,27 @@
       hmbAddBooks: function() { var b = document.getElementById('libAddBooksBtn'); if (b) b.click(); },
       hmbLibThemeLight: function() { var b = document.getElementById('libThemeLight'); if (b) b.click(); },
       hmbLibThemeDark: function() { var b = document.getElementById('libThemeDark'); if (b) b.click(); },
-      hmbLibTools: function() { var b = document.getElementById('libToolsBtn'); if (b) b.click(); },
+      hmbLibTools: function() {
+        var menu = document.getElementById('libToolsMenu');
+        if (!menu) return;
+        var opening = menu.classList.contains('hidden');
+        if (opening) {
+          // Close themes menu if open
+          var themesMenu = document.getElementById('libThemesMenu');
+          if (themesMenu) { themesMenu.classList.add('hidden'); themesMenu.classList.remove('show'); }
+          menu.classList.remove('hidden');
+          menu.classList.add('mobile-pos');
+          // Set top to just below the library header
+          var headerEl = document.querySelector('.library-header');
+          if (headerEl) {
+            menu.style.top = (headerEl.getBoundingClientRect().bottom + 8) + 'px';
+          }
+        } else {
+          menu.classList.add('hidden');
+          menu.classList.remove('mobile-pos');
+          menu.style.top = '';
+        }
+      },
       hmbLibRefresh: function() { if (typeof loadLibraryBooks === 'function') loadLibraryBooks(); }
     };
     // Items with dropdown menus need wrapper-visibility workaround on mobile

@@ -9,12 +9,19 @@
         var themesMenu = document.getElementById('libThemesMenu');
         if (themesMenu) { themesMenu.classList.add('hidden'); themesMenu.classList.remove('show'); }
         toolsMenu.classList.toggle('hidden');
+        // Clean up mobile-positioning class in case it was left over
+        if (toolsMenu.classList.contains('hidden')) {
+          toolsMenu.classList.remove('mobile-pos');
+          toolsMenu.style.top = '';
+        }
       });
       document.addEventListener('click', function(e) {
         var themesMenu = document.getElementById('libThemesMenu');
         var themesBtn = document.getElementById('libThemesBtn');
         if (toolsMenu && !toolsMenu.contains(e.target) && !toolsBtn.contains(e.target)) {
           toolsMenu.classList.add('hidden');
+          toolsMenu.classList.remove('mobile-pos');
+          toolsMenu.style.top = '';
         }
         if (themesMenu && !themesMenu.contains(e.target) && themesBtn && !themesBtn.contains(e.target)) {
           themesMenu.classList.add('hidden');
