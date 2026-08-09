@@ -197,12 +197,11 @@
         font-size: 11px;
         gap: 3px;
       }
-      /* Library dropdowns: mobile positioning via .mobile-pos class — anchored below header, right-aligned */
+      /* Library dropdowns: mobile positioning via .mobile-pos class — anchored below header, to the right of hamburger */
       .lib-tools-menu.mobile-pos,
       .lib-themes-menu.mobile-pos {
         position: fixed !important;
-        right: 8px !important;
-        left: auto !important;
+        right: auto !important;
         z-index: 1001 !important;
       }
 

@@ -13,10 +13,12 @@
         if (toolsMenu.classList.contains('hidden')) {
           toolsMenu.classList.remove('mobile-pos');
           toolsMenu.style.top = '';
+          toolsMenu.style.left = '';
         }
         if (themesMenu.classList.contains('hidden')) {
           themesMenu.classList.remove('mobile-pos');
           themesMenu.style.top = '';
+          themesMenu.style.left = '';
         }
       });
       document.addEventListener('click', function(e) {
@@ -26,12 +28,14 @@
           toolsMenu.classList.add('hidden');
           toolsMenu.classList.remove('mobile-pos');
           toolsMenu.style.top = '';
+          toolsMenu.style.left = '';
         }
         if (themesMenu && !themesMenu.contains(e.target) && themesBtn && !themesBtn.contains(e.target)) {
           themesMenu.classList.add('hidden');
           themesMenu.classList.remove('show');
           themesMenu.classList.remove('mobile-pos');
           themesMenu.style.top = '';
+          themesMenu.style.left = '';
         }
       });
     })();

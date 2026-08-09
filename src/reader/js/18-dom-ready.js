@@ -284,7 +284,7 @@
           themesBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             var toolsMenu = document.getElementById('libToolsMenu');
-            if (toolsMenu) { toolsMenu.classList.add('hidden'); toolsMenu.classList.remove('mobile-pos'); toolsMenu.style.top = ''; }
+            if (toolsMenu) { toolsMenu.classList.add('hidden'); toolsMenu.classList.remove('mobile-pos'); toolsMenu.style.top = ''; toolsMenu.style.left = ''; }
             themesMenu.classList.toggle('hidden');
             themesMenu.classList.toggle('show');
           });
@@ -299,6 +299,7 @@
             themesMenu.classList.remove('show');
             themesMenu.classList.remove('mobile-pos');
             themesMenu.style.top = '';
+            themesMenu.style.left = '';
           });
         }
         // Dark theme option
@@ -311,6 +312,7 @@
             themesMenu.classList.remove('show');
             themesMenu.classList.remove('mobile-pos');
             themesMenu.style.top = '';
+            themesMenu.style.left = '';
           });
         }
       })();

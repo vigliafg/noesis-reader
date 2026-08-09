@@ -148,15 +148,20 @@
           if (themesMenu) { themesMenu.classList.add('hidden'); themesMenu.classList.remove('show'); themesMenu.classList.remove('mobile-pos'); themesMenu.style.top = ''; }
           menu.classList.remove('hidden');
           menu.classList.add('mobile-pos');
-          // Set top to just below the library header
+          // Position below header, to the right of the hamburger
           var headerEl = document.querySelector('.library-header');
           if (headerEl) {
             menu.style.top = (headerEl.getBoundingClientRect().bottom + 8) + 'px';
+          }
+          var hb = document.getElementById('hamburgerBtnLib');
+          if (hb) {
+            menu.style.left = (hb.getBoundingClientRect().right + 4) + 'px';
           }
         } else {
           menu.classList.add('hidden');
           menu.classList.remove('mobile-pos');
           menu.style.top = '';
+          menu.style.left = '';
         }
       },
       hmbLibRefresh: function() { if (typeof loadLibraryBooks === 'function') loadLibraryBooks(); }
