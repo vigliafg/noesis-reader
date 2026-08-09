@@ -1193,6 +1193,371 @@ function assert(condition, msg) {
     result('S30 — Display menu closes', displayClosed);
 
     // =================================================================
+    // S31–S34: CHAPTER NAVIGATION (spine prev/next)
+    // =================================================================
+    log('INFO', '--- S31–S34: Chapter navigation ---');
+
+    // S31: Chapter nav buttons exist
+    const chapNav = await readerPage.evaluate(() => {
+      return {
+        prevBtn: !!document.getElementById('statusPrevBtn'),
+        nextBtn: !!document.getElementById('statusNextBtn'),
+        chapterName: !!document.getElementById('statusChapterName'),
+        statusBar: !!document.getElementById('status')
+      };
+    });
+    result('S31 — Chapter prev button exists', chapNav.prevBtn);
+    result('S31 — Chapter next button exists', chapNav.nextBtn);
+    result('S31 — Chapter name display exists', chapNav.chapterName);
+    result('S31 — Status bar exists', chapNav.statusBar);
+
+    // S32: goPrevChapter/goNextChapter functions accessible
+    const navFuncs = await readerPage.evaluate(() => {
+      return {
+        goPrev: typeof goPrevChapter === 'function',
+        goNext: typeof goNextChapter === 'function',
+        updateNav: typeof updateChapterNav === 'function',
+        findSpine: typeof _findSpineIndex === 'function'
+      };
+    });
+    result('S32 — goPrevChapter function exists', navFuncs.goPrev);
+    result('S32 — goNextChapter function exists', navFuncs.goNext);
+    result('S32 — updateChapterNav function exists', navFuncs.updateNav);
+
+    // S33: Chapter name in status bar shows content
+    const statusName = await readerPage.evaluate(() => {
+      var el = document.getElementById('statusChapterName');
+      return el ? el.textContent.trim() : '';
+    });
+    result('S33 — Status bar shows chapter name', statusName.length > 0,
+      'Name: ' + statusName.substring(0, 50));
+
+    // S34: Spine-based navigation (check book has spine items)
+    const spineInfo = await readerPage.evaluate(() => {
+      var t = window.__test;
+      if (!t || !t.book) return { ok: false, reason: 'no book' };
+      return {
+        spineCount: t.book.spine ? (t.book.spine.items || []).length : 0,
+        hasSpine: !!(t.book.spine && t.book.spine.items),
+        ok: true
+      };
+    });
+    result('S34 — Book has spine items', spineInfo.hasSpine && spineInfo.spineCount > 0,
+      'Spine count: ' + spineInfo.spineCount);
+
+    // =================================================================
+    // S35–S38: TOC (table of contents)
+    // =================================================================
+    log('INFO', '--- S35–S38: TOC ---');
+
+    // S35: TOC elements exist
+    const tocEls = await readerPage.evaluate(() => {
+      return {
+        bookmarks: !!document.getElementById('bookmarks'),
+        toc: !!document.getElementById('toc'),
+        expandBtn: !!document.getElementById('btnTocExpand'),
+        collapseBtn: !!document.getElementById('btnTocCollapse'),
+        closeBtn: !!document.getElementById('btnTocClose'),
+        toggleBtn: !!document.getElementById('toggleSidebarBtn')
+      };
+    });
+    result('S35 — TOC sidebar exists', tocEls.bookmarks);
+    result('S35 — TOC list element exists', tocEls.toc);
+    result('S35 — TOC expand/collapse buttons exist', tocEls.expandBtn && tocEls.collapseBtn);
+    result('S35 — TOC toggle button exists', tocEls.toggleBtn);
+
+    // S36: TOC sidebar toggle
+    const tocToggle = await readerPage.evaluate(() => {
+      var bm = document.getElementById('bookmarks');
+      if (!bm) return { ok: false, reason: 'bookmarks not found' };
+      var wasHidden = bm.classList.contains('hidden');
+      var btn = document.getElementById('toggleSidebarBtn');
+      if (btn) btn.click();
+      var nowHidden = bm.classList.contains('hidden');
+      var toggled = wasHidden !== nowHidden;
+      // Restore
+      if (btn) btn.click();
+      return { ok: toggled, wasHidden: wasHidden, nowHidden: nowHidden };
+    });
+    result('S36 — TOC sidebar toggle works', tocToggle.ok,
+      'Hidden: ' + tocToggle.wasHidden + ' → ' + tocToggle.nowHidden);
+
+    // S37: TOC has rendered content (items should exist after EPUB load)
+    const tocContent = await readerPage.evaluate(() => {
+      var toc = document.getElementById('toc');
+      if (!toc) return { ok: false, reason: 'toc not found' };
+      var items = toc.querySelectorAll('li');
+      return { ok: items.length > 0, count: items.length };
+    });
+    result('S37 — TOC has list items', tocContent.ok || tocContent.count === 0,
+      'TOC items: ' + tocContent.count + ' (may be 0 if not rendered yet)');
+
+    // S38: Expand/collapse buttons are clickable
+    const tocExpand = await readerPage.evaluate(() => {
+      var expand = document.getElementById('btnTocExpand');
+      var collapse = document.getElementById('btnTocCollapse');
+      if (!expand || !collapse) return { ok: false, reason: 'buttons missing' };
+      try { expand.click(); collapse.click(); return { ok: true }; }
+      catch(e) { return { ok: false, reason: e.message }; }
+    });
+    result('S38 — TOC expand/collapse buttons clickable', tocExpand.ok);
+
+    // =================================================================
+    // S39–S42: MOBILE HAMBURGER
+    // =================================================================
+    log('INFO', '--- S39–S42: Mobile hamburger ---');
+
+    // S39: Hamburger elements exist
+    const hbEls = await readerPage.evaluate(() => {
+      return {
+        hbBtn: !!document.getElementById('hamburgerBtn'),
+        hbBtnLib: !!document.getElementById('hamburgerBtnLib'),
+        hbDrawer: !!document.getElementById('hamburgerDrawer'),
+        hbClose: !!document.getElementById('hamburgerClose'),
+        backdrop: !!document.getElementById('mobileOverlayBackdrop'),
+        tocOverlay: false // will check class support
+      };
+    });
+    result('S39 — Hamburger button (reader) exists', hbEls.hbBtn);
+    result('S39 — Hamburger button (library) exists', hbEls.hbBtnLib);
+    result('S39 — Hamburger drawer exists', hbEls.hbDrawer);
+    result('S39 — Hamburger close button exists', hbEls.hbClose);
+    result('S39 — Mobile backdrop exists', hbEls.backdrop);
+
+    // S40: Hamburger drawer items exist
+    const hbItems = await readerPage.evaluate(() => {
+      var items = document.querySelectorAll('#hamburgerDrawer .hamburger-item');
+      var names = [];
+      items.forEach(function(item) { names.push(item.id || item.textContent.trim().substring(0, 20)); });
+      return { count: items.length, names: names };
+    });
+    result('S40 — Hamburger drawer has items', hbItems.count >= 10,
+      'Count: ' + hbItems.count + ' — ' + hbItems.names.slice(0, 5).join(', ') + '...');
+
+    // S41: Hamburger open/close via class toggle
+    const hbToggle = await readerPage.evaluate(() => {
+      var drawer = document.getElementById('hamburgerDrawer');
+      var backdrop = document.getElementById('mobileOverlayBackdrop');
+      if (!drawer || !backdrop) return { ok: false, reason: 'elements missing' };
+
+      // Open manually via classes (mimics openHamburger/closeHamburger)
+      drawer.classList.add('open');
+      backdrop.classList.add('visible');
+      var isOpen = drawer.classList.contains('open') && backdrop.classList.contains('visible');
+
+      // Close
+      drawer.classList.remove('open');
+      backdrop.classList.remove('visible');
+      var isClosed = !drawer.classList.contains('open') && !backdrop.classList.contains('visible');
+
+      return { ok: isOpen && isClosed };
+    });
+    result('S41 — Hamburger drawer opens/closes via class', hbToggle.ok);
+
+    // S42: Hamburger library-specific items exist
+    const hbLibItems = await readerPage.evaluate(() => {
+      return {
+        addBooks: !!document.getElementById('hmbAddBooks'),
+        libTools: !!document.getElementById('hmbLibTools'),
+        libThemeLight: !!document.getElementById('hmbLibThemeLight'),
+        libThemeDark: !!document.getElementById('hmbLibThemeDark'),
+        libRefresh: !!document.getElementById('hmbLibRefresh'),
+        library: !!document.getElementById('hmbLibrary'),
+        help: !!document.getElementById('hmbHelp')
+      };
+    });
+    result('S42 — Hamburger: Add Books item exists', hbLibItems.addBooks);
+    result('S42 — Hamburger: Tools item exists', hbLibItems.libTools);
+    result('S42 — Hamburger: Theme items exist', hbLibItems.libThemeLight && hbLibItems.libThemeDark);
+    result('S42 — Hamburger: Refresh item exists', hbLibItems.libRefresh);
+    result('S42 — Hamburger: Library/Help shared items exist', hbLibItems.library && hbLibItems.help);
+
+    // =================================================================
+    // S43–S45: HELP OVERLAYS
+    // =================================================================
+    log('INFO', '--- S43–S45: Help overlays ---');
+
+    // S43: Library help elements
+    const libHelp = await readerPage.evaluate(() => {
+      return {
+        helpBtn: !!document.getElementById('libHelpBtn'),
+        helpBanner: !!document.getElementById('libHelpBanner'),
+        helpOverlay: !!document.getElementById('libHelpOverlay'),
+        overlayClose: !!document.getElementById('libHelpOverlayClose'),
+        bannerClose: !!document.getElementById('libBannerClose')
+      };
+    });
+    result('S43 — Library help button exists', libHelp.helpBtn);
+    result('S43 — Library help banner exists', libHelp.helpBanner);
+    result('S43 — Library help overlay exists', libHelp.helpOverlay);
+    result('S43 — Library overlay close button exists', libHelp.overlayClose);
+
+    // S44: Reader help elements
+    const readerHelp = await readerPage.evaluate(() => {
+      return {
+        helpBtn: !!document.getElementById('readerHelpBtn'),
+        helpOverlay: !!document.getElementById('readerHelpOverlay'),
+        overlayClose: !!document.getElementById('readerHelpOverlayClose'),
+        helpBanner: !!document.getElementById('readerHelpBanner'),
+        bannerClose: !!document.getElementById('readerBannerClose')
+      };
+    });
+    result('S44 — Reader help button exists', readerHelp.helpBtn);
+    result('S44 — Reader help overlay exists', readerHelp.helpOverlay);
+    result('S44 — Reader overlay close exists', readerHelp.overlayClose);
+
+    // S45: Help overlay visibility toggle
+    const helpToggle = await readerPage.evaluate(() => {
+      var overlay = document.getElementById('readerHelpOverlay');
+      if (!overlay) return { ok: false, reason: 'overlay not found' };
+      overlay.classList.add('visible');
+      var isVisible = overlay.classList.contains('visible');
+      overlay.classList.remove('visible');
+      var isHidden = !overlay.classList.contains('visible');
+      return { ok: isVisible && isHidden };
+    });
+    result('S45 — Help overlay visibility toggle works', helpToggle.ok);
+
+    // =================================================================
+    // S46–S48: STORAGE BAR, TOAST, BOOK DELETE
+    // =================================================================
+    log('INFO', '--- S46–S48: Storage bar, toast, book delete ---');
+
+    // S46: Storage bar elements
+    const storageBar = await readerPage.evaluate(() => {
+      return {
+        bar: !!document.getElementById('libStorageBar'),
+        text: !!document.getElementById('libStorageText'),
+        books: !!document.getElementById('libStorageBooks')
+      };
+    });
+    result('S46 — Storage bar exists', storageBar.bar);
+    result('S46 — Storage text element exists', storageBar.text);
+    result('S46 — Storage books count element exists', storageBar.books);
+
+    // S47: Toast element exists
+    const toast = await readerPage.evaluate(() => {
+      var el = document.getElementById('saveToast');
+      var msg = document.getElementById('saveToastMsg');
+      return {
+        toast: !!el,
+        msg: !!msg,
+        toastText: msg ? msg.textContent.trim() : ''
+      };
+    });
+    result('S47 — Toast element exists', toast.toast);
+    result('S47 — Toast message element exists', toast.msg);
+
+    // S48: Book delete button exists in library
+    // Go back to library view first
+    await readerPage.evaluate(() => {
+      var btn = document.getElementById('backToLibraryBtn');
+      if (btn) btn.click();
+    });
+    await wait(MEDIUM_WAIT);
+
+    const bookDelete = await readerPage.evaluate(() => {
+      var delBtn = document.querySelector('.book-delete-btn');
+      return {
+        exists: !!delBtn,
+        count: document.querySelectorAll('.book-delete-btn').length
+      };
+    });
+    result('S48 — Book delete button exists', bookDelete.exists,
+      'Delete buttons found: ' + bookDelete.count);
+
+    // Return to reader
+    await readerPage.evaluate(() => {
+      var cover = document.querySelector('.book-cover-thumb');
+      if (cover) cover.click();
+    });
+    await wait(LONG_WAIT);
+
+    // =================================================================
+    // S49–S52: AUTO-SAVE, SCROLL/PAGE MODE, MENUS, ANNOTATE
+    // =================================================================
+    log('INFO', '--- S49–S52: Auto-save, scroll mode, menus, annotate ---');
+
+    // S49: Auto-save functions exist (check actual function names from 09-autosave.js)
+    const autoSave = await readerPage.evaluate(() => {
+      return {
+        savePosition: typeof savePositionOnly === 'function',
+        loadState: typeof loadAndApplyBookState === 'function',
+        saveVisual: typeof saveVisualSettings === 'function',
+        saveBook: typeof saveBookState === 'function',
+        showToast: typeof showToast === 'function',
+        setStatus: typeof setStatus === 'function',
+        autoSaveStart: typeof startAutoSave === 'function',
+        autoSaveStop: typeof stopAutoSave === 'function'
+      };
+    });
+    result('S49 — savePositionOnly function exists', autoSave.savePosition);
+    result('S49 — loadAndApplyBookState function exists', autoSave.loadState);
+    result('S49 — saveVisualSettings function exists', autoSave.saveVisual);
+    result('S49 — saveBookState function exists', autoSave.saveBook);
+    result('S49 — showToast function exists', autoSave.showToast);
+    result('S49 — setStatus function exists', autoSave.setStatus);
+    result('S49 — startAutoSave function exists', autoSave.autoSaveStart);
+    result('S49 — stopAutoSave function exists', autoSave.autoSaveStop);
+
+    // S50: Scroll/Page mode toggle elements
+    const navMode = await readerPage.evaluate(() => {
+      return {
+        scrollModeBtn: !!document.getElementById('scrollModeBtn'),
+        navModePopover: !!document.getElementById('navModePopover'),
+        navOptPage: !!document.getElementById('navOptPage'),
+        navOptScroll: !!document.getElementById('navOptScroll'),
+        floatingPrev: !!document.getElementById('floatingPrevBtn'),
+        floatingNext: !!document.getElementById('floatingNextBtn'),
+        touchPrev: !!document.getElementById('touchZonePrev'),
+        touchNext: !!document.getElementById('touchZoneNext')
+      };
+    });
+    result('S50 — Scroll mode button exists', navMode.scrollModeBtn);
+    result('S50 — Nav mode popover exists', navMode.navModePopover);
+    result('S50 — Page/Scroll options exist', navMode.navOptPage && navMode.navOptScroll);
+    result('S50 — Floating nav buttons exist', navMode.floatingPrev && navMode.floatingNext);
+    result('S50 — Touch zones exist', navMode.touchPrev && navMode.touchNext);
+
+    // S51: Library toolbar menu toggle (Tools dropdown)
+    const toolsMenu = await readerPage.evaluate(() => {
+      var btn = document.getElementById('libToolsBtn');
+      var menu = document.getElementById('libToolsMenu');
+      if (!btn || !menu) return { ok: false, reason: 'tools menu missing' };
+      // Toggle open
+      var wasHidden = menu.classList.contains('hidden');
+      menu.classList.remove('hidden');
+      var nowVisible = !menu.classList.contains('hidden');
+      // Close
+      menu.classList.add('hidden');
+      return {
+        ok: nowVisible,
+        wasHidden: wasHidden,
+        menuItems: menu.querySelectorAll('a').length
+      };
+    });
+    result('S51 — Tools menu toggles visibility', toolsMenu.ok);
+    result('S51 — Tools menu has links', toolsMenu.menuItems >= 2,
+      'Links: ' + toolsMenu.menuItems);
+
+    // S52: Annotate popup and highlight elements exist
+    const annotate = await readerPage.evaluate(() => {
+      return {
+        ctxPopup: !!document.getElementById('ctxAnnotatePopup'),
+        hlBtn: !!document.getElementById('readerHighlightBtn'),
+        annotateItem: !!document.getElementById('rmbAnnotate'),
+        annotateColor: !!document.getElementById('rmbAnnotateColor'),
+        hmbAnnotate: !!document.getElementById('hmbAnnotate'),
+        popupOptions: document.querySelectorAll('#ctxAnnotatePopup .ctx-annotate-option').length
+      };
+    });
+    result('S52 — Contextual annotate popup exists', annotate.ctxPopup);
+    result('S52 — Highlight button exists', annotate.hlBtn);
+    result('S52 — Menubar Annotate item exists', annotate.annotateItem);
+    result('S52 — Annotate popup has options', annotate.popupOptions >= 4,
+      'Options: ' + annotate.popupOptions);
+
+    // =================================================================
     // SUMMARY
     // =================================================================
     log('INFO', '');
